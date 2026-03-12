@@ -8,7 +8,7 @@
   <h1 class="hero-title">OpenCW</h1>
   <p class="hero-sub">
     {m.home_hero_subtitle_pre()}<a
-      href="/morse/learn"
+      href="/about"
       style="color: var(--accent); font-weight: 600;">{m.home_hero_koch()}</a
     >{m.home_hero_subtitle_post()}
   </p>
@@ -19,11 +19,11 @@
 
 <!-- Feature cards -->
 <section class="feature-grid">
-  <div class="card">
+  <a href="/about" class="card" style="text-decoration: none; color: inherit;">
     <div class="feature-icon" aria-hidden="true"><Radio /></div>
     <h2 class="feature-title">{m.home_feature_koch_title()}</h2>
     <p class="feature-body">{m.home_feature_koch_body()}</p>
-  </div>
+  </a>
   <div class="card">
     <div class="feature-icon" aria-hidden="true"><Smartphone /></div>
     <h2 class="feature-title">{m.home_feature_mobile_title()}</h2>
