@@ -1,0 +1,26 @@
+info:
+  name: CW Settings
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: http://localhost:8080/api/v1/cw/settings
+  body:
+    type: json
+    data: |-
+      {
+        "char_wpm": 25,
+        "eff_wpm": 12,
+        "freq": 700,
+        "start_delay": 0
+      }
+  auth:
+    type: bearer
+    token: "{{access_token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,10 @@
+name: dev
+variables:
+  - name: username
+    value: user
+  - name: email
+    value: user@a.com
+  - name: password
+    value: "12345678"
+  - secret: true
+    name: secret

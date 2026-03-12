@@ -1,0 +1,49 @@
+# OpenCW Backend
+
+## Build production image
+
+1. Create a runtime env file from the template:
+
+```bash
+cp example.env .env
+```
+
+2. Set a secure `JWT_SECRET` in base64 format:
+
+```bash
+openssl rand -base64 32
+```
+
+3. Build the production image:
+
+```bash
+docker build -t opencw-backend:latest .
+```
+
+4. Run with explicit environment values:
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e PORT=8080 \
+  -e GIN_MODE=release \
+  -e DB_HOST=host.docker.internal \
+  -e DB_PORT=5432 \
+  -e DB_USER=user \
+  -e DB_PASSWORD=secret \
+  -e DB_NAME=opencw \
+  -e JWT_SECRET=<base64-secret> \
+  opencw-backend:latest
+```
+
+## Run app + Postgres with Docker Compose
+
+```bash
+docker compose up --build -d
+```
+
+Health check endpoint:
+
+```bash
+curl http://localhost:8080/api/v1/health
+```
+

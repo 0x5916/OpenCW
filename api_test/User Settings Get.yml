@@ -1,0 +1,17 @@
+info:
+  name: User Settings Get
+  type: http
+  seq: 10
+
+http:
+  method: GET
+  url: http://localhost:8080/api/v1/user/me
+  auth:
+    type: bearer
+    token: "{{access_token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

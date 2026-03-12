@@ -1,0 +1,30 @@
+info:
+  name: Register
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8080/api/v1/auth/register
+  body:
+    type: json
+    data: |
+      {
+        "username": "{{username}}",
+        "email": "{{email}}",
+        "password": "{{password}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        bru.setEnvVar("access_token", res.body.access_token);
+        bru.setEnvVar("refresh_token", res.body.refresh_token);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
