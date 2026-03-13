@@ -804,6 +804,59 @@ body {
 	line-height: 1rem;
 }
 
+/* ─── Tooltip icon ─────────────────────────────────────── */
+.tooltip-icon {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	color: var(--text-muted);
+	cursor: help;
+	vertical-align: middle;
+	margin-left: 0.15rem;
+}
+
+.tooltip-icon::before {
+	content: attr(data-tooltip);
+	position: absolute;
+	bottom: calc(100% + 8px);
+	left: 50%;
+	transform: translateX(-50%);
+	background: var(--bg-inset);
+	border: 1px solid var(--border-subtle);
+	color: var(--text-secondary);
+	font-size: 0.7rem;
+	line-height: 1.4;
+	padding: 0.4rem 0.6rem;
+	border-radius: var(--radius-sm);
+	width: max-content;
+	max-width: 180px;
+	white-space: normal;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.15s;
+	z-index: 50;
+	box-shadow: var(--shadow-sm);
+}
+
+.tooltip-icon::after {
+	content: '';
+	position: absolute;
+	bottom: calc(100% + 2px);
+	left: 50%;
+	transform: translateX(-50%);
+	border: 5px solid transparent;
+	border-top-color: var(--border-subtle);
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.15s;
+	z-index: 50;
+}
+
+.tooltip-icon:hover::before,
+.tooltip-icon:hover::after {
+	opacity: 1;
+}
+
 .accent-text {
 	color: var(--accent);
 	font-weight: 600;
@@ -1328,15 +1381,20 @@ body {
 /* Lesson Selection */
 .lesson-row {
 	display: flex;
-	align-items: stretch;
+	align-items: center;
 	flex-wrap: wrap;
 	gap: 0.6rem;
 }
 
-.lesson-number {
+.lesson-current-label {
+	margin: 0;
 	color: var(--accent);
-	font-weight: 700;
+	font-weight: 500;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	white-space: nowrap;
 }
+
 
 .lesson-select {
 	flex: 1;

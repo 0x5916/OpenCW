@@ -4,7 +4,7 @@
   import ResultOverlay from '$lib/components/ResultOverlay.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
   import { untrack, onDestroy } from 'svelte';
-  import { RefreshCw, Play, Square, ClipboardCheck, Upload, Download } from 'lucide-svelte';
+  import { RefreshCw, Play, Square, ClipboardCheck, Upload, Download, Info } from 'lucide-svelte';
   import { score, diffWords } from '$lib/score';
   import type { DiffToken } from '$lib/score';
   import { user } from '$lib/auth';
@@ -133,7 +133,7 @@
     diffTokens = diffWords(lessonText, inputText);
     showOverlay = true;
     if ($user && result > 0) {
-      submitProgress(currentLessonWord, charWpm, effWpm, result).catch(() => {});
+      submitProgress(String(chosenLesson), charWpm, effWpm, result).catch(() => {});
     }
   }
 
@@ -194,7 +194,7 @@
     <div class="card-sm">
       <h2 class="card-label">{m.trainer_label_lesson()}</h2>
       <div class="lesson-row">
-        <p class="lesson-number">#{chosenLesson}</p>
+        <p class="lesson-current-label">{m.trainer_current_lesson()}</p>
         <select bind:value={chosenLesson} onchange={() => (result = -1)} class="lesson-select">
           {#each LESSONS as lesson, index (index)}
             <option value={index + 1}>{index + 1} — {lesson.split('').join(', ')}</option>
@@ -207,11 +207,17 @@
       <h2 class="card-label">{m.trainer_label_settings()}</h2>
       <div class="settings-grid settings-grid-2">
         <label class="settings-field">
-          <span class="label-text">{m.trainer_label_char_wpm()}</span>
+          <span class="label-text">
+            {m.trainer_label_char_wpm()}
+            <span class="tooltip-icon" data-tooltip={m.trainer_tooltip_char_wpm()}><Info size={11} /></span>
+          </span>
           <input type="number" bind:value={charWpm} min="5" max="50" class="input" />
         </label>
         <label class="settings-field">
-          <span class="label-text">{m.trainer_label_eff_wpm()}</span>
+          <span class="label-text">
+            {m.trainer_label_eff_wpm()}
+            <span class="tooltip-icon" data-tooltip={m.trainer_tooltip_eff_wpm()}><Info size={11} /></span>
+          </span>
           <input type="number" bind:value={effWpm} min="5" max="50" class="input" />
         </label>
       </div>
@@ -259,6 +265,13 @@
         {:else if restoreError}
           <ErrorAlert message={restoreError} />
         {/if}
+      {:else}
+        <p class="body-text">
+          {m.trainer_guest_notice()}
+          <a href="/login" class="link">{m.nav_login()}</a>
+          /
+          <a href="/register" class="link">{m.nav_register()}</a>
+        </p>
       {/if}
     </div>
 
@@ -296,6 +309,7 @@
         playLabel={currentLessonChars.length > 1
           ? `Play "${selectedLessonChar}"`
           : m.trainer_play_letter()}
+        repeat={3}
         onEnded={() => (charPlaying = false)}
       />
     </div>

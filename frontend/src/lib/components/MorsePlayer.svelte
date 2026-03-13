@@ -9,12 +9,13 @@
     charWpm = 20,
     effWpm = 10,
     freq = 600,
-    startDelay = 0.5,
+    startDelay = 0,
     volume = 1.0,
     compact = false,
     playLabel = '',
     hideControls = false,
     label = '',
+    repeat = 1,
     onEnded = () => {}
   } = $props();
 
@@ -46,23 +47,25 @@
     ctxStartTime = ctx.currentTime;
     let t = ctx.currentTime + startDelay;
 
-    for (const char of text.toUpperCase()) {
-      const morse = MORSE[char];
-      if (!morse) {
-        t += timings.wordSpace;
-        continue;
-      }
+    for (let i = 0; i < repeat; i++) {
+      for (const char of text.toUpperCase()) {
+        const morse = MORSE[char];
+        if (!morse) {
+          t += timings.wordSpace;
+          continue;
+        }
 
-      for (let j = 0; j < morse.length; j++) {
-        const dur = morse[j] === '.' ? timings.charDot : timings.dash;
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(volume, t + fade);
-        gain.gain.setValueAtTime(volume, t + dur - fade);
-        gain.gain.linearRampToValueAtTime(0, t + dur);
-        t += dur;
-        if (j < morse.length - 1) t += timings.symbolSpace;
+        for (let j = 0; j < morse.length; j++) {
+          const dur = morse[j] === '.' ? timings.charDot : timings.dash;
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(volume, t + fade);
+          gain.gain.setValueAtTime(volume, t + dur - fade);
+          gain.gain.linearRampToValueAtTime(0, t + dur);
+          t += dur;
+          if (j < morse.length - 1) t += timings.symbolSpace;
+        }
+        t += timings.letterSpace;
       }
-      t += timings.letterSpace;
     }
     // remove last letter space
     t -= text.length > 0 ? timings.letterSpace : 0;

@@ -66,11 +66,16 @@
   }
 
   function formatLesson(lessonStr: string): string {
+    const numericLesson = Number.parseInt(lessonStr, 10);
+    if (Number.isInteger(numericLesson) && numericLesson >= 1 && numericLesson <= LESSONS.length) {
+      return `${numericLesson} - ${LESSONS[numericLesson - 1].split('').join(', ')}`;
+    }
+
     let cumulative = '';
     for (let i = 0; i < LESSONS.length; i++) {
       cumulative += LESSONS[i];
       if (cumulative === lessonStr.toUpperCase()) {
-        return `${i + 1} — ${LESSONS[i].split('').join(', ')}`;
+        return `${i + 1} - ${LESSONS[i].split('').join(', ')}`;
       }
     }
     // Fallback: truncate raw string
