@@ -7,9 +7,9 @@
   let {
     text = '',
     charWpm = 20,
-    effWpm = 12,
+    effWpm = 10,
     freq = 600,
-    startDelay = 0,
+    startDelay = 0.5,
     volume = 1.0,
     compact = false,
     playLabel = '',
