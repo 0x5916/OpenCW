@@ -106,6 +106,7 @@
 	"trainer_play_letter": "播放",
 	"trainer_regenerate": "重新產生",
 	"trainer_answer_label": "您的答案",
+	"trainer_answer_shortcut_tip": "提示：在空白答案框中按空白鍵可開始播放完整訓練。",
 	"trainer_answer_placeholder": "在此輸入您聽到的內容…",
 	"trainer_check": "檢查結果",
 	"trainer_accuracy": "正確率",

@@ -1331,6 +1331,12 @@ body {
 	gap: 1rem;
 }
 
+@media (max-width: 767px) {
+	.learn-col-right .learn-answer-textarea {
+		min-height: 11rem;
+	}
+}
+
 @media (min-width: 768px) {
 	.learn-page {
 		display: grid;
@@ -1369,6 +1375,16 @@ body {
 
 .learn-heading {
 	margin-bottom: 1rem;
+}
+
+/* Slightly brighter trainer card titles for readability */
+.learn-page .card-label {
+	color: var(--text-label);
+}
+
+/* Reduce the title-to-textarea gap in the answer card */
+.learn-answer-card > .card-label {
+	margin-bottom: 0;
 }
 
 .page-title-sub {

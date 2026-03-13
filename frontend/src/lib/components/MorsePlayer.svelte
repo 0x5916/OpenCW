@@ -117,6 +117,10 @@
     await stop();
   }
 
+  export function isStarted() {
+    return started;
+  }
+
   onDestroy(() => ctx?.close());
 </script>
 

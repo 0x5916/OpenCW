@@ -108,6 +108,11 @@
     playNow: () => Promise<void>;
     stopNow: () => Promise<void>;
   } | null>(null);
+  let fullLessonPlayer = $state<{
+    playNow: () => Promise<void>;
+    stopNow: () => Promise<void>;
+    isStarted: () => boolean;
+  } | null>(null);
   let charPlaying = $state(false);
 
   async function toggleSelectedLessonChar() {
@@ -176,6 +181,16 @@
 
   function onSelectedCharChange(event: Event) {
     selectedLessonChar = (event.currentTarget as HTMLSelectElement).value;
+  }
+
+  function onAnswerInput(event: Event) {
+    inputText = (event.currentTarget as HTMLTextAreaElement).value.toUpperCase();
+  }
+
+  async function onAnswerKeydown(event: KeyboardEvent) {
+    if (event.code !== 'Space' || inputText.trim() !== '' || fullLessonPlayer?.isStarted()) return;
+    event.preventDefault()
+    await fullLessonPlayer?.playNow()
   }
 </script>
 
@@ -319,6 +334,7 @@
   <div class="learn-col-right">
     <div class="card-sm">
       <MorsePlayer
+        bind:this={fullLessonPlayer}
         text={lessonText}
         {charWpm}
         {effWpm}
@@ -334,8 +350,11 @@
     <div class="answer-card learn-answer-card">
       <h2 class="card-label">{m.trainer_answer_label()}</h2>
       <textarea
-        placeholder={m.trainer_answer_placeholder()}
+        placeholder={`${m.trainer_answer_placeholder()}\n${m.trainer_answer_shortcut_tip()}`}
         bind:value={inputText}
+        oninput={onAnswerInput}
+        onkeydown={onAnswerKeydown}
+        autocapitalize="characters"
         class="textarea learn-answer-textarea"
       ></textarea>
       <button onclick={checkResult} class="btn-primary"
