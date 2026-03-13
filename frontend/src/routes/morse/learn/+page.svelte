@@ -23,9 +23,9 @@
   let showOverlay = $state(false);
   let diffTokens = $state<DiffToken[]>([]);
   let charWpm = $state(20);
-  let effWpm = $state(12);
+  let effWpm = $state(10);
   let freq = $state(600);
-  let startDelay = $state(0);
+  let startDelay = $state(0.5);
 
   let syncing = $state(false);
   let synced = $state(false);
