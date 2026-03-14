@@ -12,6 +12,11 @@ export interface CWSettings {
   start_delay: number;
 }
 
+export interface PageSettings {
+  theme: string;
+  language: string;
+}
+
 export interface UserInfo {
   username: string;
   email: string;
@@ -37,6 +42,15 @@ export async function getUserInfo(): Promise<UserInfo> {
   const res = await apiFetch('/user/me');
   if (!res.ok) return apiError(res, 'Failed to load user info');
   return res.json();
+}
+
+export async function savePageSettings(settings: PageSettings): Promise<void> {
+  const res = await apiFetch('/cw/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings)
+  });
+  if (!res.ok) return apiError(res, 'Failed to save settings');
 }
 
 export async function updateEmail(email: string): Promise<void> {

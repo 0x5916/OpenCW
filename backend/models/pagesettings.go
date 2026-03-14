@@ -4,10 +4,11 @@ import "gorm.io/gorm"
 
 type PageSettings struct {
 	gorm.Model
-	UserID uint   `gorm:"uniqueIndex;not null"`
-	User   *User  `gorm:"constraint:OnDelete:CASCADE;"`
-	Theme  string `gorm:"not null"`
-	Lang   string `gorm:"not null"`
+	UserID    uint   `gorm:"uniqueIndex;not null"`
+	User      *User  `gorm:"constraint:OnDelete:CASCADE;"`
+	Theme     string `gorm:"not null"`
+	Lang      string `gorm:"not null"`
+	CurLesson int    `gorm:"not null"`
 }
 
 func (PageSettings) TableName() string {

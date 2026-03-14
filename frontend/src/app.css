@@ -1126,7 +1126,8 @@ body {
 }
 
 .textarea::placeholder {
-	color: var(--input-ph);
+	color: var(--text-secondary);
+	opacity: 0.7;
 }
 
 /* ════════════════════════════════════════════════════════

@@ -18,8 +18,9 @@ type CWSettingsResponse struct {
 }
 
 type PageSettingsResponse struct {
-	Theme string `json:"theme"`
-	Lang  string `json:"lang"`
+	Theme     string `json:"theme"`
+	Lang      string `json:"language"`
+	CurLesson string `json:"cur_lesson"`
 }
 
 type AuthTokenPairResponse struct {

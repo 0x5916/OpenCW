@@ -219,6 +219,45 @@
     </div>
 
     <div class="card-sm">
+      <h2 class="card-label">{m.trainer_label_current_chars()}</h2>
+      <div class="lesson-char-row">
+        <p class="lesson-char-preview">{m.trainer_choose_letter()}</p>
+        <select
+          bind:value={selectedLessonChar}
+          onchange={onSelectedCharChange}
+          class="lesson-select lesson-char-select"
+        >
+          {#each currentLessonChars as char (char)}
+            <option value={char}>{char}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="lesson-char-play-row">
+        <button type="button" class="btn-regen" onclick={toggleSelectedLessonChar}>
+          {#if charPlaying}
+            <Square size={16} />{m.player_stop()}
+          {:else}
+            <Play size={16} />{m.trainer_play_letter()}
+          {/if}
+        </button>
+      </div>
+      <MorsePlayer
+        bind:this={selectedCharPlayer}
+        text={selectedLessonChar}
+        {charWpm}
+        {effWpm}
+        {freq}
+        compact
+        hideControls
+        playLabel={currentLessonChars.length > 1
+          ? `Play "${selectedLessonChar}"`
+          : m.trainer_play_letter()}
+        repeat={3}
+        onEnded={() => (charPlaying = false)}
+      />
+    </div>
+
+    <div class="card-sm">
       <h2 class="card-label">{m.trainer_label_settings()}</h2>
       <div class="settings-grid settings-grid-2">
         <label class="settings-field">
@@ -288,45 +327,6 @@
           <a href="/register" class="link">{m.nav_register()}</a>
         </p>
       {/if}
-    </div>
-
-    <div class="card-sm">
-      <h2 class="card-label">{m.trainer_label_current_chars()}</h2>
-      <div class="lesson-char-row">
-        <p class="lesson-char-preview">{m.trainer_choose_letter()}</p>
-        <select
-          bind:value={selectedLessonChar}
-          onchange={onSelectedCharChange}
-          class="lesson-select lesson-char-select"
-        >
-          {#each currentLessonChars as char (char)}
-            <option value={char}>{char}</option>
-          {/each}
-        </select>
-      </div>
-      <div class="lesson-char-play-row">
-        <button type="button" class="btn-regen" onclick={toggleSelectedLessonChar}>
-          {#if charPlaying}
-            <Square size={16} />{m.player_stop()}
-          {:else}
-            <Play size={16} />{m.trainer_play_letter()}
-          {/if}
-        </button>
-      </div>
-      <MorsePlayer
-        bind:this={selectedCharPlayer}
-        text={selectedLessonChar}
-        {charWpm}
-        {effWpm}
-        {freq}
-        compact
-        hideControls
-        playLabel={currentLessonChars.length > 1
-          ? `Play "${selectedLessonChar}"`
-          : m.trainer_play_letter()}
-        repeat={3}
-        onEnded={() => (charPlaying = false)}
-      />
     </div>
   </div>
 

@@ -40,14 +40,16 @@ func FromCwSettingsModel(obj models.CWSettings) CWSettingsInput {
 }
 
 type PageSettingsInput struct {
-	Theme string `json:"theme" binding:"required,oneof=auto dark light"`
-	Lang  string `json:"lang"  binding:"required"`
+	Theme     string `json:"theme"      binding:"required,oneof=auto dark light"`
+	Lang      string `json:"language"   binding:"required"`
+	CurLesson int    `json:"cur_lesson" binding:"required"`
 }
 
 func FromPageSettingsModel(obj models.PageSettings) PageSettingsInput {
 	return PageSettingsInput{
-		Theme: obj.Theme,
-		Lang:  obj.Lang,
+		Theme:     obj.Theme,
+		Lang:      obj.Lang,
+		CurLesson: obj.CurLesson,
 	}
 }
 
