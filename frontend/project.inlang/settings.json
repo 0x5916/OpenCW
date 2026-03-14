@@ -1,6 +1,6 @@
 {
 	"baseLocale": "en",
-	"locales": ["en", "zh-TW"],
+	"locales": ["en", "zh-Hant"],
 	"modules": [
 		"https://cdn.jsdelivr.net/npm/@inlang/plugin-message-format/dist/index.js"
 	],

@@ -23,6 +23,7 @@
     LayoutDashboard
   } from 'lucide-svelte';
   import { lang, setLang, initLang } from '$lib/i18n.svelte';
+  import { locales } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
   import type { Locale } from '$lib/i18n.svelte';
 
@@ -30,8 +31,11 @@
 
   type Theme = 'auto' | 'light' | 'dark';
 
-  const LANG_CYCLE: Record<Locale, Locale> = { en: 'zh-TW', 'zh-TW': 'en' };
-  const LANG_LABELS: Record<Locale, string> = { en: '繁', 'zh-TW': 'EN' };
+  const LANG_LABELS: Partial<Record<Locale, string>> = {
+    en: 'EN',
+    'zh-Hant': 'ZH-T',
+    'zh-Hans': 'ZH-S'
+  };
   const CYCLE: Record<Theme, Theme> = { auto: 'light', light: 'dark', dark: 'auto' };
 
   function load(): Theme {
@@ -67,7 +71,13 @@
   });
 
   function toggleLang() {
-    setLang(LANG_CYCLE[lang.value]);
+    const current = locales.indexOf(lang.value);
+    const next = locales[(current + 1) % locales.length] as Locale;
+    setLang(next);
+  }
+
+  function langLabel(locale: Locale) {
+    return LANG_LABELS[locale] ?? locale.toUpperCase();
   }
 
   function setTheme(nextTheme: Theme) {
@@ -282,7 +292,7 @@
           aria-label="Switch language"
         >
           <span class="nav-label-icon"
-            ><Languages class="nav-icon" aria-hidden="true" />{LANG_LABELS[lang.value]}</span
+            ><Languages class="nav-icon" aria-hidden="true" />{langLabel(lang.value)}</span
           >
         </button>
       </div>
@@ -356,7 +366,7 @@
         >
         <div class="mobile-divider"></div>
         <button type="button" onclick={toggleLang} class="mobile-link mobile-link-btn"
-          ><Languages size={16} />{LANG_LABELS[lang.value]}</button
+          ><Languages size={16} />{langLabel(lang.value)}</button
         >
       </div>
     {/if}
