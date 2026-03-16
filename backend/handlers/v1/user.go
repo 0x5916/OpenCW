@@ -22,8 +22,27 @@ func (h UserHandler) GetUserInfo(c *gin.Context) {
 
 	c.JSON(http.StatusOK, common.UserInfoResponse{
 		Username:  user.Username,
-		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
+	})
+}
+
+func (h UserHandler) GetOtherUserInfo(c *gin.Context) {
+	otherUserId := c.Param("id")
+
+	var otherUser models.User
+	if err := h.DB.Take(&otherUser, "id = ?", otherUserId).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, common.ErrorResponse{Error: "User not found"})
+		} else {
+			slog.Error("GetOtherUserInfo DB error", "id", otherUserId, "err", err)
+			c.JSON(http.StatusInternalServerError, common.ErrorResponse{Error: "Internal server error"})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, common.UserInfoResponse{
+		Username:  otherUser.Username,
+		CreatedAt: otherUser.CreatedAt,
 	})
 }
 

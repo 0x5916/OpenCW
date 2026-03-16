@@ -5,14 +5,14 @@ import (
 )
 
 type RegisterInput struct {
-	Username string `json:"username" binding:"required,min=3,max=16"`
+	Username string `json:"username" binding:"required,username"`
 	Email    string `json:"email"    binding:"required,email,max=254"`
 	Password string `json:"password" binding:"required,min=8,max=256"`
 }
 
 type LoginInput struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Identifier string `json:"identifier" binding:"required"`
+	Password   string `json:"password"   binding:"required"`
 }
 
 type RefreshInput struct {
@@ -54,7 +54,7 @@ func FromPageSettingsModel(obj models.PageSettings) PageSettingsInput {
 }
 
 type ProgressInput struct {
-	Lesson   string   `json:"lesson"   binding:"required"`
+	Lesson   int      `json:"lesson"   binding:"required"`
 	CharWPM  int      `json:"char_wpm" binding:"required,min=5,max=50"`
 	EffWPM   int      `json:"eff_wpm"  binding:"required,min=5,max=50"`
 	Accuracy *float64 `json:"accuracy" binding:"required,min=0.0,max=1.0"`

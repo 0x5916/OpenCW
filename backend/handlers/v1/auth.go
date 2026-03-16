@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"opencw/handlers/v1/common"
@@ -30,9 +31,9 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		First(&user).Error
 	if err == nil {
 		if user.Username == input.Username && user.Email == input.Email {
-			c.JSON(http.StatusConflict, common.ErrorResponse{Error: "Username and email already exists"})
+			c.JSON(http.StatusConflict, common.ErrorResponse{Error: "Identifier and email already exists"})
 		} else if user.Username == input.Username {
-			c.JSON(http.StatusConflict, common.ErrorResponse{Error: "Username already exists"})
+			c.JSON(http.StatusConflict, common.ErrorResponse{Error: "Identifier already exists"})
 		} else {
 			c.JSON(http.StatusConflict, common.ErrorResponse{Error: "Email already exists"})
 		}
@@ -96,9 +97,16 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	var queryString string
+	if strings.Contains(input.Identifier, "@") {
+		queryString = "email = ?"
+	} else {
+		queryString = "username = ?"
+	}
+
 	var user models.User
-	if err := h.DB.Take(&user, "username = ?", input.Username).Error; err != nil {
-		slog.Warn("Login failed: user not found", "username", input.Username, "ip", c.ClientIP())
+	if err := h.DB.Take(&user, queryString, input.Identifier).Error; err != nil {
+		slog.Warn("Login failed", "identifier", input.Identifier, "ip", c.ClientIP())
 		c.JSON(http.StatusUnauthorized, common.ErrorResponse{Error: "Invalid credentials"})
 		return
 	}

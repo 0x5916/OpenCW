@@ -33,6 +33,11 @@ func main() {
 
 	r := gin.Default()
 
+	if err := common.RegisterCustomValidators(); err != nil {
+		slog.Error("Failed to register custom validators", "err", err)
+		os.Exit(1)
+	}
+
 	if !configs.App.IsRelease() {
 		slog.Warn("App is not in production mode. Set GIN_MODE=release for production")
 	}
@@ -195,4 +200,3 @@ func isCORSAllowed(origin string) bool {
 	}
 	return origin == "https://opencw.net"
 }
-
