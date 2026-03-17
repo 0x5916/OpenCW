@@ -22,6 +22,7 @@ func (h UserHandler) GetUserInfo(c *gin.Context) {
 
 	c.JSON(http.StatusOK, common.UserInfoResponse{
 		Username:  user.Username,
+		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
 	})
 }

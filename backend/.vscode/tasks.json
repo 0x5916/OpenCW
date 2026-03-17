@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "docker: up db",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "up",
+        "-d",
+        "db"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "docker: down db",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "stop",
+        "db"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

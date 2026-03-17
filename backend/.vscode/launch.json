@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Go: Debug API (db via compose)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/main.go",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "docker: up db",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "DB_HOST": "127.0.0.1",
+        "DB_PORT": "5432"
+      }
+    }
+  ]
+}

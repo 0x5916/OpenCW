@@ -31,9 +31,9 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		First(&user).Error
 	if err == nil {
 		if user.Username == input.Username && user.Email == input.Email {
-			c.JSON(http.StatusConflict, common.ErrorResponse{Error: "Identifier and email already exists"})
+			c.JSON(http.StatusConflict, common.ErrorResponse{Error: "Username and email already exists"})
 		} else if user.Username == input.Username {
-			c.JSON(http.StatusConflict, common.ErrorResponse{Error: "Identifier already exists"})
+			c.JSON(http.StatusConflict, common.ErrorResponse{Error: "Username already exists"})
 		} else {
 			c.JSON(http.StatusConflict, common.ErrorResponse{Error: "Email already exists"})
 		}

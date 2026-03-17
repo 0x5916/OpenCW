@@ -2,7 +2,7 @@
 
 services:
   db:
-    image: postgres:18-alpine3.23
+    image: postgres:18.3-alpine3.23
     restart: unless-stopped
     ports:
       - "${DB_PORT:-5432}:5432"
