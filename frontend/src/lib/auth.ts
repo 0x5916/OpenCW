@@ -31,16 +31,9 @@ export async function register(username: string, email: string, password: string
   }
 
   const data = await response.json();
-  // Prefer username from token payload when available (user may have logged in with email)
-  try {
-    const payload = JSON.parse(atob(data.access_token.split('.')[1]));
-    const uname = payload?.username ?? username;
-    persistTokens(data.access_token, data.refresh_token, uname);
-    user.set({ username: uname });
-  } catch {
-    persistTokens(data.access_token, data.refresh_token, username);
-    user.set({ username });
-  }
+  const resolvedUsername = await resolveUsername(data.access_token, username);
+  persistTokens(data.access_token, data.refresh_token, resolvedUsername);
+  user.set({ username: resolvedUsername });
 }
 
 export async function login(username: string, password: string): Promise<void> {
@@ -56,16 +49,9 @@ export async function login(username: string, password: string): Promise<void> {
   }
 
   const data = await response.json();
-  // Prefer username from token payload when available (user may have logged in with email)
-  try {
-    const payload = JSON.parse(atob(data.access_token.split('.')[1]));
-    const uname = payload?.username ?? username;
-    persistTokens(data.access_token, data.refresh_token, uname);
-    user.set({ username: uname });
-  } catch {
-    persistTokens(data.access_token, data.refresh_token, username);
-    user.set({ username });
-  }
+  const resolvedUsername = await resolveUsername(data.access_token, username);
+  persistTokens(data.access_token, data.refresh_token, resolvedUsername);
+  user.set({ username: resolvedUsername });
 }
 
 export async function refreshTokens(): Promise<boolean> {
@@ -142,3 +128,30 @@ function persistTokens(accessToken: string, refreshToken: string, username: stri
   localStorage.setItem('refresh_token', refreshToken);
   localStorage.setItem('username', username);
 }
+
+async function resolveUsername(accessToken: string, fallback: string): Promise<string> {
+  try {
+    const payload = JSON.parse(atob(accessToken.split('.')[1]));
+    if (typeof payload?.username === 'string' && payload.username.trim() !== '') {
+      return payload.username;
+    }
+  } catch {
+    // Ignore token parse failure and fallback to API lookup.
+  }
+
+  try {
+    const meRes = await fetch(`${API_BASE}/user/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (!meRes.ok) return fallback;
+    const me = await meRes.json();
+    if (typeof me?.username === 'string' && me.username.trim() !== '') {
+      return me.username;
+    }
+  } catch {
+    // Ignore lookup failure and fallback.
+  }
+
+  return fallback;
+}
+

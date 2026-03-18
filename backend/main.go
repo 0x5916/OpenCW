@@ -188,6 +188,9 @@ func main() {
 //  2. Non-release mode → allow everything
 //  3. Production → only https://opencw.net
 func isCORSAllowed(origin string) bool {
+	if !configs.App.IsRelease() {
+		return true
+	}
 	if len(configs.App.CORSOrigins) > 0 {
 		for _, o := range configs.App.CORSOrigins {
 			if o == origin {
@@ -195,9 +198,6 @@ func isCORSAllowed(origin string) bool {
 			}
 		}
 		return false
-	}
-	if !configs.App.IsRelease() {
-		return true
 	}
 	return origin == "https://opencw.net"
 }
