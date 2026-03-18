@@ -248,9 +248,20 @@
     selectedLessonChar = (event.currentTarget as HTMLSelectElement).value;
   }
 
-  function onAnswerInput(event: Event) {
-    inputText = (event.currentTarget as HTMLTextAreaElement).value.toUpperCase();
+  async function onAnswerInput(event: Event) {
+    const value = (event.currentTarget as HTMLTextAreaElement).value;
+
+    // Intercept a lone space to start the player
+    if (value === ' ' && !fullLessonPlayer?.isStarted()) {
+      inputText = '';
+      (event.currentTarget as HTMLTextAreaElement).value = '';
+      await fullLessonPlayer?.playNow();
+      return;
+    }
+
+    inputText = value.toUpperCase();
   }
+
 
   async function onAnswerKeydown(event: KeyboardEvent) {
     if (event.code !== 'Space' || inputText.trim() !== '' || fullLessonPlayer?.isStarted()) return;
