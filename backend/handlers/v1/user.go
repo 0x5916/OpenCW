@@ -72,3 +72,44 @@ func (h UserHandler) UpdateEmail(c *gin.Context) {
 
 	c.JSON(http.StatusOK, common.MessageResponse{Message: "Email updated"})
 }
+
+func (h UserHandler) UpdatePassword(c *gin.Context) {
+	user := c.MustGet("user").(*models.User)
+
+	var input common.UpdatePasswordInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	match, err := common.ComparePasswordAndHash(input.OldPassword, user.Password)
+	if err != nil {
+		slog.Error("Failed to compare password hash", "user_id", user.ID, "err", err)
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{Error: "internal error"})
+		return
+	}
+	if !match {
+		slog.Warn("Update failed: invalid password", "user_id", user.ID, "ip", c.ClientIP())
+		c.JSON(http.StatusUnauthorized, common.ErrorResponse{Error: "Invalid credentials"})
+		return
+	}
+
+	hash, err := common.HashPassword(input.NewPassword)
+	if err != nil {
+		slog.Error("Failed to hash password", "err", err)
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{Error: "Failed to hash password"})
+		return
+	}
+
+	if err := h.DB.Model(user).Update("password", hash).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			c.JSON(http.StatusConflict, common.ErrorResponse{Error: "Email already in use"})
+			return
+		}
+		slog.Error("Failed to update password", "user_id", user.ID, "err", err)
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{Error: "Failed to update password"})
+		return
+	}
+
+	c.JSON(http.StatusOK, common.MessageResponse{Message: "Password updated"})
+}

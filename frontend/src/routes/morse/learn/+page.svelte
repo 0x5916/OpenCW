@@ -138,7 +138,7 @@
     diffTokens = diffWords(lessonText, inputText);
     showOverlay = true;
     if ($user && result > 0) {
-      submitProgress(String(chosenLesson), charWpm, effWpm, result).catch(() => {});
+      submitProgress(chosenLesson, charWpm, effWpm, result).catch(() => {});
     }
   }
 

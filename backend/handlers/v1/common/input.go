@@ -23,6 +23,11 @@ type UpdateEmailInput struct {
 	Email string `json:"email" binding:"required,email,max=254"`
 }
 
+type UpdatePasswordInput struct {
+	OldPassword string `json:"old_password" binding:"required,min=8,max=256"`
+	NewPassword string `json:"new_password" binding:"required,min=8,max=256"`
+}
+
 type CWSettingsInput struct {
 	CharWPM    int      `json:"char_wpm"    binding:"required,min=5,max=50"`
 	EffWPM     int      `json:"eff_wpm"     binding:"required,min=5,max=50"`

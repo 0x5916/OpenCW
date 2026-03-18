@@ -71,7 +71,7 @@
           class="input"
           placeholder={m.register_password_placeholder()}
           autocomplete="new-password"
-          minlength="6"
+          minlength="8"
           required
         />
       </label>
@@ -84,7 +84,7 @@
           class="input"
           placeholder={m.register_confirm_placeholder()}
           autocomplete="new-password"
-          minlength="6"
+          minlength="8"
           required
         />
       </label>

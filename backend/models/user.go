@@ -4,7 +4,7 @@ import "gorm.io/gorm"
 
 type User struct {
 	gorm.Model
-	CallSign     string        `gorm:"uniqueIndex;"`
+	CallSign     *string       `gorm:"uniqueIndex;"`
 	Username     string        `gorm:"uniqueIndex;not null"`
 	Email        string        `gorm:"uniqueIndex;not null"`
 	Password     string        `gorm:"not null"`

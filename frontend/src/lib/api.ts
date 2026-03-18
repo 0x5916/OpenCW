@@ -13,8 +13,9 @@ export interface CWSettings {
 }
 
 export interface PageSettings {
-  theme: string;
+  theme: 'auto' | 'dark' | 'light';
   language: string;
+  cur_lesson: number;
 }
 
 export interface UserInfo {
@@ -45,12 +46,18 @@ export async function getUserInfo(): Promise<UserInfo> {
 }
 
 export async function savePageSettings(settings: PageSettings): Promise<void> {
-  const res = await apiFetch('/cw/settings', {
+  const res = await apiFetch('/page/settings', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settings)
   });
-  if (!res.ok) return apiError(res, 'Failed to save settings');
+  if (!res.ok) return apiError(res, 'Failed to save page settings');
+}
+
+export async function getPageSettings(): Promise<PageSettings> {
+  const res = await apiFetch('/page/settings');
+  if (!res.ok) return apiError(res, 'Failed to load page settings');
+  return res.json();
 }
 
 export async function updateEmail(email: string): Promise<void> {
@@ -73,12 +80,12 @@ export interface ProgressRecord {
 export async function getProgress(): Promise<ProgressRecord[]> {
   const res = await apiFetch('/cw/progress');
   if (!res.ok) return apiError(res, 'Failed to load progress');
-  const data = await res.json();
+  const data = (await res.json()) as { data?: ProgressRecord[] };
   return data.data ?? [];
 }
 
 export async function submitProgress(
-  lesson: string,
+  lesson: number,
   charWpm: number,
   effWpm: number,
   accuracy: number
@@ -89,4 +96,13 @@ export async function submitProgress(
     body: JSON.stringify({ lesson, char_wpm: charWpm, eff_wpm: effWpm, accuracy })
   });
   if (!res.ok) return apiError(res, 'Failed to submit progress');
+}
+
+export async function updatePassword(oldPassword: string, newPassword: string): Promise<void> {
+  const res = await apiFetch('/user/password', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
+  });
+  if (!res.ok) return apiError(res, 'Failed to update password');
 }

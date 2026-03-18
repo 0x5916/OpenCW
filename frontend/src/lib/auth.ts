@@ -31,15 +31,23 @@ export async function register(username: string, email: string, password: string
   }
 
   const data = await response.json();
-  persistTokens(data.access_token, data.refresh_token, username);
-  user.set({ username });
+  // Prefer username from token payload when available (user may have logged in with email)
+  try {
+    const payload = JSON.parse(atob(data.access_token.split('.')[1]));
+    const uname = payload?.username ?? username;
+    persistTokens(data.access_token, data.refresh_token, uname);
+    user.set({ username: uname });
+  } catch {
+    persistTokens(data.access_token, data.refresh_token, username);
+    user.set({ username });
+  }
 }
 
 export async function login(username: string, password: string): Promise<void> {
   const response = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password })
+    body: JSON.stringify({ identifier: username, password })
   });
 
   if (!response.ok) {
@@ -48,8 +56,16 @@ export async function login(username: string, password: string): Promise<void> {
   }
 
   const data = await response.json();
-  persistTokens(data.access_token, data.refresh_token, username);
-  user.set({ username });
+  // Prefer username from token payload when available (user may have logged in with email)
+  try {
+    const payload = JSON.parse(atob(data.access_token.split('.')[1]));
+    const uname = payload?.username ?? username;
+    persistTokens(data.access_token, data.refresh_token, uname);
+    user.set({ username: uname });
+  } catch {
+    persistTokens(data.access_token, data.refresh_token, username);
+    user.set({ username });
+  }
 }
 
 export async function refreshTokens(): Promise<boolean> {

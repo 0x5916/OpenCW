@@ -101,6 +101,7 @@ func main() {
 			{
 				user.GET("/me", userHandler.GetUserInfo)
 				user.PUT("/email", userHandler.UpdateEmail)
+				user.PUT("/password", userHandler.UpdatePassword)
 			}
 			progressHandler := handlers.ProgressHandler{DB: databases.DB}
 			{
