@@ -421,6 +421,9 @@
         oninput={onAnswerInput}
         onkeydown={onAnswerKeydown}
         autocapitalize="characters"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
         class="textarea learn-answer-textarea"
       ></textarea>
       <button onclick={checkResult} class="btn-primary"

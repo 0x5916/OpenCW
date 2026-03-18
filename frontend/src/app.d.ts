@@ -10,4 +10,14 @@ declare global {
   }
 }
 
+declare module 'svelte/elements' {
+  interface HTMLTextareaAttributes {
+    autocorrect?: 'on' | 'off';
+  }
+  // Optionally extend input too, for consistency
+  interface HTMLInputAttributes {
+    autocorrect?: 'on' | 'off';
+  }
+}
+
 export {};
