@@ -36,7 +36,7 @@ func (h CWSettingsHandler) GetSettings(c *gin.Context) {
 func (h CWSettingsHandler) UpdateSettings(c *gin.Context) {
 	var input common.CWSettingsInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: "Invalid request body"})
 		return
 	}
 

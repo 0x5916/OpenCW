@@ -52,7 +52,7 @@ func (h UserHandler) UpdateEmail(c *gin.Context) {
 
 	var input common.UpdateEmailInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: "Invalid request body"})
 		return
 	}
 	if user.Email == input.Email {
@@ -78,7 +78,7 @@ func (h UserHandler) UpdatePassword(c *gin.Context) {
 
 	var input common.UpdatePasswordInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: "Invalid request body"})
 		return
 	}
 

@@ -1,147 +1,794 @@
-# OpenCW Backend API (v1)
 
-Base URL: `https://<your-host>` (production) or `http://localhost:<PORT>` (local). The server listens on `:` + value of `configs.App.Port` (default configured in `.env`).
+# API Documentation
 
-Authentication:
-- Type: JWT access token (Bearer). Include header `Authorization: Bearer <access_token>` for protected endpoints.
-- Access tokens expire ~15 minutes. Use the refresh endpoint to get a new access token + refresh token pair.
-- Refresh tokens are opaque strings returned by the server. When refreshing, send the raw refresh token value in the `refresh_token` body field.
+> Last updated: March 18, 2026
 
-Common response shapes
-- Success message: `{"message": "..."}`
-- Error shape: `{"error": "..."}` — server returns appropriate HTTP status (400, 401, 403, 404, 409, 500).
+## Table of Contents
+- Health
+- Auth
+  - POST /api/v1/auth/register
+  - POST /api/v1/auth/login
+  - POST /api/v1/auth/refresh
+- CW
+  - GET /api/v1/cw/settings
+  - POST /api/v1/cw/settings
+  - GET /api/v1/cw/progress
+  - PUT /api/v1/cw/progress
+- Page
+  - GET /api/v1/page/settings
+  - POST /api/v1/page/settings
+- User
+  - GET /api/v1/user/me
+  - PUT /api/v1/user/email
+  - PUT /api/v1/user/password
 
-Top-level routes
-- `GET /api/v1/health` — health check. Returns: `{"status":"healthy","timestamp":<unix>}`
+---
 
-Auth
-- `POST /api/v1/auth/register` — Register new user
-  - Request JSON:
-    - `username` (string, required, custom username validator)
-    - `email` (string, required, email)
-    - `password` (string, required, min 8)
-  - Success (200): `AuthTokenPairResponse` — `{"refresh_token": "<raw>", "access_token": "<jwt>"}`
-  - Errors: 400 (validation), 409 (username/email existing), 500 (db/crypto)
+---
+## GET `/api/v1/health`
 
-- `POST /api/v1/auth/login` — Login with username or email
-  - Request JSON:
-    - `identifier` (string, required) — username or email
-    - `password` (string, required)
-  - Success (200): `AuthTokenPairResponse`
-  - Errors: 400, 401 (invalid credentials), 500
+**Description:** Simple health check endpoint. Returns basic server status and a unix timestamp.
 
-- `POST /api/v1/auth/refresh` — Exchange refresh token for new pair
-  - Request JSON:
-    - `refresh_token` (string, required) — raw refresh token previously returned
-  - Success (200): `AuthTokenPairResponse` (new refresh token + access token)
-  - Errors: 400, 401 (invalid/expired token), 500
+**Authentication:** Not required
 
-User (Protected — requires `Authorization: Bearer <access_token>`)
-- `GET /api/v1/user/me` — Get current user's basic info
-  - Success (200): `UserInfoResponse` — `{"username":"...","email":"...","created_at":"..."}`
+### Request
 
-- `PUT /api/v1/user/email` — Update current user's email
-  - Request JSON:
-    - `email` (string, required, email)
-  - Success (200): `{"message":"Email updated"}`
-  - Errors: 400, 409 (email conflict), 500
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| None | No | No special headers required. |
 
-- `PUT /api/v1/user/password` — Update password
-  - Request JSON:
-    - `old_password` (string, required)
-    - `new_password` (string, required, min 8)
-  - Success (200): `{"message":"Password updated"}`
-  - Errors: 400, 401 (old password mismatch), 500
+**Path Parameters:** None
 
-CW Settings (Protected; user loaded via middleware)
-- `GET /api/v1/cw/settings` — Get user's CW (Morse/typing) settings
-  - Success (200): `CWSettingsResponse` — `{"char_wpm":int,"eff_wpm":int,"freq":int,"start_delay":float}`
-  - If no saved settings, defaults from `models.GetDefaultCWSettings()` are returned.
+**Query Parameters:** None
 
-- `POST /api/v1/cw/settings` — Create or update CW settings
-  - Request JSON (CWSettingsInput):
-    - `char_wpm` (int, required, 5..50)
-    - `eff_wpm` (int, required, 5..50)
-    - `freq` (int, required, 300..2000)
-    - `start_delay` (float, required, 0.0..10.0)
-  - Success (200): `{"message":"Settings updated"}`
-  - Errors: 400 (validation), 500
+**Request Body:** None
 
-Page Settings (Protected)
-- `GET /api/v1/page/settings` — Get user's page settings
-  - Success (200): `PageSettingsResponse` — `{"theme":"auto|dark|light","language":"...","cur_lesson":int}`
-  - If none, returns `models.GetDefaultPageSettings()`.
+### Response
 
-- `POST /api/v1/page/settings` — Create or update page settings
-  - Request JSON (PageSettingsInput):
-    - `theme` (string, required) — one of `auto`, `dark`, `light`
-    - `language` (string, required)
-    - `cur_lesson` (int, required)
-  - Success (200): `{"message":"Settings updated"}`
-  - Errors: 400, 500
+**Success `200`:**
+```json
+{
+  "status": "healthy",
+  "timestamp": 1710681600
+}
+```
 
-Progress (Protected)
-- `GET /api/v1/cw/progress` — Get all progress records for current user
-  - Success (200): `{"data": [ProgressResponse, ...]}`
-  - `ProgressResponse` shape: `{"lesson":string,"char_wpm":int,"eff_wpm":int,"accuracy":float,"created_at":"..."}`
+| Field | Type | Description |
+|---|---|---|
+| status | string | Always "healthy" when server is up |
+| timestamp | integer | Unix timestamp (seconds) when response was generated |
 
-- `PUT /api/v1/cw/progress` — Add a new progress entry
-  - Request JSON (ProgressInput):
-    - `lesson` (int, required)
-    - `char_wpm` (int, required, 5..50)
-    - `eff_wpm` (int, required, 5..50)
-    - `accuracy` (float, required, 0.0..1.0)
-  - Success (201): `{"message":"Progress Created"}`
-  - Errors: 400, 500
+**Errors:** None (this endpoint always returns 200 in normal operation)
 
-Misc
-- `GET /api/v1/hello` — Protected test endpoint, returns `{"message":"Hello, authenticated user!"}`
+### Example (cURL)
+```bash
+curl -X GET https://api.example.com/api/v1/health
+```
 
-Headers
-- `Content-Type: application/json` for JSON bodies.
-- `Authorization: Bearer <access_token>` for protected endpoints.
+---
 
-Validation notes
-- Validation tags are defined in `handlers/v1/common` input structs. See code:
-  - `handlers/v1/common/input.go` ([file](handlers/v1/common/input.go))
+## Auth
 
-- Examples
-- Register (curl):
+All auth endpoints live under /api/v1/auth and are unauthenticated.
 
+### POST `/api/v1/auth/register`
+
+**Description:** Create a new user account. Returns an access token and a refresh token on success.
+
+**Authentication:** Not required
+
+### Request
+
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| Content-Type | Yes | Must be `application/json` |
+
+**Request Body** (`application/json`):
+```json
+{
+  "username": "captain_jones",
+  "email": "jones@example.com",
+  "password": "Secur3P@ssw0rd"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| username | string | Yes | 3–16 characters, letters/numbers, may include _ or - in middle. Custom validator `username` enforces pattern. |
+| email | string | Yes | Must be valid email, max length 254 |
+| password | string | Yes | 8–256 characters |
+
+### Response
+
+**Success `200`:**
+```json
+{
+  "refresh_token": "<long-random-string>",
+  "access_token": "<jwt-access-token>"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| refresh_token | string | Opaque refresh token (raw). Keep this secure; used to obtain new access tokens. Expires in ~30 days. |
+| access_token | string | JWT access token (Bearer). Expires in ~15 minutes. |
+
+**Errors:**
+| Status Code | Meaning |
+|---:|---|
+| 400 | Invalid request body or validation failed |
+| 409 | Username or email already exists |
+| 500 | Internal server error (database or hashing failure) |
+
+### Example (cURL)
 ```bash
 curl -X POST https://api.example.com/api/v1/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"alice","email":"alice@example.com","password":"s3curepass"}'
+  -d '{"username":"captain_jones","email":"jones@example.com","password":"Secur3P@ssw0rd"}'
 ```
 
-- Login (curl):
+---
 
+### POST `/api/v1/auth/login`
+
+**Description:** Authenticate a user by username or email and password. Returns an access token and a refresh token on success.
+
+**Authentication:** Not required
+
+### Request
+
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| Content-Type | Yes | `application/json` |
+
+**Request Body** (`application/json`):
+```json
+{
+  "identifier": "jones@example.com",
+  "password": "Secur3P@ssw0rd"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| identifier | string | Yes | Either username or email. If it contains an `@` it is treated as an email. |
+| password | string | Yes | Plain-text password to verify. |
+
+### Response
+
+**Success `200`:**
+```json
+{
+  "refresh_token": "<long-random-string>",
+  "access_token": "<jwt-access-token>"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| refresh_token | string | Raw refresh token (store safely). |
+| access_token | string | JWT access token (use as `Authorization: Bearer <token>`) |
+
+**Errors:**
+| Status Code | Meaning |
+|---:|---|
+| 400 | Invalid request body |
+| 401 | Invalid credentials (wrong identifier or password) |
+| 500 | Internal server error |
+
+### Example (cURL)
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
+curl -X POST https://api.example.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"identifier":"alice","password":"s3curepass"}'
+  -d '{"identifier":"jones@example.com","password":"Secur3P@ssw0rd"}'
 ```
 
-- Fetch CW settings (curl):
+---
 
+### POST `/api/v1/auth/refresh`
+
+**Description:** Exchange a valid refresh token for a new refresh token + access token pair. Refresh tokens are one-time use: submitting a valid refresh token revokes it and issues a brand-new refresh token.
+
+**Authentication:** Not required (provides refresh token in body)
+
+### Request
+
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| Content-Type | Yes | `application/json` |
+
+**Request Body** (`application/json`):
+```json
+{
+  "refresh_token": "<raw-refresh-token>"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| refresh_token | string | Yes | Raw refresh token previously issued by the server. |
+
+### Response
+
+**Success `200`:**
+```json
+{
+  "refresh_token": "<new-raw-refresh-token>",
+  "access_token": "<new-jwt-access-token>"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| refresh_token | string | New raw refresh token (previous one is revoked) |
+| access_token | string | New JWT access token |
+
+**Errors:**
+| Status Code | Meaning |
+|---:|---|
+| 400 | Invalid request body |
+| 401 | Invalid refresh token or expired refresh token |
+| 500 | Internal server error (DB failure) |
+
+### Notes
+- Access tokens expire after ~15 minutes. Refresh tokens expire after ~30 days and are single-use (they are revoked when exchanged).
+
+### Example (cURL)
 ```bash
-curl -H "Authorization: Bearer <access_token>" \
-  http://localhost:8080/api/v1/cw/settings
+curl -X POST https://api.example.com/api/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token":"<raw-refresh-token>"}'
 ```
 
-Errors and Troubleshooting
-- 401 Unauthorized — missing/invalid token or refresh token
-- 409 Conflict — uniqueness constraint (username/email)
-- 400 Bad Request — validation failures; response body contains `{"error":"<message>"}`
-- 500 Internal Server Error — DB or cryptographic failures
+---
 
-Implementation pointers for frontend
-- When storing tokens: store refresh token securely (httpOnly cookie recommended); access token can be stored in memory and refreshed when expired.
-- Use `POST /api/v1/auth/refresh` with `refresh_token` to obtain a new `access_token`/`refresh_token` pair.
+## CW
 
-Server internals (Go models and DB schema) are intentionally omitted from this document — the frontend should rely on the JSON request/response shapes above. If you need machine-readable schemas or language-specific types (OpenAPI, JSON Schema, TypeScript), I can generate those instead.
+All /api/v1/cw endpoints require a valid access token in the Authorization header (see "Authentication" below). Additionally the server loads the full user model into the request context.
 
-If you want, I can:
-- add OpenAPI/Swagger spec
-- generate TypeScript client types
-- include example responses for each endpoint
+Authentication for protected endpoints:
+- Header: Authorization: Bearer <access_token>
+- Access tokens are JWTs signed by the server and validated by middleware. If missing, malformed, expired, or invalid → 401.
+
+### GET `/api/v1/cw/settings`
+
+**Description:** Retrieve the current user's CW (typing) settings. If the user has not saved settings yet, default server settings are returned.
+
+**Authentication:** Required — Bearer access token in `Authorization` header
+
+### Request
+
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| Authorization | Yes | `Bearer <access_token>` |
+
+**Request Body:** None
+
+### Response
+
+**Success `200`:**
+```json
+{
+  "char_wpm": 20,
+  "eff_wpm": 10,
+  "freq": 600,
+  "start_delay": 0.5
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| char_wpm | integer | Target character WPM (5–50) |
+| eff_wpm | integer | Effective WPM (5–50) |
+| freq | integer | Frequency / pacing value (300–2000) |
+| start_delay | float | Seconds to wait before starting (0.0–10.0) |
+
+**Errors:**
+| Status Code | Meaning |
+|---:|---|
+| 401 | Missing or invalid access token |
+| 500 | Failed to read settings from database |
+
+### Example (cURL)
+```bash
+curl -X GET https://api.example.com/api/v1/cw/settings \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### POST `/api/v1/cw/settings`
+
+**Description:** Create or update the user's CW settings.
+
+**Authentication:** Required — Bearer access token
+
+### Request
+
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| Authorization | Yes | `Bearer <access_token>` |
+| Content-Type | Yes | `application/json` |
+
+**Request Body** (`application/json`):
+```json
+{
+  "char_wpm": 25,
+  "eff_wpm": 12,
+  "freq": 800,
+  "start_delay": 0.7
+}
+```
+
+| Field | Type | Required | Validation | Description |
+|---|---|---:|---|---|
+| char_wpm | integer | Yes | 5–50 | Desired character WPM |
+| eff_wpm | integer | Yes | 5–50 | Effective WPM |
+| freq | integer | Yes | 300–2000 | Frequency / pacing |
+| start_delay | number | Yes | 0.0–10.0 | Start delay in seconds |
+
+### Response
+
+**Success `200`:**
+```json
+{
+  "message": "Settings updated"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| message | string | Human-readable confirmation |
+
+**Errors:**
+| Status Code | Meaning |
+|---:|---|
+| 400 | Invalid request body or validation failure |
+| 401 | Missing or invalid access token |
+| 500 | Failed to update settings in database |
+
+### Example (cURL)
+```bash
+curl -X POST https://api.example.com/api/v1/cw/settings \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"char_wpm":25,"eff_wpm":12,"freq":800,"start_delay":0.7}'
+```
+
+---
+
+### GET `/api/v1/cw/progress`
+
+**Description:** Retrieve all saved lesson progress records for the authenticated user.
+
+**Authentication:** Required — Bearer access token
+
+### Request
+
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| Authorization | Yes | `Bearer <access_token>` |
+
+### Response
+
+**Success `200`:**
+```json
+{
+  "data": [
+	{
+	  "lesson": "1",
+	  "char_wpm": 24,
+	  "eff_wpm": 12,
+	  "accuracy": 0.94,
+	  "created_at": "2026-03-01T12:34:56Z"
+	}
+  ]
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| data | array | List of progress entries |
+| lesson | string | NOTE: returned as string (the database stores lesson as integer). Frontend should treat as string or convert to number as needed. |
+| char_wpm | integer | Character-level WPM recorded |
+| eff_wpm | integer | Effective WPM recorded |
+| accuracy | float | Value between 0.0 and 1.0 |
+| created_at | string (ISO 8601) | Timestamp when the record was created |
+
+**Errors:**
+| Status Code | Meaning |
+|---:|---|
+| 401 | Missing or invalid access token |
+| 500 | Database read failure |
+
+### Example (cURL)
+```bash
+curl -X GET https://api.example.com/api/v1/cw/progress \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### PUT `/api/v1/cw/progress`
+
+**Description:** Submit a new lesson progress record for the authenticated user.
+
+**Authentication:** Required — Bearer access token
+
+### Request
+
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| Authorization | Yes | `Bearer <access_token>` |
+| Content-Type | Yes | `application/json` |
+
+**Request Body** (`application/json`):
+```json
+{
+  "lesson": 1,
+  "char_wpm": 24,
+  "eff_wpm": 12,
+  "accuracy": 0.94
+}
+```
+
+| Field | Type | Required | Validation | Description |
+|---|---|---:|---|---|
+| lesson | integer | Yes | required | Lesson identifier (integer) |
+| char_wpm | integer | Yes | 5–50 | Character WPM measured |
+| eff_wpm | integer | Yes | 5–50 | Effective WPM measured |
+| accuracy | number | Yes | 0.0–1.0 | Accuracy ratio (0.0–1.0) |
+
+### Response
+
+**Success `201`:**
+```json
+{
+  "message": "Progress Created"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| message | string | Confirmation message |
+
+**Errors:**
+| Status Code | Meaning |
+|---:|---|
+| 400 | Invalid request body or validation failure |
+| 401 | Missing or invalid access token |
+| 500 | Failed to write progress to database |
+
+### Example (cURL)
+```bash
+curl -X PUT https://api.example.com/api/v1/cw/progress \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"lesson":1,"char_wpm":24,"eff_wpm":12,"accuracy":0.94}'
+```
+
+---
+
+## Page
+
+Routes under `/api/v1/page` manage user-visible page settings.
+
+### GET `/api/v1/page/settings`
+
+**Description:** Retrieve the current user's page settings. If not set, server defaults are returned.
+
+**Authentication:** Required — Bearer access token
+
+### Request
+
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| Authorization | Yes | `Bearer <access_token>` |
+
+### Response
+
+**Success `200`:**
+```json
+{
+  "theme": "auto",
+  "language": "auto",
+  "cur_lesson": 0
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| theme | string | One of `auto`, `dark`, `light` |
+| language | string | Language code or `auto` |
+| cur_lesson | integer | Currently selected lesson index |
+
+**Errors:**
+| Status Code | Meaning |
+|---:|---|
+| 401 | Missing or invalid access token |
+| 500 | Database read failure |
+
+### Example (cURL)
+```bash
+curl -X GET https://api.example.com/api/v1/page/settings \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### POST `/api/v1/page/settings`
+
+**Description:** Create or update the user's page settings.
+
+**Authentication:** Required — Bearer access token
+
+### Request
+
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| Authorization | Yes | `Bearer <access_token>` |
+| Content-Type | Yes | `application/json` |
+
+**Request Body** (`application/json`):
+```json
+{
+  "theme": "dark",
+  "language": "en",
+  "cur_lesson": 3
+}
+```
+
+| Field | Type | Required | Validation | Description |
+|---|---|---:|---|---|
+| theme | string | Yes | one of `auto`, `dark`, `light` | UI theme preference |
+| language | string | Yes | required | Language code or `auto` |
+| cur_lesson | integer | Yes | required | Current lesson index |
+
+### Response
+
+**Success `200`:**
+```json
+{
+  "message": "Settings updated"
+}
+```
+
+**Errors:**
+| Status Code | Meaning |
+|---:|---|
+| 400 | Invalid input or validation failure |
+| 401 | Missing or invalid access token |
+| 500 | Database write failure |
+
+### Example (cURL)
+```bash
+curl -X POST https://api.example.com/api/v1/page/settings \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"theme":"dark","language":"en","cur_lesson":3}'
+```
+
+---
+
+## User
+
+User-related endpoints are under `/api/v1/user` and require a valid access token.
+
+### GET `/api/v1/user/me`
+
+**Description:** Retrieve information about the currently authenticated user.
+
+**Authentication:** Required — Bearer access token
+
+### Request
+
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| Authorization | Yes | `Bearer <access_token>` |
+
+### Response
+
+**Success `200`:**
+```json
+{
+  "username": "captain_jones",
+  "email": "jones@example.com",
+  "created_at": "2026-02-15T09:21:00Z"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| username | string | User's username |
+| email | string | User's email address |
+| created_at | string (ISO 8601) | Account creation timestamp |
+
+**Errors:**
+| Status Code | Meaning |
+|---:|---|
+| 401 | Missing or invalid access token or user not found |
+
+### Example (cURL)
+```bash
+curl -X GET https://api.example.com/api/v1/user/me \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### PUT `/api/v1/user/email`
+
+**Description:** Update the authenticated user's email address.
+
+**Authentication:** Required — Bearer access token
+
+### Request
+
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| Authorization | Yes | `Bearer <access_token>` |
+| Content-Type | Yes | `application/json` |
+
+**Request Body** (`application/json`):
+```json
+{
+  "email": "new.email@example.com"
+}
+```
+
+| Field | Type | Required | Validation | Description |
+|---|---|---:|---|---|
+| email | string | Yes | valid email, max 254 | New email address (must be different from current) |
+
+### Response
+
+**Success `200`:**
+```json
+{
+  "message": "Email updated"
+}
+```
+
+**Errors:**
+| Status Code | Meaning |
+|---:|---|
+| 400 | Invalid request body or new email equals current email |
+| 401 | Missing or invalid access token |
+| 409 | Email already in use by another account |
+| 500 | Database error while updating email |
+
+### Example (cURL)
+```bash
+curl -X PUT https://api.example.com/api/v1/user/email \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"new.email@example.com"}'
+```
+
+---
+
+### PUT `/api/v1/user/password`
+
+**Description:** Change the authenticated user's password. The endpoint requires the current password for verification.
+
+**Authentication:** Required — Bearer access token
+
+### Request
+
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| Authorization | Yes | `Bearer <access_token>` |
+| Content-Type | Yes | `application/json` |
+
+**Request Body** (`application/json`):
+```json
+{
+  "old_password": "Secur3P@ssw0rd",
+  "new_password": "N3wSecur3P@ss"
+}
+```
+
+| Field | Type | Required | Validation | Description |
+|---|---|---:|---|---|
+| old_password | string | Yes | 8–256 chars | Current password (verified) |
+| new_password | string | Yes | 8–256 chars | New password to set |
+
+### Response
+
+**Success `200`:**
+```json
+{
+  "message": "Password updated"
+}
+```
+
+**Errors:**
+| Status Code | Meaning |
+|---:|---|
+| 400 | Invalid request body |
+| 401 | Invalid current password or missing/invalid access token |
+| 500 | Internal server error (hashing or DB update failure) |
+
+### Example (cURL)
+```bash
+curl -X PUT https://api.example.com/api/v1/user/password \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"old_password":"Secur3P@ssw0rd","new_password":"N3wSecur3P@ss"}'
+```
+
+---
+
+## Additional Notes
+
+- Authentication middleware requirements:
+  - All protected endpoints require the `Authorization` header in the form `Bearer <token>`.
+  - Tokens are validated as JWTs and must include a numeric subject (the user ID).
+  - If the Authorization header is missing, malformed, or token is invalid/expired, endpoints return 401 with a JSON error.
+- The `LoadUser` middleware fetches the full user record from the database using the ID from the access token and places it in request context under the key `user`. If the user is not found, request returns 401.
+- CORS: the server sets Access-Control-Allow-Origin based on configuration (explicit allowlist via env or, in non-release mode, allows all origins). The server includes Authorization in Access-Control-Allow-Headers.
+- Rate limiting: none implemented in codebase (no per-route rate limits found).
+
+---
+
+## Protected miscellaneous
+
+### GET `/api/v1/hello`
+
+**Description:** Simple protected endpoint that returns a greeting message for authenticated users. Useful for quick token checks.
+
+**Authentication:** Required — Bearer access token
+
+### Request
+
+**Headers:**
+| Header | Required | Description |
+|---|---:|---|
+| Authorization | Yes | `Bearer <access_token>` |
+
+### Response
+
+**Success `200`:**
+```json
+{
+  "message": "Hello, authenticated user!"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| message | string | Greeting message |
+
+**Errors:**
+| Status Code | Meaning |
+|---:|---|
+| 401 | Missing or invalid access token |
+
+
+---
+
+## Error Reference
+
+| Status Code | Meaning |
+|---|---|
+| 400 | Bad Request — Invalid or missing parameters |
+| 401 | Unauthorized — Missing or invalid token |
+| 403 | Forbidden — Insufficient permissions |
+| 404 | Not Found — Resource does not exist |
+| 429 | Too Many Requests — Rate limit exceeded |
+| 500 | Internal Server Error — Unexpected server failure |
+
+

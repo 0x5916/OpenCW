@@ -21,7 +21,7 @@ type AuthHandler struct {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var input common.RegisterInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: "Invalid request body"})
 		return
 	}
 
@@ -39,7 +39,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		}
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		slog.Error("Failed to query user user", "err", err, "username", input.Username)
+		slog.Error("Failed to query user", "err", err, "username", input.Username)
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{Error: "Database failure"})
 		return
 	}
@@ -51,29 +51,23 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	var result common.HttpErrorResponse
 	user = models.User{
 		Username: input.Username,
 		Email:    input.Email,
 		Password: hash,
 	}
+	if err := h.DB.Create(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			c.JSON(http.StatusConflict, common.ErrorResponse{
+				Error: "Registration conflict, please try again",
+			})
+			return
+		}
 
-	err = h.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&user).Error; err != nil {
-			if errors.Is(err, gorm.ErrDuplicatedKey) {
-				result = common.HttpErrorResponse{Status: http.StatusConflict, Err: "Registration conflict, please try again"}
-			} else {
-				result = common.HttpErrorResponse{Status: http.StatusInternalServerError, Err: "Failed to create user"}
-			}
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		if result.Status == http.StatusInternalServerError {
-			slog.Error("Registration transaction failed", "err", err, "username", input.Username)
-		}
-		c.JSON(result.Status, common.ErrorResponse{Error: result.Err})
+		slog.Error("Failed to create user", "err", err, "username", input.Username)
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
+			Error: "Failed to create user",
+		})
 		return
 	}
 
@@ -93,7 +87,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var input common.LoginInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: "Invalid request body"})
 		return
 	}
 
@@ -139,7 +133,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	var input common.RefreshInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: err.Error()})
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: "Invalid request body"})
 		return
 	}
 	now := time.Now()

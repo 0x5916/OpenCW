@@ -8,8 +8,16 @@
   import { score, diffWords } from '$lib/score';
   import type { DiffToken } from '$lib/score';
   import { user } from '$lib/auth';
-  import { submitProgress, getCWSettings } from '$lib/api';
-  import { performSync, performRestore, type CWSettings } from '$lib/cwSync';
+  import { submitProgress } from '$lib/api';
+  import { lang, setLang } from '$lib/i18n.svelte';
+  import {
+    type CWSettings,
+    normalizeLesson,
+    readClientPageSettings,
+    restoreSettingsFromServer,
+    applyClientPageSettings,
+    syncSettingsToServer
+  } from '$lib/cwSync';
   import * as m from '$lib/paraglide/messages';
 
   let { data } = $props();
@@ -32,70 +40,115 @@
   let syncError = $state('');
   let restoring = $state(false);
   let restoreError = $state('');
+  let suppressAutoSync = $state(true);
 
   let syncedTimeout: ReturnType<typeof setTimeout> | null = null;
+  let autoSyncTimeout: ReturnType<typeof setTimeout> | null = null;
+  let autoSyncQueued = $state(false);
 
   $effect(() => {
     if ($user) {
-      getCWSettings()
-        .then((cwSettings) => {
+      restoreSettingsFromServer()
+        .then(({ cw: cwSettings, page }) => {
           charWpm = cwSettings.char_wpm;
           effWpm = cwSettings.eff_wpm;
           freq = cwSettings.freq;
           startDelay = cwSettings.start_delay;
+
+          chosenLesson = applyClientPageSettings(page, LESSONS.length, setLang);
         })
         .catch(() => {
           // Error silently handled, won't block UI
+        })
+        .finally(() => {
+          suppressAutoSync = false;
         });
+    } else {
+      suppressAutoSync = false;
     }
   });
 
-  async function syncToAccount() {
-    syncing = true;
-    synced = false;
-    syncError = '';
-    if (syncedTimeout) {
-      clearTimeout(syncedTimeout);
-      syncedTimeout = null;
+  function scheduleAutoSync() {
+    if (!$user || suppressAutoSync || restoring) return;
+    autoSyncQueued = true;
+    if (autoSyncTimeout) clearTimeout(autoSyncTimeout);
+    autoSyncTimeout = setTimeout(() => {
+      void syncToAccount(false);
+    }, 1500);
+  }
+
+  async function syncToAccount(showFeedback = true) {
+    if (!$user) return;
+    if (syncing) {
+      autoSyncQueued = true;
+      return;
     }
-    await performSync(
-      { char_wpm: charWpm, eff_wpm: effWpm, freq, start_delay: startDelay },
-      () => {
+
+    syncing = true;
+    autoSyncQueued = false;
+
+    if (showFeedback) {
+      synced = false;
+      syncError = '';
+      if (syncedTimeout) {
+        clearTimeout(syncedTimeout);
+        syncedTimeout = null;
+      }
+    }
+
+    const cw: CWSettings = { char_wpm: charWpm, eff_wpm: effWpm, freq, start_delay: startDelay };
+    const page = readClientPageSettings(chosenLesson, LESSONS.length, lang.value);
+
+    try {
+      await syncSettingsToServer(cw, page);
+      if (showFeedback) {
         synced = true;
         if (syncedTimeout) clearTimeout(syncedTimeout);
         syncedTimeout = setTimeout(() => {
           synced = false;
           syncedTimeout = null;
         }, 3000);
-      },
-      (msg: string) => {
-        syncError = msg;
+      }
+    } catch (error) {
+      if (showFeedback) {
+        syncError = error instanceof Error ? error.message : m.trainer_error_sync_settings();
         setTimeout(() => (syncError = ''), 4000);
       }
-    );
-    syncing = false;
+    } finally {
+      syncing = false;
+      if (autoSyncQueued) {
+        scheduleAutoSync();
+      }
+    }
   }
 
   async function restoreFromAccount() {
     restoring = true;
     restoreError = '';
-    await performRestore(
-      (cwSettings: CWSettings) => {
-        charWpm = cwSettings.char_wpm;
-        effWpm = cwSettings.eff_wpm;
-        freq = cwSettings.freq;
-        startDelay = cwSettings.start_delay;
-      },
-      (msg: string) => {
-        restoreError = msg;
-        setTimeout(() => (restoreError = ''), 4000);
-      }
-    );
-    restoring = false;
+    suppressAutoSync = true;
+    autoSyncQueued = false;
+    if (autoSyncTimeout) {
+      clearTimeout(autoSyncTimeout);
+      autoSyncTimeout = null;
+    }
+    try {
+      const { cw, page } = await restoreSettingsFromServer();
+      charWpm = cw.char_wpm;
+      effWpm = cw.eff_wpm;
+      freq = cw.freq;
+      startDelay = cw.start_delay;
+      chosenLesson = applyClientPageSettings(page, LESSONS.length, setLang);
+    } catch (error) {
+      restoreError = error instanceof Error ? error.message : m.trainer_error_load_settings();
+      setTimeout(() => (restoreError = ''), 4000);
+    } finally {
+      suppressAutoSync = false;
+      restoring = false;
+    }
   }
 
   $effect(() => {
-    const val = String(chosenLesson);
+    const val = String(normalizeLesson(chosenLesson, LESSONS.length));
     localStorage.setItem('learn.lesson', val);
     document.cookie = `learn.lesson=${val}; path=/; max-age=31536000; SameSite=Lax`;
   });
@@ -152,6 +205,7 @@
     result = -1;
     diffTokens = [];
     showOverlay = false;
+    scheduleAutoSync();
   }
 
   function nextLesson() {
@@ -160,6 +214,16 @@
     result = -1;
     diffTokens = [];
     showOverlay = false;
+    scheduleAutoSync();
+  }
+
+  function onLessonSelectChange() {
+    result = -1;
+    scheduleAutoSync();
+  }
+
+  function onCwSettingInput() {
+    scheduleAutoSync();
   }
 
   $effect(() => {
@@ -177,6 +241,7 @@
 
   onDestroy(() => {
     if (syncedTimeout) clearTimeout(syncedTimeout);
+    if (autoSyncTimeout) clearTimeout(autoSyncTimeout);
   });
 
   function onSelectedCharChange(event: Event) {
@@ -210,7 +275,7 @@
       <h2 class="card-label">{m.trainer_label_lesson()}</h2>
       <div class="lesson-row">
         <p class="lesson-current-label">{m.trainer_current_lesson()}</p>
-        <select bind:value={chosenLesson} onchange={() => (result = -1)} class="lesson-select">
+        <select bind:value={chosenLesson} onchange={onLessonSelectChange} class="lesson-select">
           {#each LESSONS as lesson, index (index)}
             <option value={index + 1}>{index + 1} — {lesson.split('').join(', ')}</option>
           {/each}
@@ -265,14 +330,14 @@
             {m.trainer_label_char_wpm()}
             <span class="tooltip-icon" data-tooltip={m.trainer_tooltip_char_wpm()}><Info size={11} /></span>
           </span>
-          <input type="number" bind:value={charWpm} min="5" max="50" class="input" />
+          <input type="number" bind:value={charWpm} min="5" max="50" class="input" oninput={onCwSettingInput} />
         </label>
         <label class="settings-field">
           <span class="label-text">
             {m.trainer_label_eff_wpm()}
             <span class="tooltip-icon" data-tooltip={m.trainer_tooltip_eff_wpm()}><Info size={11} /></span>
           </span>
-          <input type="number" bind:value={effWpm} min="5" max="50" class="input" />
+          <input type="number" bind:value={effWpm} min="5" max="50" class="input" oninput={onCwSettingInput} />
         </label>
       </div>
       <details class="settings-adv">
@@ -280,7 +345,7 @@
         <div class="settings-grid settings-grid-2">
           <label class="settings-field">
             <span class="label-text">{m.trainer_label_freq()}</span>
-            <input type="number" bind:value={freq} min="100" max="2000" class="input" />
+            <input type="number" bind:value={freq} min="100" max="2000" class="input" oninput={onCwSettingInput} />
           </label>
           <label class="settings-field">
             <span class="label-text">{m.trainer_label_start_delay()}</span>
@@ -291,6 +356,7 @@
               max="10"
               step="0.5"
               class="input"
+              oninput={onCwSettingInput}
             />
           </label>
         </div>
@@ -301,7 +367,7 @@
             type="button"
             class="btn-regen"
             class:btn-regen-success={synced}
-            onclick={syncToAccount}
+            onclick={() => void syncToAccount()}
             disabled={syncing}
           >
             <Upload size={14} />{synced

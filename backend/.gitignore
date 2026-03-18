@@ -25,6 +25,9 @@ vendor/
 go.work
 go.work.sum
 
+# Go compiled files
+bin/
+
 # ========================
 # Environment
 # ========================
