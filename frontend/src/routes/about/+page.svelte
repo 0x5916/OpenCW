@@ -1,6 +1,11 @@
 <script lang="ts">
   import { BookOpen, CheckCircle } from 'lucide-svelte';
+  import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
+
+  function href(path: string) {
+    return localizeHref(path);
+  }
 </script>
 
 <main class="about-page">
@@ -76,7 +81,7 @@
     </div>
 
     <div class="about-cta">
-      <a href="/morse/learn" class="btn-cta">Start Training →</a>
+      <a href={href('/morse/learn')} class="btn-cta">Start Training →</a>
     </div>
   </section>
 </main>

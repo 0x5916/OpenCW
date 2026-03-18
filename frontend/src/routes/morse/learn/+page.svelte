@@ -9,7 +9,7 @@
   import type { DiffToken } from '$lib/score';
   import { user } from '$lib/auth';
   import { submitProgress } from '$lib/api';
-  import { lang, setLang } from '$lib/i18n.svelte';
+  import { langPreference, setLangPreference } from '$lib/i18n.svelte';
   import {
     type CWSettings,
     normalizeLesson,
@@ -18,6 +18,7 @@
     applyClientPageSettings,
     syncSettingsToServer
   } from '$lib/cwSync';
+  import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
 
   let { data } = $props();
@@ -55,7 +56,9 @@
           freq = cwSettings.freq;
           startDelay = cwSettings.start_delay;
 
-          chosenLesson = applyClientPageSettings(page, LESSONS.length, setLang);
+          chosenLesson = applyClientPageSettings(page, LESSONS.length, setLangPreference, {
+            applyLanguage: false
+          });
         })
         .catch(() => {
           // Error silently handled, won't block UI
@@ -97,7 +100,7 @@
     }
 
     const cw: CWSettings = { char_wpm: charWpm, eff_wpm: effWpm, freq, start_delay: startDelay };
-    const page = readClientPageSettings(chosenLesson, LESSONS.length, lang.value);
+    const page = readClientPageSettings(chosenLesson, LESSONS.length, langPreference.value);
 
     try {
       await syncSettingsToServer(cw, page);
@@ -137,7 +140,7 @@
       effWpm = cw.eff_wpm;
       freq = cw.freq;
       startDelay = cw.start_delay;
-      chosenLesson = applyClientPageSettings(page, LESSONS.length, setLang);
+      chosenLesson = applyClientPageSettings(page, LESSONS.length, setLangPreference);
     } catch (error) {
       restoreError = error instanceof Error ? error.message : m.trainer_error_load_settings();
       setTimeout(() => (restoreError = ''), 4000);
@@ -399,9 +402,9 @@
       {:else}
         <p class="body-text">
           {m.trainer_guest_notice()}
-          <a href="/login" class="link">{m.nav_login()}</a>
+          <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
           /
-          <a href="/register" class="link">{m.nav_register()}</a>
+          <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
         </p>
       {/if}
     </div>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { login } from '$lib/auth';
   import { goto } from '$app/navigation';
+  import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
 
   let username = $state('');
@@ -14,7 +15,7 @@
     loading = true;
     try {
       await login(username, password);
-      await goto('/');
+      await goto(localizeHref('/'));
     } catch (error) {
       err = error instanceof Error ? error.message : m.login_error_unknown();
     } finally {
@@ -66,7 +67,8 @@
 
     <hr class="divider" />
     <p class="body-text auth-footer-text">
-      {m.login_no_account()} <a href="/register" class="link">{m.login_register_link()}</a>
+      {m.login_no_account()}
+      <a href={localizeHref('/register')} class="link">{m.login_register_link()}</a>
     </p>
   </div>
 </main>

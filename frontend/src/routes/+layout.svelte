@@ -23,7 +23,8 @@
     LayoutDashboard
   } from 'lucide-svelte';
   import { lang, setLang, initLang } from '$lib/i18n.svelte';
-  import { locales } from '$lib/paraglide/runtime';
+  import { locales, localizeHref } from '$lib/paraglide/runtime';
+  import { getLocaleLongLabel, getLocaleShortLabel } from '$lib/locale';
   import * as m from '$lib/paraglide/messages';
   import type { Locale } from '$lib/i18n.svelte';
 
@@ -31,11 +32,6 @@
 
   type Theme = 'auto' | 'light' | 'dark';
 
-  const LANG_LABELS: Partial<Record<Locale, string>> = {
-    en: 'EN',
-    'zh-Hant': 'ZH-T',
-    'zh-Hans': 'ZH-S'
-  };
   const CYCLE: Record<Theme, Theme> = { auto: 'light', light: 'dark', dark: 'auto' };
 
   function load(): Theme {
@@ -54,15 +50,18 @@
   let guestMenuOpen = $state(false);
   let userMenuLeaveTimer = 0;
   let guestMenuLeaveTimer = 0;
+  let langMenuLeaveTimer = 0;
   let navEl = $state<HTMLElement | null>(null);
   let userMenuEl = $state<HTMLElement | null>(null);
   let guestMenuEl = $state<HTMLElement | null>(null);
+  let langMenuEl = $state<HTMLElement | null>(null);
+  let langMenuOpen = $state(false);
   let ThemeIcon = $derived(themeIconFor(theme));
 
   // initLang receives the locale the server read from the cookie —
   // so SSR renders the correct language from the very first request.
   // svelte-ignore state_referenced_locally
-  initLang(data.locale);
+  initLang(data.locale, data.localePreference);
 
   $effect(() => {
     theme = load();
@@ -70,14 +69,17 @@
     initAuth();
   });
 
-  function toggleLang() {
-    const current = locales.indexOf(lang.value);
-    const next = locales[(current + 1) % locales.length] as Locale;
-    setLang(next);
+  function langLabel(locale: Locale): string {
+    return getLocaleShortLabel(locale);
   }
 
-  function langLabel(locale: Locale) {
-    return LANG_LABELS[locale] ?? locale.toUpperCase();
+  function languageLabel(locale: Locale): string {
+    return getLocaleLongLabel(locale);
+  }
+
+  function setLanguage(locale: Locale): void {
+    setLang(locale);
+    langMenuOpen = false;
   }
 
   function setTheme(nextTheme: Theme) {
@@ -92,7 +94,11 @@
 
   function handleLogout() {
     logout();
-    goto('/');
+    goto(localizeHref('/', { locale: lang.value }));
+  }
+
+  function href(path: string) {
+    return localizeHref(path, { locale: lang.value });
   }
 
   function themeIconFor(currentTheme: Theme) {
@@ -105,6 +111,7 @@
     menuOpen = false;
     userMenuOpen = false;
     guestMenuOpen = false;
+    langMenuOpen = false;
   }
 
   function onDocumentClick(event: MouseEvent) {
@@ -121,6 +128,10 @@
 
     if (guestMenuOpen && guestMenuEl && !guestMenuEl.contains(target)) {
       guestMenuOpen = false;
+    }
+
+    if (langMenuOpen && langMenuEl && !langMenuEl.contains(target)) {
+      langMenuOpen = false;
     }
   }
 
@@ -155,17 +166,17 @@
   <nav class="navbar" bind:this={navEl}>
     <div class="navbar-inner">
       <!-- Brand -->
-      <a href="/" class="navbar-brand">
+      <a href={href('/')} class="navbar-brand">
         <img src={favicon} alt="OpenCW" />
         OpenCW
       </a>
 
       <!-- Desktop: all links + user menu on the right -->
       <div class="navbar-right navbar-desktop">
-        <a href="/" class="navbar-link">{m.nav_home()}</a>
-        <a href="/morse/learn" class="navbar-link">{m.nav_learn()}</a>
-        <a href="/forum" class="navbar-link">{m.nav_forum()}</a>
-        <a href="/about" class="navbar-link">{m.nav_about()}</a>
+        <a href={href('/')} class="navbar-link">{m.nav_home()}</a>
+        <a href={href('/morse/learn')} class="navbar-link">{m.nav_learn()}</a>
+        <a href={href('/forum')} class="navbar-link">{m.nav_forum()}</a>
+        <a href={href('/about')} class="navbar-link">{m.nav_about()}</a>
         <div class="navbar-divider"></div>
         {#if $user}
           <div
@@ -197,14 +208,14 @@
             {#if userMenuOpen}
               <div class="user-dropdown" id="user-menu" role="menu">
                 <a
-                  href="/profile"
+                  href={href('/profile')}
                   onclick={() => (userMenuOpen = false)}
                   class="user-dropdown-item"
                   role="menuitem"
                   ><LayoutDashboard size={14} style="pointer-events:none" /> {m.nav_profile()}</a
                 >
                 <a
-                  href="/settings"
+                  href={href('/settings')}
                   onclick={() => (userMenuOpen = false)}
                   class="user-dropdown-item"
                   role="menuitem"
@@ -253,13 +264,13 @@
             {#if guestMenuOpen}
               <div class="user-dropdown" id="guest-menu" role="menu">
                 <a
-                  href="/login"
+                  href={href('/login')}
                   class="user-dropdown-item"
                   role="menuitem"
                   onclick={() => (guestMenuOpen = false)}>{m.nav_login()}</a
                 >
                 <a
-                  href="/register"
+                  href={href('/register')}
                   class="user-dropdown-item"
                   role="menuitem"
                   onclick={() => (guestMenuOpen = false)}>{m.nav_register()}</a
@@ -284,17 +295,49 @@
                 : m.theme_dark()}
           </span>
         </button>
-        <button
-          type="button"
-          onclick={toggleLang}
-          class="theme-icon-btn"
-          title="Switch language"
-          aria-label="Switch language"
+        <div
+          class="user-menu-wrapper"
+          role="group"
+          bind:this={langMenuEl}
+          onmouseenter={() => {
+            clearTimeout(langMenuLeaveTimer);
+            langMenuOpen = true;
+          }}
+          onmouseleave={() => {
+            langMenuLeaveTimer = window.setTimeout(() => (langMenuOpen = false), 150);
+          }}
         >
-          <span class="nav-label-icon"
-            ><Languages class="nav-icon" aria-hidden="true" />{langLabel(lang.value)}</span
+          <button
+            type="button"
+            onclick={() => (langMenuOpen = !langMenuOpen)}
+            class="navbar-user-btn"
+            aria-expanded={langMenuOpen}
+            aria-haspopup="menu"
+            aria-controls="lang-menu"
+            title={m.settings_language_label()}
+            aria-label={m.settings_language_label()}
           >
-        </button>
+            <span class="nav-label-icon">
+              <Languages class="nav-icon" aria-hidden="true" />
+              {langLabel(lang.value)}
+              <ChevronDown class="nav-icon" aria-hidden="true" />
+            </span>
+          </button>
+          {#if langMenuOpen}
+            <div class="user-dropdown" id="lang-menu" role="menu">
+              {#each locales as locale (locale)}
+                <button
+                  type="button"
+                  class="user-dropdown-item"
+                  role="menuitem"
+                  onclick={() => setLanguage(locale as Locale)}
+                >
+                  {languageLabel(locale as Locale)}
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
       </div>
 
       <!-- Mobile: hamburger only -->
@@ -319,24 +362,24 @@
     <!-- Mobile dropdown menu -->
     {#if menuOpen}
       <div class="mobile-menu" id="mobile-nav-menu">
-        <a href="/" class="mobile-link" onclick={() => (menuOpen = false)}
+        <a href={href('/')} class="mobile-link" onclick={() => (menuOpen = false)}
           ><Home size={16} />{m.nav_home()}</a
         >
-        <a href="/morse/learn" class="mobile-link" onclick={() => (menuOpen = false)}
+        <a href={href('/morse/learn')} class="mobile-link" onclick={() => (menuOpen = false)}
           ><Radio size={16} />{m.nav_learn()}</a
         >
-        <a href="/forum" class="mobile-link" onclick={() => (menuOpen = false)}
+        <a href={href('/forum')} class="mobile-link" onclick={() => (menuOpen = false)}
           ><MessageSquare size={16} />{m.nav_forum()}</a
         >
-        <a href="/about" class="mobile-link" onclick={() => (menuOpen = false)}
+        <a href={href('/about')} class="mobile-link" onclick={() => (menuOpen = false)}
           ><Info size={16} />{m.nav_about()}</a
         >
         <div class="mobile-divider"></div>
         {#if $user}
-          <a href="/profile" class="mobile-link" onclick={() => (menuOpen = false)}
+          <a href={href('/profile')} class="mobile-link" onclick={() => (menuOpen = false)}
             ><LayoutDashboard size={16} />{m.nav_profile()}</a
           >
-          <a href="/settings" class="mobile-link" onclick={() => (menuOpen = false)}
+          <a href={href('/settings')} class="mobile-link" onclick={() => (menuOpen = false)}
             ><Settings size={16} />{m.nav_settings()}</a
           >
           <button
@@ -349,10 +392,10 @@
             ><LogOut size={16} />{m.nav_logout()} ({$user.username})</button
           >
         {:else}
-          <a href="/login" class="mobile-link" onclick={() => (menuOpen = false)}
+          <a href={href('/login')} class="mobile-link" onclick={() => (menuOpen = false)}
             ><LogIn size={16} />{m.nav_login()}</a
           >
-          <a href="/register" class="mobile-link" onclick={() => (menuOpen = false)}
+          <a href={href('/register')} class="mobile-link" onclick={() => (menuOpen = false)}
             ><UserPlus size={16} />{m.nav_register()}</a
           >
         {/if}
@@ -365,9 +408,11 @@
               : m.theme_dark()}</button
         >
         <div class="mobile-divider"></div>
-        <button type="button" onclick={toggleLang} class="mobile-link mobile-link-btn"
-          ><Languages size={16} />{langLabel(lang.value)}</button
-        >
+        {#each locales as locale (locale)}
+          <button type="button" class="mobile-link mobile-link-btn" onclick={() => setLanguage(locale)}
+            ><Languages size={16} />{languageLabel(locale)}</button
+          >
+        {/each}
       </div>
     {/if}
   </nav>

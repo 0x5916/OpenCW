@@ -624,6 +624,7 @@ body {
 	transform: scaleX(1);
 }
 
+
 /* Mobile Controls */
 .navbar-mobile-controls {
 	display: flex;
@@ -703,6 +704,7 @@ body {
 	border: none;
 	cursor: pointer;
 }
+
 
 .mobile-divider {
 	height: 1px;

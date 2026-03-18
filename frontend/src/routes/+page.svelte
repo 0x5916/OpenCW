@@ -1,6 +1,11 @@
 <script lang="ts">
   import { Radio, Smartphone, MessagesSquare } from 'lucide-svelte';
+  import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
+
+  function href(path: string) {
+    return localizeHref(path);
+  }
 </script>
 
 <!-- Hero -->
@@ -8,18 +13,18 @@
   <h1 class="hero-title">OpenCW</h1>
   <p class="hero-sub">
     {m.home_hero_subtitle_pre()}<a
-      href="/about"
+      href={href('/about')}
       style="color: var(--accent); font-weight: 600;">{m.home_hero_koch()}</a
     >{m.home_hero_subtitle_post()}
   </p>
-  <a href="/morse/learn" class="btn-cta">{m.home_cta()}</a>
+  <a href={href('/morse/learn')} class="btn-cta">{m.home_cta()}</a>
 </section>
 
 <hr class="divider" />
 
 <!-- Feature cards -->
 <section class="feature-grid">
-  <a href="/about" class="card" style="text-decoration: none; color: inherit;">
+  <a href={href('/about')} class="card" style="text-decoration: none; color: inherit;">
     <div class="feature-icon" aria-hidden="true"><Radio /></div>
     <h2 class="feature-title">{m.home_feature_koch_title()}</h2>
     <p class="feature-body">{m.home_feature_koch_body()}</p>

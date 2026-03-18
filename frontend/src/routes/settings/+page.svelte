@@ -8,8 +8,13 @@
     savePageSettings,
     type PageSettings
   } from '$lib/api';
-  import { lang, setLang, type Locale } from '$lib/i18n.svelte';
-  import { isLocale, locales } from '$lib/paraglide/runtime';
+  import { langPreference, setLangPreference, type Locale } from '$lib/i18n.svelte';
+  import { locales, localizeHref } from '$lib/paraglide/runtime';
+  import {
+    getLocaleLongLabel,
+    normalizeLocalePreference,
+    type LocalePreference
+  } from '$lib/locale';
   import { LESSONS } from '$lib/morse';
   import { applyClientPageSettings, normalizeLesson, restoreSettingsFromServer } from '$lib/cwSync';
   import { Settings } from 'lucide-svelte';
@@ -36,7 +41,7 @@
 
   // Page settings section
   let pageTheme = $state<Theme>('auto');
-  let pageLanguage = $state<Locale>(lang.value);
+  let pageLanguage = $state<LocalePreference>(langPreference.value);
   let pageLesson = $state(1);
   let pageSaving = $state(false);
   let pageError = $state('');
@@ -75,7 +80,7 @@
       freq = cw.freq;
       startDelay = cw.start_delay;
       pageTheme = page.theme;
-      pageLanguage = page.language === 'auto' ? lang.value : isLocale(page.language) ? (page.language as Locale) : lang.value;
+      pageLanguage = normalizeLocalePreference(page.language);
       pageLesson = normalizeLesson(page.cur_lesson, LESSONS.length);
     } catch (e) {
       loadError = e instanceof Error ? e.message : m.settings_load_error();
@@ -84,23 +89,8 @@
     }
   }
 
-  function languageLabel(locale: string): string {
-    switch (locale) {
-      case 'en':
-        return 'English';
-      case 'zh-Hant':
-        return 'Traditional Chinese (繁體中文)';
-      case 'zh-Hans':
-        return 'Simplified Chinese (简体中文)';
-      case 'ja':
-        return 'Japanese (日本語)';
-      case 'de':
-        return 'German (Deutsch)';
-      case 'es':
-        return 'Spanish (Español)';
-      default:
-        return locale;
-    }
+  function languageLabel(locale: Locale): string {
+    return getLocaleLongLabel(locale);
   }
 
   async function saveEmail(e: SubmitEvent) {
@@ -181,7 +171,7 @@
         cur_lesson: pageLesson
       };
       await savePageSettings(pagePayload);
-      applyClientPageSettings(pagePayload, LESSONS.length, setLang);
+      applyClientPageSettings(pagePayload, LESSONS.length, setLangPreference);
       pageSaved = true;
       setTimeout(() => (pageSaved = false), 3000);
     } catch (err) {
@@ -201,7 +191,8 @@
   {#if !$user && !loading}
     <div class="card">
       <p class="body-text">
-        {m.settings_not_logged_in()} <a href="/login" class="link">{m.nav_login()}</a>
+        {m.settings_not_logged_in()}
+        <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
       </p>
     </div>
   {:else if loading}
@@ -298,6 +289,7 @@
         <label class="settings-field">
           <span class="label-text">{m.settings_language_label()}</span>
           <select bind:value={pageLanguage} class="input">
+            <option value="auto">{m.theme_auto()}</option>
             {#each locales as locale (locale)}
               <option value={locale}>{languageLabel(locale)}</option>
             {/each}

@@ -15,6 +15,7 @@
   } from 'lucide-svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+  import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
 
   let loading = $state(true);
@@ -103,7 +104,7 @@
   {#if !$user && !loading}
     <div class="card">
       <p class="body-text">
-        {m.profile_not_logged_in()} <a href="/login" class="link">{m.nav_login()}</a>
+        {m.profile_not_logged_in()} <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
       </p>
     </div>
   {:else if loading}
@@ -183,7 +184,8 @@
       </div>
       {#if recentRecords.length === 0}
         <p class="body-text profile-empty">
-          {m.profile_history_empty()} <a href="/morse/learn" class="link">{m.nav_learn()}</a>
+          {m.profile_history_empty()}
+          <a href={localizeHref('/morse/learn')} class="link">{m.nav_learn()}</a>
         </p>
       {:else}
         <div class="profile-table-wrap">

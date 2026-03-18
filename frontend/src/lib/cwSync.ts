@@ -7,12 +7,16 @@ import {
   type PageSettings
 } from '$lib/api';
 import { isLocale } from '$lib/paraglide/runtime';
-import type { Locale } from '$lib/i18n.svelte';
+import {
+  LOCALE_COOKIE,
+  LOCALE_PREFERENCE_STORAGE_KEY,
+  normalizeLocalePreference,
+  type LocalePreference
+} from '$lib/locale';
 
 export type { CWSettings, PageSettings };
 
 const LESSON_COOKIE = 'learn.lesson';
-const LANG_COOKIE = 'PARAGLIDE_LOCALE';
 const ONE_YEAR_SECONDS = 31536000;
 
 export function normalizeLesson(lesson: number, maxLesson: number): number {
@@ -27,15 +31,19 @@ function readCookie(name: string): string | null {
   return item ? decodeURIComponent(item.slice(target.length)) : null;
 }
 
-export function readClientPageSettings(currentLesson: number, maxLesson: number, fallbackLanguage: Locale): PageSettings {
+export function readClientPageSettings(
+  currentLesson: number,
+  maxLesson: number,
+  fallbackLanguagePreference: LocalePreference
+): PageSettings {
   const themeRaw = typeof localStorage === 'undefined' ? null : localStorage.getItem('theme');
   const theme: PageSettings['theme'] =
     themeRaw === 'dark' || themeRaw === 'light' || themeRaw === 'auto' ? themeRaw : 'auto';
 
-  const localLang = typeof localStorage === 'undefined' ? null : localStorage.getItem(LANG_COOKIE);
-  const cookieLang = readCookie(LANG_COOKIE);
-  const candidateLang = localLang ?? cookieLang ?? fallbackLanguage;
-  const language = candidateLang === 'auto' || isLocale(candidateLang) ? candidateLang : fallbackLanguage;
+  const localLang =
+    typeof localStorage === 'undefined' ? null : localStorage.getItem(LOCALE_PREFERENCE_STORAGE_KEY);
+  const cookieLang = readCookie(LOCALE_COOKIE);
+  const language = normalizeLocalePreference(localLang ?? cookieLang ?? fallbackLanguagePreference);
 
   return {
     theme,
@@ -47,13 +55,19 @@ export function readClientPageSettings(currentLesson: number, maxLesson: number,
 export function applyClientPageSettings(
   page: PageSettings,
   maxLesson: number,
-  onLocale: (locale: Locale) => void
+  onLocale: (preference: LocalePreference, options?: { navigate?: boolean }) => void,
+  options: { applyLanguage?: boolean; navigate?: boolean } = {}
 ): number {
   const lesson = normalizeLesson(page.cur_lesson, maxLesson);
+  const language = normalizeLocalePreference(page.language);
+  const applyLanguage = options.applyLanguage ?? true;
 
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem('theme', page.theme);
     localStorage.setItem('learn.lesson', String(lesson));
+    if (applyLanguage) {
+      localStorage.setItem(LOCALE_PREFERENCE_STORAGE_KEY, language);
+    }
   }
 
   if (typeof document !== 'undefined') {
@@ -62,13 +76,13 @@ export function applyClientPageSettings(
 
     document.cookie = `${LESSON_COOKIE}=${lesson}; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
 
-    if (page.language !== 'auto') {
-      document.cookie = `${LANG_COOKIE}=${page.language}; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
+    if (applyLanguage) {
+      document.cookie = `${LOCALE_COOKIE}=${language}; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
     }
   }
 
-  if (page.language !== 'auto' && isLocale(page.language)) {
-    onLocale(page.language as Locale);
+  if (applyLanguage && (language === 'auto' || isLocale(language))) {
+    onLocale(language, { navigate: options.navigate });
   }
 
   return lesson;
