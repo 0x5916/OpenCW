@@ -58,10 +58,17 @@ export function initLang(initialLocale: string, initialPreference: string = 'aut
   const initial = matchLocaleCandidate(initialLocale) ?? (baseLocale as Locale);
 
   if (preference === 'auto') {
-    langPreference.value = 'auto';
-    lang.value = initial;
-    overwriteGetLocale(() => lang.value);
-    applyDocumentLocale(lang.value);
+    if (typeof window === 'undefined') {
+      // Keep SSR locale for hydration consistency; browser detection is client-only.
+      langPreference.value = 'auto';
+      lang.value = initial;
+      overwriteGetLocale(() => lang.value);
+      applyDocumentLocale(lang.value);
+      return;
+    }
+
+    applyPreference('auto');
+    navigateToLocalizedPathIfNeeded();
     return;
   }
 
