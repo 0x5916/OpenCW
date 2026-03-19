@@ -77,7 +77,12 @@ export const MORSE: Record<string, string> = {
   '6': '-....',
   '7': '--...',
   '8': '---..',
-  '9': '----.'
+  '9': '----.',
+  // Punctuation
+  '.': '.-.-.-',
+  ',': '--..--',
+  '/': '-..-.',
+  '?': '..--..',
 };
 
 function getGroupSize(groupSize: number | null) {

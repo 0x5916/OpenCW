@@ -8,6 +8,7 @@ export interface AuthUser {
 export const user = writable<AuthUser | null>(null);
 
 const API_BASE = PUBLIC_API_BASE;
+let refreshInFlight: Promise<boolean> | null = null;
 
 /** Rehydrate user from stored tokens on app start */
 export function initAuth() {
@@ -55,17 +56,35 @@ export async function login(username: string, password: string): Promise<void> {
 }
 
 export async function refreshTokens(): Promise<boolean> {
-  const refreshToken = localStorage.getItem('refresh_token');
-  if (!refreshToken) return false;
+  if (refreshInFlight) {
+    return refreshInFlight;
+  }
 
-  const response = await fetch(`${API_BASE}/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: refreshToken })
-  });
+  refreshInFlight = (async () => {
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (!refreshToken) {
+    // No refresh token means the session can't be renewed.
+    logout();
+    return false;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    });
+  } catch {
+    // Network/transport failure: do not force logout.
+    return false;
+  }
 
   if (!response.ok) {
-    logout();
+    // Only invalidate local auth state when refresh token is rejected.
+    if (response.status === 400 || response.status === 401 || response.status === 403) {
+      logout();
+    }
     return false;
   }
 
@@ -73,14 +92,20 @@ export async function refreshTokens(): Promise<boolean> {
   const username = localStorage.getItem('username') ?? '';
   persistTokens(data.access_token, data.refresh_token, username);
   return true;
+  })();
+
+  try {
+    return await refreshInFlight;
+  } finally {
+    refreshInFlight = null;
+  }
 }
 
 /** Decode JWT payload and return true if the token is expired (or invalid). */
-function isTokenExpired(token: string): boolean {
+function isTokenExpired(token: string, bufferSeconds: number = 60): boolean {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
-    // exp is in seconds; subtract 10 s buffer for clock skew
-    return Date.now() / 1000 >= payload.exp - 10;
+    return Date.now() / 1000 + bufferSeconds >= payload.exp;
   } catch {
     return true;
   }
@@ -108,7 +133,12 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
   if (response.status === 401) {
     const refreshed = await refreshTokens();
     if (refreshed) {
-      headers.set('Authorization', `Bearer ${localStorage.getItem('access_token')}`);
+      const renewedToken = localStorage.getItem('access_token');
+      if (renewedToken) {
+        headers.set('Authorization', `Bearer ${renewedToken}`);
+      } else {
+        headers.delete('Authorization');
+      }
       response = await fetch(`${API_BASE}${input}`, { ...init, headers });
     }
   }
