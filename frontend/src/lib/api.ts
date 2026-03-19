@@ -1,8 +1,95 @@
 import { apiFetch } from './auth';
 
-async function apiError(res: Response, fallback: string): Promise<never> {
-  const body = await res.json().catch(() => ({}));
-  throw new Error(body?.error ?? fallback);
+class ApiError extends Error {
+  status: number;
+
+  body: unknown;
+
+  constructor(message: string, status: number, body: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.body = body;
+  }
+}
+
+const JSON_HEADERS = {
+  'Content-Type': 'application/json',
+  Accept: 'application/json'
+} as const;
+const inFlightGetRequests = new Map<string, Promise<unknown>>();
+
+function pickErrorMessage(body: unknown, fallback: string): string {
+  if (!body || typeof body !== 'object') return fallback;
+
+  const candidate = (body as Record<string, unknown>).error;
+  if (typeof candidate === 'string' && candidate.trim() !== '') return candidate;
+
+  const message = (body as Record<string, unknown>).message;
+  if (typeof message === 'string' && message.trim() !== '') return message;
+
+  const detail = (body as Record<string, unknown>).detail;
+  if (typeof detail === 'string' && detail.trim() !== '') return detail;
+
+  return fallback;
+}
+
+async function parseJsonBody<T>(res: Response): Promise<T> {
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
+  const contentLength = res.headers.get('content-length');
+  if (contentLength === '0') {
+    return undefined as T;
+  }
+
+  const text = await res.text();
+  if (text.trim() === '') {
+    return undefined as T;
+  }
+
+  return JSON.parse(text) as T;
+}
+
+async function throwApiError(res: Response, fallback: string): Promise<never> {
+  const body = await parseJsonBody<unknown>(res).catch(() => null);
+  throw new ApiError(pickErrorMessage(body, fallback), res.status, body);
+}
+
+async function apiGetJson<T>(path: string, fallback: string): Promise<T> {
+  const requestKey = `GET:${path}`;
+  const existing = inFlightGetRequests.get(requestKey) as Promise<T> | undefined;
+  if (existing) return existing;
+
+  const request = (async () => {
+    const res = await apiFetch(path);
+    if (!res.ok) return throwApiError(res, fallback);
+
+    try {
+      return await parseJsonBody<T>(res);
+    } catch {
+      throw new ApiError(fallback, res.status, null);
+    }
+  })();
+
+  inFlightGetRequests.set(requestKey, request);
+
+  try {
+    return await request;
+  } finally {
+    inFlightGetRequests.delete(requestKey);
+  }
+}
+
+async function apiSendJson(path: string, method: 'POST' | 'PUT', body: unknown, fallback: string) {
+  const res = await apiFetch(path, {
+    method,
+    headers: JSON_HEADERS,
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) return throwApiError(res, fallback);
 }
 
 export interface CWSettings {
@@ -24,49 +111,37 @@ export interface UserInfo {
   created_at: string;
 }
 
+export interface CombinedSettings {
+  cw_settings: CWSettings;
+  page_settings: PageSettings;
+}
+
 export async function getCWSettings(): Promise<CWSettings> {
-  const res = await apiFetch('/cw/settings');
-  if (!res.ok) return apiError(res, 'Failed to load settings');
-  return res.json();
+  return apiGetJson<CWSettings>('/settings/cw', 'Failed to load settings');
 }
 
 export async function saveCWSettings(settings: CWSettings): Promise<void> {
-  const res = await apiFetch('/cw/settings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(settings)
-  });
-  if (!res.ok) return apiError(res, 'Failed to save settings');
+  await apiSendJson('/settings/cw', 'POST', settings, 'Failed to save settings');
+}
+
+export async function getSettings(): Promise<CombinedSettings> {
+  return apiGetJson<CombinedSettings>('/settings/all', 'Failed to load settings');
 }
 
 export async function getUserInfo(): Promise<UserInfo> {
-  const res = await apiFetch('/user/me');
-  if (!res.ok) return apiError(res, 'Failed to load user info');
-  return res.json();
+  return apiGetJson<UserInfo>('/user/me', 'Failed to load user info');
 }
 
 export async function savePageSettings(settings: PageSettings): Promise<void> {
-  const res = await apiFetch('/page/settings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(settings)
-  });
-  if (!res.ok) return apiError(res, 'Failed to save page settings');
+  await apiSendJson('/settings/page', 'POST', settings, 'Failed to save page settings');
 }
 
 export async function getPageSettings(): Promise<PageSettings> {
-  const res = await apiFetch('/page/settings');
-  if (!res.ok) return apiError(res, 'Failed to load page settings');
-  return res.json();
+  return apiGetJson<PageSettings>('/settings/page', 'Failed to load page settings');
 }
 
 export async function updateEmail(email: string): Promise<void> {
-  const res = await apiFetch('/user/email', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email })
-  });
-  if (!res.ok) return apiError(res, 'Failed to update email');
+  await apiSendJson('/user/email', 'PUT', { email }, 'Failed to update email');
 }
 
 export interface ProgressRecord {
@@ -78,10 +153,14 @@ export interface ProgressRecord {
 }
 
 export async function getProgress(): Promise<ProgressRecord[]> {
-  const res = await apiFetch('/cw/progress');
-  if (!res.ok) return apiError(res, 'Failed to load progress');
-  const data = (await res.json()) as { data?: ProgressRecord[] };
-  return data.data ?? [];
+  const data = await apiGetJson<{
+    data?: Array<Omit<ProgressRecord, 'lesson'> & { lesson: string | number }>;
+  }>('/cw/progress', 'Failed to load progress');
+
+  return (data.data ?? []).map((record) => ({
+    ...record,
+    lesson: String(record.lesson)
+  }));
 }
 
 export async function submitProgress(
@@ -90,19 +169,19 @@ export async function submitProgress(
   effWpm: number,
   accuracy: number
 ): Promise<void> {
-  const res = await apiFetch('/cw/progress', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lesson, char_wpm: charWpm, eff_wpm: effWpm, accuracy })
-  });
-  if (!res.ok) return apiError(res, 'Failed to submit progress');
+  await apiSendJson(
+    '/cw/progress',
+    'PUT',
+    { lesson, char_wpm: charWpm, eff_wpm: effWpm, accuracy },
+    'Failed to submit progress'
+  );
 }
 
 export async function updatePassword(oldPassword: string, newPassword: string): Promise<void> {
-  const res = await apiFetch('/user/password', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
-  });
-  if (!res.ok) return apiError(res, 'Failed to update password');
+  await apiSendJson(
+    '/user/password',
+    'PUT',
+    { old_password: oldPassword, new_password: newPassword },
+    'Failed to update password'
+  );
 }

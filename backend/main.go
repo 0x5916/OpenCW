@@ -80,37 +80,36 @@ func main() {
 
 		protected := v1.Group("/")
 		protected.Use(middlewares.AuthRequired())
+		protected.Use(middlewares.LoadUser(databases.DB))
 		{
-			cw := protected.Group("/cw")
-			cw.Use(middlewares.LoadUser(databases.DB))
-			cwSettingsHandler := handlers.CWSettingsHandler{DB: databases.DB}
+			settings := protected.Group("/settings")
+			settingsHandler := handlers.SettingsHandler{DB: databases.DB}
 			{
-				cw.GET("/settings", cwSettingsHandler.GetSettings)
-				cw.POST("/settings", cwSettingsHandler.UpdateSettings)
+				settings.GET("/all", settingsHandler.GetAllSettings)
+				settings.GET("/cw", settingsHandler.GetCWSettings)
+				settings.GET("/page", settingsHandler.GetPageSettings)
+				settings.POST("/cw", settingsHandler.UpdateCWSettings)
+				settings.POST("/page", settingsHandler.UpdatePageSettings)
 			}
-			page := protected.Group("/page")
-			page.Use(middlewares.LoadUser(databases.DB))
-			pageSettingsHandler := handlers.PageSettingsHandler{DB: databases.DB}
-			{
-				page.GET("/settings", pageSettingsHandler.GetSettings)
-				page.POST("/settings", pageSettingsHandler.UpdateSettings)
-			}
+
 			user := protected.Group("/user")
-			user.Use(middlewares.LoadUser(databases.DB))
 			userHandler := handlers.UserHandler{DB: databases.DB}
 			{
 				user.GET("/me", userHandler.GetUserInfo)
 				user.PUT("/email", userHandler.UpdateEmail)
 				user.PUT("/password", userHandler.UpdatePassword)
 			}
+
+			cwProgress := protected.Group("/cw")
 			progressHandler := handlers.ProgressHandler{DB: databases.DB}
 			{
-				cw.GET("progress", progressHandler.GetAllProgress)
-				cw.PUT("progress", progressHandler.AddProgress)
+				cwProgress.GET("/progress", progressHandler.GetAllProgress)
+				cwProgress.PUT("/progress", progressHandler.AddProgress)
 			}
 
 			protected.GET("/hello", func(c *gin.Context) {
-				c.JSON(http.StatusOK, common.MessageResponse{Message: "Hello, authenticated user!"})
+				user := c.MustGet("user").(models.User)
+				c.JSON(http.StatusOK, common.MessageResponse{Message: "Hello, authenticated user {" + user.Username + "}!"})
 			})
 		}
 	}

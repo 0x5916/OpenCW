@@ -1,6 +1,5 @@
 import {
-  getCWSettings,
-  getPageSettings,
+  getSettings,
   saveCWSettings,
   savePageSettings,
   type CWSettings,
@@ -93,6 +92,6 @@ export async function syncSettingsToServer(cw: CWSettings, page: PageSettings): 
 }
 
 export async function restoreSettingsFromServer(): Promise<{ cw: CWSettings; page: PageSettings }> {
-  const [cw, page] = await Promise.all([getCWSettings(), getPageSettings()]);
-  return { cw, page };
+  const settings = await getSettings();
+  return { cw: settings.cw_settings, page: settings.page_settings };
 }
