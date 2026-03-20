@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"opencw/utils"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,7 +14,6 @@ import (
 	"opencw/configs"
 	"opencw/databases"
 	"opencw/handlers/v1"
-	"opencw/handlers/v1/common"
 	"opencw/middlewares"
 	"opencw/models"
 
@@ -33,7 +33,7 @@ func main() {
 
 	r := gin.Default()
 
-	if err := common.RegisterCustomValidators(); err != nil {
+	if err := utils.RegisterCustomValidators(); err != nil {
 		slog.Error("Failed to register custom validators", "err", err)
 		os.Exit(1)
 	}
@@ -109,7 +109,7 @@ func main() {
 
 			protected.GET("/hello", func(c *gin.Context) {
 				user := c.MustGet("user").(models.User)
-				c.JSON(http.StatusOK, common.MessageResponse{Message: "Hello, authenticated user {" + user.Username + "}!"})
+				c.JSON(http.StatusOK, utils.MessageResponse{Message: "Hello, authenticated user {" + user.Username + "}!"})
 			})
 		}
 	}

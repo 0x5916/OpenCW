@@ -3,8 +3,8 @@ package middlewares
 import (
 	"log/slog"
 	"net/http"
+	"opencw/utils"
 
-	"opencw/handlers/v1/common"
 	"opencw/models"
 
 	"github.com/gin-gonic/gin"
@@ -18,7 +18,7 @@ func LoadUser(db *gorm.DB) gin.HandlerFunc {
 		var user models.User
 		if err := db.Take(&user, userID).Error; err != nil {
 			slog.Warn("LoadUser failed: user not found", "user_id", userID, "err", err)
-			c.JSON(http.StatusUnauthorized, common.ErrorResponse{Error: "User not found"})
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{Error: "User not found"})
 			c.Abort()
 			return
 		}

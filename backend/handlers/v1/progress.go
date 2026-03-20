@@ -3,6 +3,7 @@ package handlers
 import (
 	"log/slog"
 	"net/http"
+	"opencw/utils"
 
 	"opencw/handlers/v1/common"
 	"opencw/models"
@@ -18,10 +19,10 @@ type ProgressHandler struct {
 func (h ProgressHandler) GetAllProgress(c *gin.Context) {
 	user := c.MustGet("user").(*models.User)
 
-	var progresses []common.ProgressResponse
+	var progresses []utils.ProgressResponse
 	if err := h.DB.Model(&models.Progress{}).Find(&progresses, "user_id = ?", user.ID).Error; err != nil {
 		slog.Error("Failed to query progress", "user_id", user.ID, "err", err)
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{Error: "failed to query progress"})
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{Error: "failed to query progress"})
 		return
 	}
 
@@ -33,7 +34,7 @@ func (h ProgressHandler) AddProgress(c *gin.Context) {
 
 	var input common.ProgressInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: "Invalid request body"})
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse{Error: "Invalid request body"})
 		return
 	}
 
@@ -47,8 +48,8 @@ func (h ProgressHandler) AddProgress(c *gin.Context) {
 
 	if err := h.DB.Create(&progress).Error; err != nil {
 		slog.Error("Failed to create progress", "user_id", user.ID, "lesson", progress.Lesson, "err", err)
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{Error: "Failed to create progress"})
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{Error: "Failed to create progress"})
 		return
 	}
-	c.JSON(http.StatusCreated, common.MessageResponse{Message: "Progress Created"})
+	c.JSON(http.StatusCreated, utils.MessageResponse{Message: "Progress Created"})
 }

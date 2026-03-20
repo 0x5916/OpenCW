@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"opencw/utils"
 	"strconv"
 	"strings"
 
 	"opencw/configs"
-	"opencw/handlers/v1/common"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -19,7 +19,7 @@ func AuthRequired() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			slog.Warn("Auth required: missing header", "ip", c.ClientIP(), "path", c.Request.RequestURI)
-			c.JSON(http.StatusUnauthorized, common.ErrorResponse{Error: "Authorization header is required"})
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{Error: "Authorization header is required"})
 			c.Abort()
 			return
 		}
@@ -28,7 +28,7 @@ func AuthRequired() gin.HandlerFunc {
 
 		if tokenString == authHeader {
 			slog.Warn("Auth required: invalid header format", "ip", c.ClientIP(), "path", c.Request.RequestURI)
-			c.JSON(http.StatusUnauthorized, common.ErrorResponse{Error: "Authorization header must be in the format 'Bearer <token>'"})
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{Error: "Authorization header must be in the format 'Bearer <token>'"})
 			c.Abort()
 			return
 		}
@@ -43,7 +43,7 @@ func AuthRequired() gin.HandlerFunc {
 
 		if err != nil || !token.Valid {
 			slog.Warn("Auth required: invalid token", "ip", c.ClientIP(), "path", c.Request.RequestURI, "err", err)
-			c.JSON(http.StatusUnauthorized, common.ErrorResponse{Error: "Invalid token"})
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{Error: "Invalid token"})
 			c.Abort()
 			return
 		}
@@ -51,7 +51,7 @@ func AuthRequired() gin.HandlerFunc {
 		userID, err := strconv.ParseUint(claims.Subject, 10, 32)
 		if err != nil {
 			slog.Warn("Auth required: invalid token subject", "ip", c.ClientIP(), "subject", claims.Subject, "err", err)
-			c.JSON(http.StatusUnauthorized, common.ErrorResponse{Error: "Invalid token"})
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{Error: "Invalid token"})
 			c.Abort()
 			return
 		}
