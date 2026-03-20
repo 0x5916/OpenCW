@@ -196,7 +196,7 @@
       </p>
     </div>
   {:else if loading}
-    <LoadingSpinner variant="dots" padded />
+    <LoadingSpinner variant="spinner" padded />
   {:else if loadError}
     <ErrorAlert message={loadError} />
   {:else}
