@@ -60,7 +60,7 @@ func main() {
 		c.Next()
 	})
 
-	v1 := r.Group("/api/v1")
+	v1 := r.Group("/v1")
 	{
 		// Health check endpoint
 		v1.GET("/health", func(c *gin.Context) {
