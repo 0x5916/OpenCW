@@ -57,6 +57,7 @@
           startDelay = cwSettings.start_delay;
 
           chosenLesson = applyClientPageSettings(page, LESSONS.length, setLangPreference, {
+            applyTheme: false,
             applyLanguage: false
           });
         })

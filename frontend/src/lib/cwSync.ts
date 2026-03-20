@@ -55,14 +55,17 @@ export function applyClientPageSettings(
   page: PageSettings,
   maxLesson: number,
   onLocale: (preference: LocalePreference, options?: { navigate?: boolean }) => void,
-  options: { applyLanguage?: boolean; navigate?: boolean } = {}
+  options: { applyTheme?: boolean; applyLanguage?: boolean; navigate?: boolean } = {}
 ): number {
   const lesson = normalizeLesson(page.cur_lesson, maxLesson);
   const language = normalizeLocalePreference(page.language);
+  const applyTheme = options.applyTheme ?? true;
   const applyLanguage = options.applyLanguage ?? true;
 
   if (typeof localStorage !== 'undefined') {
-    localStorage.setItem('theme', page.theme);
+    if (applyTheme) {
+      localStorage.setItem('theme', page.theme);
+    }
     localStorage.setItem('learn.lesson', String(lesson));
     if (applyLanguage) {
       localStorage.setItem(LOCALE_PREFERENCE_STORAGE_KEY, language);
@@ -70,8 +73,10 @@ export function applyClientPageSettings(
   }
 
   if (typeof document !== 'undefined') {
-    if (page.theme === 'auto') document.documentElement.removeAttribute('data-theme');
-    else document.documentElement.setAttribute('data-theme', page.theme);
+    if (applyTheme) {
+      if (page.theme === 'auto') document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme', page.theme);
+    }
 
     document.cookie = `${LESSON_COOKIE}=${lesson}; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
 
