@@ -3,6 +3,7 @@
   import {
     saveCWSettings,
     getUserInfo,
+    updateCallSign,
     updateEmail,
     updatePassword,
     savePageSettings,
@@ -27,7 +28,13 @@
 
   // Account section
   let username = $state('');
+  let callSign = $state('');
+  let initialCallSign = $state('');
+  let callSignSaving = $state(false);
+  let callSignError = $state('');
+  let callSignSaved = $state(false);
   let email = $state('');
+  let initialEmail = $state('');
   let emailSaving = $state(false);
   let emailError = $state('');
   let emailSaved = $state(false);
@@ -42,23 +49,47 @@
 
   // Page settings section
   let pageTheme = $state<Theme>('auto');
+  let initialPageTheme = $state<Theme>('auto');
   let pageLanguage = $state<LocalePreference>(langPreference.value);
+  let initialPageLanguage = $state<LocalePreference>(langPreference.value);
   let pageLesson = $state(1);
+  let initialPageLesson = $state(1);
   let pageSaving = $state(false);
   let pageError = $state('');
   let pageSaved = $state(false);
 
   // CW Settings section
   let charWpm = $state(20);
+  let initialCharWpm = $state(20);
   let effWpm = $state(12);
+  let initialEffWpm = $state(12);
   let freq = $state(600);
+  let initialFreq = $state(600);
   let startDelay = $state(0);
+  let initialStartDelay = $state(0);
   let cwSaving = $state(false);
   let cwError = $state('');
   let cwSaved = $state(false);
 
   let loading = $state(true);
   let loadError = $state('');
+
+  const passwordDirty = $derived(
+    currentPassword.trim() !== '' || newPassword.trim() !== '' || confirmPassword.trim() !== ''
+  );
+  const callSignDirty = $derived(callSign.trim().toUpperCase() !== initialCallSign);
+  const emailDirty = $derived(email.trim() !== initialEmail.trim());
+  const pageDirty = $derived(
+    pageTheme !== initialPageTheme ||
+      pageLanguage !== initialPageLanguage ||
+      normalizeLesson(pageLesson, LESSONS.length) !== initialPageLesson
+  );
+  const cwDirty = $derived(
+    charWpm !== initialCharWpm ||
+      effWpm !== initialEffWpm ||
+      freq !== initialFreq ||
+      startDelay !== initialStartDelay
+  );
 
   $effect(() => {
     if ($user) {
@@ -75,18 +106,47 @@
       const [info, settings] = await Promise.all([getUserInfo(), restoreSettingsFromServer()]);
       const { cw, page } = settings;
       username = info.username;
+      callSign = (info.call_sign ?? '').trim().toUpperCase();
+      initialCallSign = callSign;
       email = info.email;
+      initialEmail = info.email;
       charWpm = cw.char_wpm;
+      initialCharWpm = cw.char_wpm;
       effWpm = cw.eff_wpm;
+      initialEffWpm = cw.eff_wpm;
       freq = cw.freq;
+      initialFreq = cw.freq;
       startDelay = cw.start_delay;
+      initialStartDelay = cw.start_delay;
       pageTheme = page.theme;
+      initialPageTheme = page.theme;
       pageLanguage = normalizeLocalePreference(page.language);
+      initialPageLanguage = pageLanguage;
       pageLesson = normalizeLesson(page.cur_lesson, LESSONS.length);
+      initialPageLesson = pageLesson;
     } catch (e) {
       loadError = localizeApiError(e, () => m.settings_load_error());
     } finally {
       loading = false;
+    }
+  }
+
+  async function saveCallSign(e: SubmitEvent) {
+    e.preventDefault();
+    if (!callSignDirty) return;
+    callSignSaving = true;
+    callSignError = '';
+    callSignSaved = false;
+    try {
+      await updateCallSign(callSign.trim().toUpperCase());
+      callSign = callSign.trim().toUpperCase();
+      initialCallSign = callSign;
+      callSignSaved = true;
+      setTimeout(() => (callSignSaved = false), 3000);
+    } catch (err) {
+      callSignError = localizeApiError(err, () => m.settings_save_error());
+    } finally {
+      callSignSaving = false;
     }
   }
 
@@ -96,11 +156,13 @@
 
   async function saveEmail(e: SubmitEvent) {
     e.preventDefault();
+    if (!emailDirty) return;
     emailSaving = true;
     emailError = '';
     emailSaved = false;
     try {
       await updateEmail(email);
+      initialEmail = email;
       emailSaved = true;
       setTimeout(() => (emailSaved = false), 3000);
     } catch (err) {
@@ -112,11 +174,16 @@
 
   async function saveCW(e: SubmitEvent) {
     e.preventDefault();
+    if (!cwDirty) return;
     cwSaving = true;
     cwError = '';
     cwSaved = false;
     try {
       await saveCWSettings({ char_wpm: charWpm, eff_wpm: effWpm, freq, start_delay: startDelay });
+      initialCharWpm = charWpm;
+      initialEffWpm = effWpm;
+      initialFreq = freq;
+      initialStartDelay = startDelay;
       cwSaved = true;
       setTimeout(() => (cwSaved = false), 3000);
     } catch (err) {
@@ -128,6 +195,7 @@
 
   async function savePassword(e: SubmitEvent) {
     e.preventDefault();
+    if (!passwordDirty) return;
     passwordSaving = true;
     passwordError = '';
     passwordSaved = false;
@@ -160,6 +228,7 @@
 
   async function savePage(e: SubmitEvent) {
     e.preventDefault();
+    if (!pageDirty) return;
     pageSaving = true;
     pageError = '';
     pageSaved = false;
@@ -173,6 +242,9 @@
       };
       await savePageSettings(pagePayload);
       applyClientPageSettings(pagePayload, LESSONS.length, setLangPreference);
+      initialPageTheme = pageTheme;
+      initialPageLanguage = pageLanguage;
+      initialPageLesson = pageLesson;
       pageSaved = true;
       setTimeout(() => (pageSaved = false), 3000);
     } catch (err) {
@@ -204,25 +276,58 @@
     <!-- Account -->
     <section class="card settings-card">
       <h2 class="card-label">{m.settings_account_section()}</h2>
-      <form onsubmit={saveEmail} class="settings-form">
+      <form onsubmit={saveCallSign} class="settings-form">
         <label class="settings-field">
           <span class="label-text">{m.settings_username_label()}</span>
           <input type="text" value={username} class="input" disabled />
         </label>
         <label class="settings-field">
+          <span class="label-text">{m.settings_call_sign_label()}</span>
+          <div class="settings-input-action">
+            <input
+              type="text"
+              bind:value={callSign}
+              class="input"
+              placeholder={m.settings_call_sign_placeholder()}
+              maxlength="32"
+            />
+            {#if callSignDirty || callSignSaving || callSignSaved}
+              <button type="submit" class="btn-primary settings-btn-compact" disabled={callSignSaving}>
+                {callSignSaved
+                  ? m.settings_saved()
+                  : callSignSaving
+                    ? m.settings_saving()
+                    : m.settings_update()}
+              </button>
+            {/if}
+          </div>
+        </label>
+        {#if callSignError}
+          <p class="settings-error">⚠ {callSignError}</p>
+        {/if}
+      </form>
+
+      <hr class="settings-divider" />
+
+      <form onsubmit={saveEmail} class="settings-form">
+        <label class="settings-field">
           <span class="label-text">{m.settings_email_label()}</span>
-          <input type="email" bind:value={email} class="input" required />
+          <div class="settings-input-action">
+            <input type="email" bind:value={email} class="input" required />
+            {#if emailDirty || emailSaving || emailSaved}
+              <button type="submit" class="btn-primary settings-btn-compact" disabled={emailSaving}>
+                {emailSaved
+                  ? m.settings_saved()
+                  : emailSaving
+                    ? m.settings_saving()
+                    : m.settings_update()}
+              </button>
+            {/if}
+          </div>
         </label>
         {#if emailError}
           <p class="settings-error">⚠ {emailError}</p>
         {/if}
-        <button type="submit" class="btn-primary" disabled={emailSaving}>
-          {emailSaved
-            ? m.settings_saved()
-            : emailSaving
-              ? m.settings_saving()
-              : m.settings_email_save()}
-        </button>
       </form>
 
       <hr class="settings-divider" />
@@ -265,13 +370,17 @@
         {#if passwordError}
           <p class="settings-error">⚠ {passwordError}</p>
         {/if}
-        <button type="submit" class="btn-primary" disabled={passwordSaving}>
-          {passwordSaved
-            ? m.settings_saved()
-            : passwordSaving
-              ? m.settings_saving()
-              : m.settings_password_update()}
-        </button>
+        {#if passwordDirty || passwordSaving || passwordSaved}
+          <div class="settings-action-row">
+            <button type="submit" class="btn-primary settings-btn-compact" disabled={passwordSaving}>
+              {passwordSaved
+                ? m.settings_saved()
+                : passwordSaving
+                  ? m.settings_saving()
+                  : m.settings_update()}
+            </button>
+          </div>
+        {/if}
       </form>
     </section>
 
@@ -303,9 +412,13 @@
         {#if pageError}
           <p class="settings-error">⚠ {pageError}</p>
         {/if}
-        <button type="submit" class="btn-primary" disabled={pageSaving}>
-          {pageSaved ? m.settings_saved() : pageSaving ? m.settings_saving() : m.settings_save()}
-        </button>
+        {#if pageDirty || pageSaving || pageSaved}
+          <div class="settings-action-row">
+            <button type="submit" class="btn-primary settings-btn-compact" disabled={pageSaving}>
+              {pageSaved ? m.settings_saved() : pageSaving ? m.settings_saving() : m.settings_update()}
+            </button>
+          </div>
+        {/if}
       </form>
     </section>
 
@@ -332,9 +445,13 @@
         {#if cwError}
           <p class="settings-error">⚠ {cwError}</p>
         {/if}
-        <button type="submit" class="btn-primary" disabled={cwSaving}>
-          {cwSaved ? m.settings_saved() : cwSaving ? m.settings_saving() : m.settings_save()}
-        </button>
+        {#if cwDirty || cwSaving || cwSaved}
+          <div class="settings-action-row">
+            <button type="submit" class="btn-primary settings-btn-compact" disabled={cwSaving}>
+              {cwSaved ? m.settings_saved() : cwSaving ? m.settings_saving() : m.settings_update()}
+            </button>
+          </div>
+        {/if}
       </form>
     </section>
   {/if}
@@ -380,5 +497,36 @@
     font-size: 1rem;
     font-weight: 700;
     color: var(--text-primary);
+  }
+  .settings-input-action {
+    display: flex;
+    gap: 0.6rem;
+    align-items: stretch;
+  }
+  .settings-input-action .input {
+    flex: 1;
+    min-width: 0;
+  }
+  .settings-action-row {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .settings-btn-compact {
+    padding: var(--space-sm) 0.9rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    min-height: calc(1.25rem + (var(--space-sm) * 2) + 2px);
+    width: auto;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 720px) {
+    .settings-input-action {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .settings-btn-compact {
+      width: 100%;
+    }
   }
 </style>

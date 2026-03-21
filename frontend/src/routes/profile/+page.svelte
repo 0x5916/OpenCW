@@ -9,7 +9,9 @@
     Radio,
     Calendar,
     Activity,
-    Zap
+    Zap,
+    Check,
+    X
   } from 'lucide-svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
@@ -22,6 +24,8 @@
 
   let username = $state('');
   let email = $state('');
+  let callSign = $state<string | null>(null);
+  let emailVerified = $state(false);
   let memberSince = $state('');
   let memberCreatedAtMs = $state<number | null>(null);
   let selectedYear = $state(new Date().getFullYear());
@@ -141,6 +145,8 @@
       const [info, cw, prog] = await Promise.all([getUserInfo(), getCWSettings(), getProgress()]);
       username = info.username;
       email = info.email;
+      callSign = info.call_sign;
+      emailVerified = info.email_verified;
       memberSince = new Date(info.created_at).toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'long',
@@ -348,6 +354,24 @@
       <div class="profile-header-info">
         <h1 class="profile-username">{username}</h1>
         <p class="profile-email">{email}</p>
+        <div class="profile-meta-row">
+          <p class="profile-meta-item">
+            <span class="profile-meta-label">{m.profile_call_sign_label()}:</span>
+            <span>{callSign ?? m.profile_call_sign_none()}</span>
+          </p>
+          <p class="profile-meta-item">
+            {#if emailVerified}
+              <Check size={14} class="profile-status-icon profile-status-icon-ok" aria-hidden="true" />
+            {:else}
+              <X size={14} class="profile-status-icon profile-status-icon-bad" aria-hidden="true" />
+            {/if}
+            <span
+              >{emailVerified
+                ? m.profile_email_status_verified()
+                : m.profile_email_status_not_verified()}</span
+            >
+          </p>
+        </div>
         <p class="profile-joined">
           <Calendar size={13} />
           {m.profile_member_since()}: {memberSince}
@@ -560,6 +584,33 @@
     font-size: 0.8rem;
     color: var(--text-muted);
     margin: 0;
+  }
+  .profile-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin: 0;
+  }
+  .profile-meta-item {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: inline-flex;
+    gap: 0.25rem;
+    align-items: center;
+  }
+  .profile-meta-label {
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+  :global(.profile-status-icon) {
+    flex-shrink: 0;
+  }
+  :global(.profile-status-icon-ok) {
+    color: #22c55e;
+  }
+  :global(.profile-status-icon-bad) {
+    color: #ef4444;
   }
 
   /* Activity heatmap */

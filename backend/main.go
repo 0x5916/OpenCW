@@ -97,6 +97,7 @@ func main() {
 			userHandler := handlers.UserHandler{DB: databases.DB}
 			{
 				user.GET("/me", userHandler.GetUserInfo)
+				user.PUT("/callsign", userHandler.UpdateCallSign)
 				user.PUT("/email", userHandler.UpdateEmail)
 				user.PUT("/password", userHandler.UpdatePassword)
 			}

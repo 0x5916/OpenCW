@@ -122,8 +122,10 @@ export interface PageSettings {
 }
 
 export interface UserInfo {
+  call_sign: string | null;
   username: string;
   email: string;
+  email_verified: boolean;
   created_at: string;
 }
 
@@ -158,6 +160,10 @@ export async function getPageSettings(): Promise<PageSettings> {
 
 export async function updateEmail(email: string): Promise<void> {
   await apiSendJson('/user/email', 'PUT', { email }, 'INTERNAL_SERVER_ERROR');
+}
+
+export async function updateCallSign(callSign: string): Promise<void> {
+  await apiSendJson('/user/callsign', 'PUT', { call_sign: callSign }, 'INTERNAL_SERVER_ERROR');
 }
 
 export interface ProgressRecord {
