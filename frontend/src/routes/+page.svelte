@@ -14,7 +14,7 @@
   <p class="hero-sub">
     {m.home_hero_subtitle_pre()}<a
       href={href('/about')}
-      style="color: var(--accent); font-weight: 600;">{m.home_hero_koch()}</a
+      class="hero-link">{m.home_hero_koch()}</a
     >{m.home_hero_subtitle_post()}
   </p>
   <a href={href('/morse/learn')} class="btn-cta">{m.home_cta()}</a>
@@ -24,7 +24,7 @@
 
 <!-- Feature cards -->
 <section class="feature-grid">
-  <a href={href('/about')} class="card" style="text-decoration: none; color: inherit;">
+  <a href={href('/about')} class="card feature-link-card">
     <div class="feature-icon" aria-hidden="true"><Radio /></div>
     <h2 class="feature-title">{m.home_feature_koch_title()}</h2>
     <p class="feature-body">{m.home_feature_koch_body()}</p>
@@ -48,13 +48,13 @@
   <div>
     <h2 class="section-title">{m.home_about_site_title()}</h2>
     <h3 class="sub-title">{m.home_about_site_q1()}</h3>
-    <p class="body-text mb-4">{m.home_about_site_a1()}</p>
+    <p class="body-text about-answer">{m.home_about_site_a1()}</p>
     <h3 class="sub-title">{m.home_about_site_q2()}</h3>
-    <p class="body-text mb-4">{m.home_about_site_a2()}</p>
+    <p class="body-text about-answer">{m.home_about_site_a2()}</p>
   </div>
   <div>
     <h2 class="section-title">{m.home_about_me_title()}</h2>
-    <p class="body-text mb-3">{m.home_about_me_p1()}</p>
+    <p class="body-text about-bio">{m.home_about_me_p1()}</p>
     <p class="body-text">
       {m.home_about_me_p2_pre()}
       <a href="https://github.com/0x5916" class="link">{m.home_about_me_github()}</a>.
@@ -86,6 +86,24 @@
     margin-left: auto;
     margin-right: auto;
     margin-bottom: 2rem;
+  }
+
+  .hero-link {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .feature-link-card {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .about-answer {
+    margin-bottom: 1rem;
+  }
+
+  .about-bio {
+    margin-bottom: 0.75rem;
   }
 
   .about-grid {

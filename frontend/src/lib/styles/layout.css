@@ -99,15 +99,6 @@
 	}
 }
 
-.navbar-links {
-	display: flex;
-	align-items: center;
-	gap: 1.5rem;
-	font-size: 0.875rem;
-	line-height: 1.25rem;
-	font-weight: 500;
-}
-
 .navbar-link {
 	position: relative;
 	display: inline-flex;
@@ -154,39 +145,6 @@
 	height: 1.5rem;
 	background: var(--border-subtle);
 	margin: 0 0.35rem;
-}
-
-.navbar-btn-ghost,
-.navbar-btn-accent {
-	height: var(--nav-control-height);
-	box-sizing: border-box;
-	line-height: 1.25rem;
-	padding: 0 0.72rem;
-	font-size: 0.875rem;
-	font-weight: 500;
-	border-radius: 0.5rem;
-	border: none;
-	cursor: pointer;
-	transition: background 0.15s, color 0.15s;
-}
-
-.navbar-btn-ghost {
-	color: var(--text-secondary);
-	background: transparent;
-}
-
-.navbar-btn-ghost:hover {
-	background: var(--bg-inset);
-}
-
-.navbar-btn-accent {
-	background: var(--accent);
-	color: #000;
-	font-weight: 600;
-}
-
-.navbar-btn-accent:hover {
-	background: var(--accent-hover);
 }
 
 .user-menu-wrapper {
