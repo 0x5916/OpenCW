@@ -41,10 +41,12 @@ type MessageResponse struct {
 }
 
 type ErrorResponse struct {
+	Code  string `json:"code"`
 	Error string `json:"error"`
 }
 
 type HttpErrorResponse struct {
 	Status int
+	Code   string
 	Err    string
 }

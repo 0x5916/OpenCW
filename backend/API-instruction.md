@@ -1,137 +1,130 @@
-You are a senior backend engineer and technical writer. You have full access to this codebase. Your task is to autonomously read the source code and generate complete API documentation for frontend developers, saved as `API.md`.
+You are an expert Go API documentation generator for Gin framework projects.
 
----
+**CRITICAL INSTRUCTIONS**:
+1. **FIRST**: Use your file reading tool to read `main.go` from the project directory
+2. **THEN**: Parse all Gin router definitions (`r.GET()`, `r.POST()`, etc.)
+3. **OUTPUT**: Generate complete API documentation and write it to `API.md` in the same directory
 
-### Step 1 — Explore the Project
+**TOOL CALL REQUIRED** (do this immediately):
+```
+Read file: main.go
+Output file: API.md
+```
 
-Begin by reading the project structure. Then:
-1. Open and read `main.go` — identify the router, all middleware, and all route groups
-2. Follow every registered route to its handler file and read the full handler logic
-3. Read all request/response struct definitions referenced by those handlers
-4. Read all middleware (auth, rate limiting, etc.) to infer constraints
-5. Repeat until every registered route is fully understood
+**ANALYSIS STEPS** (execute after reading main.go):
+1. Extract ALL endpoints: method + path + handler function
+2. Parse handler functions for parameters (path `:id`, query `c.Query()`, body binding)
+3. Find ALL structs with `json:"..."` tags for schemas
+4. Detect auth middleware and validation logic
+5. **ERROR CODES**: Scan for string error codes in `c.JSON()` calls (e.g. `gin.H{"error": "USER_NOT_FOUND"}`)
+6. Generate cURL examples for each endpoint
+7. If error constants exist (e.g. `const ErrUserNotFound = "USER_NOT_FOUND"`), extract them all
 
-Do not skip any file. If a route references a function in another file, go read that file.
+**API.md STRUCTURE** (write this EXACT format):
 
----
-
-### Step 2 — Extract Per-Endpoint Information
-
-For each endpoint, extract:
-- HTTP method and full path (with route group prefixes)
-- All parameters: path, query, and body — name, type, required, validation rules
-- Required request headers
-- Successful response body — all fields, types, and meanings
-- All possible error responses with status codes
-- Auth requirements from middleware
-- Rate limiting rules if present
-
----
-
-### Step 3 — Write `API.md`
-
-Write the entire output as valid Markdown, ready to save as `API.md`.
-
-Start the file with:
-
+```markdown
 # API Documentation
+*Generated: $(date)*
+*Base URL: http://localhost:8080*
 
-**Base URL:** `https://api.example.com`
-> Last updated: [today's date]
+## Endpoints Overview
+| Method | Path              | Description              |
+|--------|-------------------|--------------------------|
+| POST   | /api/v1/users     | Create new user          |
+| GET    | /api/v1/users/:id | Get user by ID           |
 
-## Table of Contents
-[generate based on all discovered endpoints, grouped by resource]
+## User Management
 
----
+### POST /api/v1/users
+**Creates a new user account**
 
-Then document each endpoint using this template:
+**Authentication**: Bearer JWT (Admin role required)
 
----
+**Path Parameters**: None
 
-## [METHOD] `[full path]`
+**Query Parameters**: None
 
-**Description:** [Plain English explanation of what this endpoint does]
-
-**Authentication:** [Required / Not required — specify method if required]
-
-### Request
-
-**Headers:**
-| Header | Required | Description |
-|---|---|---|
-
-**Path Parameters:**
-| Name | Type | Required | Description |
-|---|---|---|---|
-
-**Query Parameters:**
-| Name | Type | Required | Default | Description |
-|---|---|---|---|---|
-
-**Request Body** (`application/json`):
-\```json
+**Request Body**:
+```json
 {
-  // realistic example payload
+  "username": "alan_yeung",
+  "email": "alan@example.com",
+  "password": "min8chars123"
 }
-\```
+```
+*Validation: username (3-20 chars), email (valid format), password (min 8 chars)*
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-
-### Response
-
-**Success `[status code]`:**
-\```json
+**Response (201)**:
+```json
 {
-  // realistic example response
+  "id": 1,
+  "username": "alan_yeung",
+  "email": "alan@example.com",
+  "created_at": "2026-03-21T18:30:00Z"
 }
-\```
+```
 
-| Field | Type | Description |
-|---|---|---|
+**Error Responses**:
+| Status | Error Code              | Message                          |
+|--------|-------------------------|----------------------------------|
+| 400    | `INVALID_REQUEST`       | "Request body is malformed"      |
+| 401    | `UNAUTHORIZED`          | "Missing or invalid token"       |
+| 403    | `FORBIDDEN`             | "Admin role required"            |
+| 409    | `USERNAME_TAKEN`        | "Username already exists"        |
+| 409    | `EMAIL_EXISTS`          | "Email already registered"       |
+| 422    | `VALIDATION_FAILED`     | "Field validation errors"        |
+| 500    | `INTERNAL_SERVER_ERROR` | "Unexpected server error"        |
 
-**Errors:**
-| Status Code | Meaning |
-|---|---|
+**Error Response Shape**:
+```json
+{
+  "error": "USERNAME_TAKEN",
+  "message": "Username already exists",
+  "status": 409
+}
+```
 
-### Example (cURL)
-\```bash
-curl -X [METHOD] https://api.example.com/[path] \
-  -H "Authorization: Bearer <token>" \
+**Validation Error Shape** (422):
+```json
+{
+  "error": "VALIDATION_FAILED",
+  "message": "Field validation errors",
+  "status": 422,
+  "details": {
+    "username": "must be 3-20 characters",
+    "password": "must contain 8+ characters"
+  }
+}
+```
+
+**Example cURL**:
+```bash
+curl -X POST http://localhost:8080/api/v1/users \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
   -H "Content-Type: application/json" \
-  -d '{...}'
-\```
+  -d '{
+    "username": "alan_yeung",
+    "email": "alan@example.com",
+    "password": "securepass123"
+  }'
+```
 
----
+### GET /api/v1/users/:id
+**Retrieves a single user by ID**
 
-Group all endpoints by resource to match the route groups in `main.go` (e.g., `## Auth`, `## Users`).
+[... repeat pattern for each endpoint ...]
 
----
+## Pagination Pattern
+All list endpoints support:
+- `?page=1&limit=20` (default: page 1, limit 20)
+- Response includes `{"data": [...], "total": 150, "page": 1, "pages": 8}`
+```
 
-### Step 4 — Append Global Error Reference
+**EXECUTE NOW**:
+1. ✅ Call file read tool for `main.go`
+2. ✅ Extract ALL endpoints, structs, error codes from your actual code
+3. ✅ Generate consistent error tables with string codes
+4. ✅ Write complete `API.md` file
+5. ✅ Confirm: "✅ API.md generated with [X] endpoints documented"
 
-At the bottom of `API.md`, always append:
-
-## Error Reference
-
-| Status Code | Meaning |
-|---|---|
-| 400 | Bad Request — Invalid or missing parameters |
-| 401 | Unauthorized — Missing or invalid token |
-| 403 | Forbidden — Insufficient permissions |
-| 404 | Not Found — Resource does not exist |
-| 429 | Too Many Requests — Rate limit exceeded |
-| 500 | Internal Server Error — Unexpected server failure |
-
----
-
-### Writing Rules
-- Audience is frontend developers — never expose internal implementation details
-- Use plain, active-voice English
-- Use realistic example values, never "foo", "test", or "123"
-- Note any response field that may be unintuitive to a frontend developer
-- Mark deprecated fields with ⚠️ **Deprecated**
-
----
-
-Begin now. Start with `main.go`, read all referenced files, and produce the complete `API.md`.
+**Begin tool call immediately — read main.go now.**

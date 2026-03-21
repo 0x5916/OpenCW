@@ -17,7 +17,7 @@ func LoadUser(db *gorm.DB) gin.HandlerFunc {
 		var user models.User
 		if err := db.Take(&user, userID).Error; err != nil {
 			slog.Warn("LoadUser failed: user not found", "user_id", userID, "err", err)
-			c.JSON(http.StatusUnauthorized, common.ErrorResponse{Error: "User not found"})
+			c.JSON(http.StatusUnauthorized, common.NewErrorResponse(common.ErrorCodeUserNotFound, "User not found"))
 			c.Abort()
 			return
 		}

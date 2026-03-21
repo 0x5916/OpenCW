@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://localhost:8080/api/v1/settings/cw
+  url: http://localhost:8080/v1/settings/cw
   auth:
     type: bearer
     token: "{{access_token}}"

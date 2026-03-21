@@ -34,7 +34,7 @@ func (h SettingsHandler) GetAllSettings(c *gin.Context) {
 			}
 		} else {
 			slog.Error("Failed to get settings", "user_id", user.ID, "err", err)
-			c.JSON(http.StatusInternalServerError, common.ErrorResponse{Error: "Failed to get settings"})
+			c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeSettingsFetchFailed, "Failed to get settings"))
 			return
 		}
 	}
@@ -49,7 +49,7 @@ func (h SettingsHandler) GetAllSettings(c *gin.Context) {
 			}
 		} else {
 			slog.Error("Failed to get settings", "user_id", user.ID, "err", err)
-			c.JSON(http.StatusInternalServerError, common.ErrorResponse{Error: "Failed to get settings"})
+			c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeSettingsFetchFailed, "Failed to get settings"))
 			return
 		}
 	}
@@ -66,7 +66,7 @@ func (h SettingsHandler) GetCWSettings(c *gin.Context) {
 			c.JSON(http.StatusOK, common.FromCwSettingsModel(models.GetDefaultCWSettings()))
 			return
 		}
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{Error: "Failed to get settings"})
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeSettingsFetchFailed, "Failed to get settings"))
 		slog.Error("Failed to get settings", "user_id", user.ID, "err", err)
 		return
 	}
@@ -84,7 +84,7 @@ func (h SettingsHandler) GetPageSettings(c *gin.Context) {
 			return
 		}
 		slog.Error("Failed to get settings", "user_id", user.ID, "err", err)
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{Error: "Failed to get settings"})
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeSettingsFetchFailed, "Failed to get settings"))
 		return
 	}
 
@@ -94,7 +94,7 @@ func (h SettingsHandler) GetPageSettings(c *gin.Context) {
 func (h SettingsHandler) UpdateCWSettings(c *gin.Context) {
 	var input common.CWSettingsInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: "Invalid request body"})
+		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid request body"))
 		return
 	}
 
@@ -103,7 +103,7 @@ func (h SettingsHandler) UpdateCWSettings(c *gin.Context) {
 
 	if err := h.DB.Where(&settings).Assign(&input).FirstOrCreate(&settings).Error; err != nil {
 		slog.Error("Failed to update settings", "user_id", user.ID, "err", err)
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{Error: "Failed to update settings"})
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeSettingsUpdateFailed, "Failed to update settings"))
 		return
 	}
 
@@ -113,7 +113,7 @@ func (h SettingsHandler) UpdateCWSettings(c *gin.Context) {
 func (h SettingsHandler) UpdatePageSettings(c *gin.Context) {
 	var input common.PageSettingsInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{Error: "Invalid request body"})
+		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid request body"))
 		return
 	}
 
@@ -122,7 +122,7 @@ func (h SettingsHandler) UpdatePageSettings(c *gin.Context) {
 
 	if err := h.DB.Where(&settings).Assign(&input).FirstOrCreate(&settings).Error; err != nil {
 		slog.Error("Failed to update settings", "user_id", user.ID, "err", err)
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{Error: "Failed to update settings"})
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeSettingsUpdateFailed, "Failed to update settings"))
 		return
 	}
 

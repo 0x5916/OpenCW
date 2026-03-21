@@ -1,302 +1,623 @@
 # API Documentation
+*Generated: 2026-03-21*
+*Base URL: http://localhost:8080*
 
-**Base URL:** `https://api.example.com`
-> Last updated: March 21, 2026
+## Endpoints Overview
+| Method | Path                      | Description                             |
+|--------|---------------------------|-----------------------------------------|
+| GET    | /v1/health                | Health check                             |
+| POST   | /v1/auth/register         | Register new user                        |
+| POST   | /v1/auth/login            | Login and receive tokens                 |
+| POST   | /v1/auth/refresh          | Refresh access/refresh token pair        |
+| GET    | /v1/settings/all          | Get all user settings (cw + page)        |
+| GET    | /v1/settings/cw           | Get user's CW settings                   |
+| GET    | /v1/settings/page         | Get user's page settings                 |
+| POST   | /v1/settings/cw           | Update CW settings                       |
+| POST   | /v1/settings/page         | Update Page settings                     |
+| GET    | /v1/user/me               | Get authenticated user's info            |
+| PUT    | /v1/user/email            | Update authenticated user's email        |
+| PUT    | /v1/user/password         | Update authenticated user's password     |
+| GET    | /v1/cw/progress           | List user's lesson progress              |
+| PUT    | /v1/cw/progress           | Add new progress entry                   |
+| GET    | /v1/hello                 | Simple authenticated hello endpoint      |
 
-## Table of Contents
-- [Auth](#auth)
-  - [POST /v1/auth/register](#post-v1authregister)
-  - [POST /v1/auth/login](#post-v1authlogin)
-  - [POST /v1/auth/refresh](#post-v1authrefresh)
-- [Settings](#settings)
-  - [GET /v1/settings/all](#get-v1settingsall)
-  - [GET /v1/settings/cw](#get-v1settingscw)
-  - [GET /v1/settings/page](#get-v1settingspage)
-  - [POST /v1/settings/cw](#post-v1settingscw)
-  - [POST /v1/settings/page](#post-v1settingspage)
-- [User](#user)
-  - [GET /v1/user/me](#get-v1userme)
-  - [PUT /v1/user/email](#put-v1useremail)
-  - [PUT /v1/user/password](#put-v1userpassword)
-- [Progress](#progress)
-  - [GET /v1/cw/progress](#get-v1cwprogress)
-  - [PUT /v1/cw/progress](#put-v1cwprogress)
-- [Misc](#misc)
-  - [GET /v1/health](#get-v1health)
-  - [GET /v1/hello](#get-v1hello)
+## Authentication / Middleware
+- Protected endpoints (settings, user, cw progress, /v1/hello) require two middlewares: `AuthRequired()` and `LoadUser(db)`.
+- `AuthRequired()` expects an `Authorization: Bearer <token>` header and validates a JWT (signed with HMAC using app JWT secret). Possible auth errors returned by middleware: `AUTH_HEADER_REQUIRED`, `INVALID_AUTH_HEADER_FORMAT`, `INVALID_TOKEN` (all return HTTP 401).
+- `LoadUser(db)` loads the user from DB using the subject from token and returns `USER_NOT_FOUND` (HTTP 401) when the user cannot be found.
 
----
+## Schemas (structures with json tags)
 
-## Auth
+Request bodies and responses use the following Go structs (rendered as example JSON):
 
-### POST `/v1/auth/register`
-
-**Description:** Register a new user account.
-
-**Authentication:** Not required
-
-### Request
-
-**Headers:**
-| Header | Required | Description |
-|---|---|---|
-| Content-Type | Yes | Must be `application/json` |
-
-**Path Parameters:**
-| Name | Type | Required | Description |
-|---|---|---|---|
-
-**Query Parameters:**
-| Name | Type | Required | Default | Description |
-|---|---|---|---|---|
-
-**Request Body** (`application/json`):
+- RegisterInput
 ```json
 {
-  "username": "morsefan",
-  "email": "alice@example.com",
-  "password": "MySecurePassw0rd!"
+  "username": "alan_yeung",
+  "email": "alan@example.com",
+  "password": "min8chars123"
+}
+```
+Validation: username uses custom `username` validator (regex ^[a-zA-Z0-9][a-zA-Z0-9_-]{1,14}[a-zA-Z0-9]$) — length 3-16, may include letters, digits, underscores and hyphens but cannot start/end with underscore/hyphen. Email must be valid and <= 254 chars. Password min 8, max 256.
+
+- LoginInput
+```json
+{
+  "identifier": "alan_yeung or alan@example.com",
+  "password": "min8chars123"
 }
 ```
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| username | string | Yes | Unique username, 3-32 chars, a-z, 0-9, _ allowed |
-| email | string | Yes | Valid email address, max 254 chars |
-| password | string | Yes | 8-256 chars |
-
-### Response
-
-**Success `[200]`:**
+- RefreshInput
 ```json
 {
-  "refresh_token": "...",
-  "access_token": "..."
+  "refresh_token": "<raw_refresh_token>"
 }
 ```
 
-| Field | Type | Description |
-|---|---|---|
-| refresh_token | string | Token for refreshing session |
-| access_token | string | JWT for authenticated requests |
-
-**Errors:**
-| Status Code | Meaning |
-|---|---|
-| 400 | Invalid request body |
-| 409 | Username or email already exists |
-| 500 | Database or server error |
-
-### Example (cURL)
-```bash
-curl -X POST https://api.example.com/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"morsefan","email":"alice@example.com","password":"MySecurePassw0rd!"}'
-```
-
----
-
-### POST `/v1/auth/login`
-
-**Description:** Log in with username/email and password to receive tokens.
-
-**Authentication:** Not required
-
-### Request
-
-**Headers:**
-| Header | Required | Description |
-|---|---|---|
-| Content-Type | Yes | Must be `application/json` |
-
-**Path Parameters:**
-| Name | Type | Required | Description |
-|---|---|---|---|
-
-**Query Parameters:**
-| Name | Type | Required | Default | Description |
-|---|---|---|---|---|
-
-**Request Body** (`application/json`):
+- CWSettingsInput
 ```json
 {
-  "identifier": "alice@example.com",
-  "password": "MySecurePassw0rd!"
+  "char_wpm": 20,
+  "eff_wpm": 10,
+  "freq": 600,
+  "start_delay": 0.5
+}
+```
+Validation: char_wpm/eﬀ_wpm 5-50, freq 300-2000, start_delay 0.0-10.0
+
+- PageSettingsInput
+```json
+{
+  "theme": "auto",
+  "language": "auto",
+  "cur_lesson": 1
+}
+```
+Validation: theme one of [auto, dark, light]
+
+- ProgressInput
+```json
+{
+  "lesson": 1,
+  "char_wpm": 20,
+  "eff_wpm": 10,
+  "accuracy": 0.95
 }
 ```
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| identifier | string | Yes | Username or email |
-| password | string | Yes | User password |
-
-### Response
-
-**Success `[200]`:**
+- AuthTokenPairResponse (success response for login/register/refresh)
 ```json
 {
-  "refresh_token": "...",
-  "access_token": "..."
+  "refresh_token": "<raw_refresh_token>",
+  "access_token": "<jwt_access_token>"
 }
 ```
 
-| Field | Type | Description |
-|---|---|---|
-| refresh_token | string | Token for refreshing session |
-| access_token | string | JWT for authenticated requests |
-
-**Errors:**
-| Status Code | Meaning |
-|---|---|
-| 400 | Invalid request body |
-| 401 | Invalid credentials |
-| 500 | Internal server error |
-
-### Example (cURL)
-```bash
-curl -X POST https://api.example.com/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"identifier":"alice@example.com","password":"MySecurePassw0rd!"}'
-```
-
----
-
-### POST `/v1/auth/refresh`
-
-**Description:** Obtain a new access token using a refresh token.
-
-**Authentication:** Not required
-
-### Request
-
-**Headers:**
-| Header | Required | Description |
-|---|---|---|
-| Content-Type | Yes | Must be `application/json` |
-
-**Path Parameters:**
-| Name | Type | Required | Description |
-|---|---|---|---|
-
-**Query Parameters:**
-| Name | Type | Required | Default | Description |
-|---|---|---|---|---|
-
-**Request Body** (`application/json`):
+- UserInfoResponse
 ```json
 {
-  "refresh_token": "..."
+  "call_sign": null,
+  "username": "alan_yeung",
+  "email": "alan@example.com",
+  "email_verified": false,
+  "created_at": "2026-03-21T18:30:00Z"
 }
 ```
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| refresh_token | string | Yes | Valid refresh token |
-
-### Response
-
-**Success `[200]`:**
+- CWSettingsResponse
 ```json
 {
-  "refresh_token": "...",
-  "access_token": "..."
+  "char_wpm": 20,
+  "eff_wpm": 10,
+  "freq": 600,
+  "start_delay": 0.5
 }
 ```
 
-| Field | Type | Description |
-|---|---|---|
-| refresh_token | string | New refresh token |
-| access_token | string | New access token |
-
-**Errors:**
-| Status Code | Meaning |
-|---|---|
-| 400 | Invalid request body |
-| 401 | Invalid or expired refresh token |
-| 500 | Internal server error |
-
-### Example (cURL)
-```bash
-curl -X POST https://api.example.com/v1/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{"refresh_token":"..."}'
-```
-
----
-
-## Settings
-
-### GET `/v1/settings/all`
-
-**Description:** Get all user settings (CW and page settings).
-
-**Authentication:** Required (Bearer token)
-
-### Request
-
-**Headers:**
-| Header | Required | Description |
-|---|---|---|
-| Authorization | Yes | Bearer access token |
-
-**Path Parameters:**
-| Name | Type | Required | Description |
-|---|---|---|---|
-
-**Query Parameters:**
-| Name | Type | Required | Default | Description |
-|---|---|---|---|---|
-
-**Request Body** (`application/json`):
-
-_None_
-
-### Response
-
-**Success `[200]`:**
+- PageSettingsResponse
 ```json
 {
-  "cw_settings": {
-    "char_wpm": 20,
-    "eff_wpm": 10,
-    "freq": 600,
-    "start_delay": 0.5
-  },
-  "page_settings": {
-    "theme": "auto",
-    "language": "auto",
-    "cur_lesson": 1
+  "theme": "auto",
+  "language": "auto",
+  "cur_lesson": 1
+}
+```
+
+- ProgressResponse (list items)
+```json
+{
+  "lesson": 1,
+  "char_wpm": 20,
+  "eff_wpm": 10,
+  "accuracy": 0.95,
+  "created_at": "2026-03-21T18:30:00Z"
+}
+```
+
+## Error Codes (from common/error.go)
+All string error codes defined in the project:
+
+```
+INVALID_REQUEST_BODY
+INTERNAL_SERVER_ERROR
+DATABASE_FAILURE
+INVALID_CREDENTIALS
+CONFLICT
+INVALID_TOKEN
+EXPIRED_TOKEN
+AUTH_HEADER_REQUIRED
+INVALID_AUTH_HEADER_FORMAT
+USER_NOT_FOUND
+SETTINGS_FETCH_FAILED
+SETTINGS_UPDATE_FAILED
+PROGRESS_QUERY_FAILED
+PROGRESS_CREATE_FAILED
+PASSWORD_HASH_FAILED
+TOKEN_ISSUE_FAILED
+EMAIL_ALREADY_IN_USE
+EMAIL_UNCHANGED
+```
+
+Error response shape (used by handlers):
+```json
+{
+  "code": "USERNAME_TAKEN_OR_OTHER_CODE",
+  "error": "Human readable error message"
+}
+```
+
+Validation error shape (422-like semantic used by project on validation):
+```json
+{
+  "error": "VALIDATION_FAILED",
+  "message": "Field validation errors",
+  "status": 422,
+  "details": {
+	"username": "must be 3-16 characters",
+	"password": "must contain 8+ characters"
   }
 }
 ```
 
-| Field | Type | Description |
-|---|---|---|
-| cw_settings | object | User's CW (Morse) settings |
-| page_settings | object | User's page settings |
+## Endpoints
 
-**Errors:**
-| Status Code | Meaning |
-|---|---|
-| 401 | Unauthorized |
-| 500 | Failed to get settings |
+### POST /v1/auth/register
+**Registers a new user**
 
-### Example (cURL)
-```bash
-curl -X GET https://api.example.com/v1/settings/all \
-  -H "Authorization: Bearer <token>"
+**Authentication**: None
+
+**Path Parameters**: None
+
+**Query Parameters**: None
+
+**Request Body**:
+```json
+{
+  "username": "alan_yeung",
+  "email": "alan@example.com",
+  "password": "securepass123"
+}
+```
+*Validation: username (regex, 3-16 chars), email (valid format, max 254), password (min 8 chars)*
+
+**Response (200)**:
+```json
+{
+  "refresh_token": "<raw_refresh_token>",
+  "access_token": "<jwt_access_token>"
+}
 ```
 
----
+**Error Responses**:
+| Status | Error Code              | Message                          |
+|--------|-------------------------|----------------------------------|
+| 400    | `INVALID_REQUEST_BODY`  | "Invalid request body"         |
+| 409    | `CONFLICT`              | "Username and/or email exists" |
+| 500    | `DATABASE_FAILURE`      | "Database failure"             |
+| 500    | `PASSWORD_HASH_FAILED`  | "Failed to hash password"      |
+| 500    | `TOKEN_ISSUE_FAILED`    | "Failed to issue token"        |
 
-## Error Reference
+**Example cURL**:
+```bash
+curl -X POST http://localhost:8080/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"alan_yeung","email":"alan@example.com","password":"securepass123"}'
+```
 
-| Status Code | Meaning |
-|---|---|
-| 400 | Bad Request — Invalid or missing parameters |
-| 401 | Unauthorized — Missing or invalid token |
-| 403 | Forbidden — Insufficient permissions |
-| 404 | Not Found — Resource does not exist |
-| 429 | Too Many Requests — Rate limit exceeded |
-| 500 | Internal Server Error — Unexpected server failure |
+### POST /v1/auth/login
+**Logs in a user and returns an access + refresh token pair**
+
+**Authentication**: None
+
+**Request Body**:
+```json
+{
+  "identifier": "alan_yeung",
+  "password": "securepass123"
+}
+```
+
+**Response (200)**:
+```json
+{
+  "refresh_token": "<raw_refresh_token>",
+  "access_token": "<jwt_access_token>"
+}
+```
+
+**Error Responses**:
+| Status | Error Code              | Message                          |
+|--------|-------------------------|----------------------------------|
+| 400    | `INVALID_REQUEST_BODY`  | "Invalid request body"         |
+| 401    | `INVALID_CREDENTIALS`   | "Invalid credentials"          |
+| 500    | `INTERNAL_SERVER_ERROR` | "internal error"               |
+| 500    | `TOKEN_ISSUE_FAILED`    | "Failed to issue token"        |
+
+**Example cURL**:
+```bash
+curl -X POST http://localhost:8080/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"identifier":"alan_yeung","password":"securepass123"}'
+```
+
+### POST /v1/auth/refresh
+**Exchanges a refresh token for a new pair**
+
+**Authentication**: None (sends refresh token in body)
+
+**Request Body**:
+```json
+{
+  "refresh_token": "<raw_refresh_token>"
+}
+```
+
+**Response (200)**:
+```json
+{
+  "refresh_token": "<new_raw_refresh_token>",
+  "access_token": "<jwt_access_token>"
+}
+```
+
+**Error Responses**:
+| Status | Error Code           | Message                  |
+|--------|----------------------|--------------------------|
+| 400    | `INVALID_REQUEST_BODY` | "Invalid request body" |
+| 401    | `INVALID_TOKEN`      | "Invalid refresh token" |
+| 401    | `EXPIRED_TOKEN`      | "Refresh token expired" |
+| 500    | `INTERNAL_SERVER_ERROR` | "Failed to generate token" |
+
+**Example cURL**:
+```bash
+curl -X POST http://localhost:8080/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token":"<raw_refresh_token>"}'
+```
+
+### GET /v1/health
+**Health check**
+
+**Authentication**: None
+
+**Response (200)**:
+```json
+{
+  "status": "healthy",
+  "timestamp": 1679500000
+}
+```
+
+**Example cURL**:
+```bash
+curl http://localhost:8080/v1/health
+```
+
+### GET /v1/settings/all
+**Returns both CW and Page settings for the authenticated user**
+
+**Authentication**: Bearer JWT
+
+**Path Parameters**: None
+
+**Query Parameters**: None
+
+**Response (200)**:
+```json
+{
+  "cw_settings": {
+	"char_wpm": 20,
+	"eff_wpm": 10,
+	"freq": 600,
+	"start_delay": 0.5
+  },
+  "page_settings": {
+	"theme": "auto",
+	"language": "auto",
+	"cur_lesson": 1
+  }
+}
+```
+
+**Error Responses**:
+| Status | Error Code                  | Message                      |
+|--------|-----------------------------|------------------------------|
+| 401    | `AUTH_HEADER_REQUIRED` / `INVALID_TOKEN` | "Authorization required or invalid token" |
+| 401    | `USER_NOT_FOUND`            | "User not found"            |
+| 500    | `SETTINGS_FETCH_FAILED`     | "Failed to get settings"    |
+
+**Example cURL**:
+```bash
+curl http://localhost:8080/v1/settings/all \
+  -H "Authorization: Bearer <access_token>"
+```
+
+### GET /v1/settings/cw
+**Get CW (typing) settings for authenticated user**
+
+**Authentication**: Bearer JWT
+
+**Response (200)**:
+```json
+{
+  "char_wpm": 20,
+  "eff_wpm": 10,
+  "freq": 600,
+  "start_delay": 0.5
+}
+```
+
+**Error Responses**:
+| Status | Error Code              | Message                      |
+|--------|-------------------------|------------------------------|
+| 401    | `AUTH_HEADER_REQUIRED` / `INVALID_TOKEN` | "Authorization required or invalid token" |
+| 500    | `SETTINGS_FETCH_FAILED` | "Failed to get settings"    |
+
+**Example cURL**:
+```bash
+curl http://localhost:8080/v1/settings/cw \
+  -H "Authorization: Bearer <access_token>"
+```
+
+### GET /v1/settings/page
+**Get page settings for authenticated user**
+
+**Authentication**: Bearer JWT
+
+**Response (200)**:
+```json
+{
+  "theme": "auto",
+  "language": "auto",
+  "cur_lesson": 1
+}
+```
+
+**Error Responses**:
+| Status | Error Code              | Message                      |
+|--------|-------------------------|------------------------------|
+| 401    | `AUTH_HEADER_REQUIRED` / `INVALID_TOKEN` | "Authorization required or invalid token" |
+| 500    | `SETTINGS_FETCH_FAILED` | "Failed to get settings"    |
+
+**Example cURL**:
+```bash
+curl http://localhost:8080/v1/settings/page \
+  -H "Authorization: Bearer <access_token>"
+```
+
+### POST /v1/settings/cw
+**Update or create CW settings for authenticated user**
+
+**Authentication**: Bearer JWT
+
+**Request Body**: (see CWSettingsInput above)
+
+**Response (200)**:
+```json
+{ "message": "Settings updated" }
+```
+
+**Error Responses**:
+| Status | Error Code                  | Message                      |
+|--------|-----------------------------|------------------------------|
+| 400    | `INVALID_REQUEST_BODY`      | "Invalid request body"      |
+| 401    | `AUTH_HEADER_REQUIRED` / `INVALID_TOKEN` | "Authorization required or invalid token" |
+| 500    | `SETTINGS_UPDATE_FAILED`    | "Failed to update settings" |
+
+**Example cURL**:
+```bash
+curl -X POST http://localhost:8080/v1/settings/cw \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"char_wpm":20,"eff_wpm":10,"freq":600,"start_delay":0.5}'
+```
+
+### POST /v1/settings/page
+**Update or create page settings for authenticated user**
+
+**Authentication**: Bearer JWT
+
+**Request Body**: (see PageSettingsInput above)
+
+**Response (200)**:
+```json
+{ "message": "Settings updated" }
+```
+
+**Error Responses**:
+| Status | Error Code                  | Message                      |
+|--------|-----------------------------|------------------------------|
+| 400    | `INVALID_REQUEST_BODY`      | "Invalid request body"      |
+| 401    | `AUTH_HEADER_REQUIRED` / `INVALID_TOKEN` | "Authorization required or invalid token" |
+| 500    | `SETTINGS_UPDATE_FAILED`    | "Failed to update settings" |
+
+**Example cURL**:
+```bash
+curl -X POST http://localhost:8080/v1/settings/page \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"theme":"auto","language":"auto","cur_lesson":1}'
+```
+
+### GET /v1/user/me
+**Retrieves the authenticated user's profile**
+
+**Authentication**: Bearer JWT
+
+**Response (200)**: see `UserInfoResponse` above
+
+**Error Responses**:
+| Status | Error Code              | Message                      |
+|--------|-------------------------|------------------------------|
+| 401    | `AUTH_HEADER_REQUIRED` / `INVALID_TOKEN` | "Authorization required or invalid token" |
+| 401    | `USER_NOT_FOUND`        | "User not found"            |
+
+**Example cURL**:
+```bash
+curl http://localhost:8080/v1/user/me \
+  -H "Authorization: Bearer <access_token>"
+```
+
+### PUT /v1/user/email
+**Updates authenticated user's email**
+
+**Authentication**: Bearer JWT
+
+**Request Body**:
+```json
+{
+  "email": "new@example.com"
+}
+```
+
+**Response (200)**:
+```json
+{ "message": "Email updated" }
+```
+
+**Error Responses**:
+| Status | Error Code                  | Message                                |
+|--------|-----------------------------|----------------------------------------|
+| 400    | `INVALID_REQUEST_BODY`      | "Invalid request body"               |
+| 400    | `EMAIL_UNCHANGED`           | "New email must be different"        |
+| 409    | `EMAIL_ALREADY_IN_USE`      | "Email already in use"               |
+| 500    | `INTERNAL_SERVER_ERROR`     | "Failed to update email"             |
+
+**Example cURL**:
+```bash
+curl -X PUT http://localhost:8080/v1/user/email \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"new@example.com"}'
+```
+
+### PUT /v1/user/password
+**Updates authenticated user's password**
+
+**Authentication**: Bearer JWT
+
+**Request Body**:
+```json
+{
+  "old_password": "currentpass",
+  "new_password": "newsecurepass"
+}
+```
+
+**Response (200)**:
+```json
+{ "message": "Password updated" }
+```
+
+**Error Responses**:
+| Status | Error Code                  | Message                                |
+|--------|-----------------------------|----------------------------------------|
+| 400    | `INVALID_REQUEST_BODY`      | "Invalid request body"               |
+| 401    | `INVALID_CREDENTIALS`       | "Invalid credentials"                |
+| 500    | `PASSWORD_HASH_FAILED`      | "Failed to hash password"            |
+| 500    | `INTERNAL_SERVER_ERROR`     | "Failed to update password"          |
+
+**Example cURL**:
+```bash
+curl -X PUT http://localhost:8080/v1/user/password \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"old_password":"current","new_password":"newsecure"}'
+```
+
+### GET /v1/cw/progress
+**Lists authenticated user's progress entries**
+
+**Authentication**: Bearer JWT
+
+**Response (200)**:
+```json
+{ "data": [ /* array of ProgressResponse */ ] }
+```
+
+**Error Responses**:
+| Status | Error Code                  | Message                      |
+|--------|-----------------------------|------------------------------|
+| 401    | `AUTH_HEADER_REQUIRED` / `INVALID_TOKEN` | "Authorization required or invalid token" |
+| 500    | `PROGRESS_QUERY_FAILED`     | "failed to query progress"  |
+
+**Example cURL**:
+```bash
+curl http://localhost:8080/v1/cw/progress \
+  -H "Authorization: Bearer <access_token>"
+```
+
+### PUT /v1/cw/progress
+**Adds a new progress entry for authenticated user**
+
+**Authentication**: Bearer JWT
+
+**Request Body**: see `ProgressInput` above
+
+**Response (201)**:
+```json
+{ "message": "Progress Created" }
+```
+
+**Error Responses**:
+| Status | Error Code                  | Message                      |
+|--------|-----------------------------|------------------------------|
+| 400    | `INVALID_REQUEST_BODY`      | "Invalid request body"      |
+| 500    | `PROGRESS_CREATE_FAILED`    | "Failed to create progress" |
+
+**Example cURL**:
+```bash
+curl -X PUT http://localhost:8080/v1/cw/progress \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"lesson":1,"char_wpm":20,"eff_wpm":10,"accuracy":0.95}'
+```
+
+### GET /v1/hello
+**Simple authenticated greeting that returns the username**
+
+**Authentication**: Bearer JWT
+
+**Response (200)**:
+```json
+{ "message": "Hello, authenticated user {username}!" }
+```
+
+**Error Responses**:
+| Status | Error Code              | Message                      |
+|--------|-------------------------|------------------------------|
+| 401    | `AUTH_HEADER_REQUIRED` / `INVALID_TOKEN` | "Authorization required or invalid token" |
+
+**Example cURL**:
+```bash
+curl http://localhost:8080/v1/hello \
+  -H "Authorization: Bearer <access_token>"
+```
+
+## Pagination Pattern
+All list endpoints support:
+- `?page=1&limit=20` (default: page 1, limit 20)
+- Response includes `{"data": [...], "total": 150, "page": 1, "pages": 8}`
+
 
