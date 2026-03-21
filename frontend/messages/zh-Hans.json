@@ -178,5 +178,27 @@
   "profile_history_wpm": "WPM",
   "profile_history_date": "日期",
   "profile_history_empty": "尚无训练记录。开始训练吧！",
-  "profile_not_logged_in": "请登录以查看您的个人资料。"
+  "profile_not_logged_in": "请登录以查看您的个人资料。",
+
+  "api_error_invalid_request_body": "请求体无效。",
+  "api_error_internal_server_error": "服务器内部错误。",
+  "api_error_database_failure": "数据库错误，请稍后重试。",
+  "api_error_invalid_credentials": "用户名/邮箱或密码不正确。",
+  "api_error_conflict": "该账户信息已被使用。",
+  "api_error_invalid_token": "会话令牌无效。",
+  "api_error_expired_token": "会话已过期，请重新登录。",
+  "api_error_auth_header_required": "需要身份验证。",
+  "api_error_invalid_auth_header_format": "Authorization 请求头格式无效。",
+  "api_error_user_not_found": "用户不存在。",
+  "api_error_settings_fetch_failed": "加载设置失败。",
+  "api_error_settings_update_failed": "保存设置失败。",
+  "api_error_progress_query_failed": "加载进度失败。",
+  "api_error_progress_create_failed": "保存进度失败。",
+  "api_error_password_hash_failed": "密码处理失败。",
+  "api_error_token_issue_failed": "签发令牌失败。",
+  "api_error_email_already_in_use": "该邮箱已被使用。",
+  "api_error_email_unchanged": "新邮箱必须与当前邮箱不同。",
+  "api_error_validation_failed": "部分字段无效，请检查输入内容。",
+  "api_error_login_failed": "登录失败。",
+  "api_error_register_failed": "注册失败。"
 }

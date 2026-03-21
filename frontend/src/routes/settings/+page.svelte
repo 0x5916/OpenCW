@@ -17,6 +17,7 @@
   } from '$lib/locale';
   import { LESSONS } from '$lib/morse';
   import { applyClientPageSettings, normalizeLesson, restoreSettingsFromServer } from '$lib/cwSync';
+  import { localizeApiError } from '$lib/errorLocalization';
   import { Settings } from 'lucide-svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
@@ -83,7 +84,7 @@
       pageLanguage = normalizeLocalePreference(page.language);
       pageLesson = normalizeLesson(page.cur_lesson, LESSONS.length);
     } catch (e) {
-      loadError = e instanceof Error ? e.message : m.settings_load_error();
+      loadError = localizeApiError(e, () => m.settings_load_error());
     } finally {
       loading = false;
     }
@@ -103,7 +104,7 @@
       emailSaved = true;
       setTimeout(() => (emailSaved = false), 3000);
     } catch (err) {
-      emailError = err instanceof Error ? err.message : m.settings_save_error();
+      emailError = localizeApiError(err, () => m.settings_save_error());
     } finally {
       emailSaving = false;
     }
@@ -119,7 +120,7 @@
       cwSaved = true;
       setTimeout(() => (cwSaved = false), 3000);
     } catch (err) {
-      cwError = err instanceof Error ? err.message : m.settings_save_error();
+      cwError = localizeApiError(err, () => m.settings_save_error());
     } finally {
       cwSaving = false;
     }
@@ -151,7 +152,7 @@
       passwordSaved = true;
       setTimeout(() => (passwordSaved = false), 3000);
     } catch (err) {
-      passwordError = err instanceof Error ? err.message : m.settings_save_error();
+      passwordError = localizeApiError(err, () => m.settings_save_error());
     } finally {
       passwordSaving = false;
     }
@@ -175,7 +176,7 @@
       pageSaved = true;
       setTimeout(() => (pageSaved = false), 3000);
     } catch (err) {
-      pageError = err instanceof Error ? err.message : m.settings_save_error();
+      pageError = localizeApiError(err, () => m.settings_save_error());
     } finally {
       pageSaving = false;
     }

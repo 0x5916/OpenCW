@@ -13,6 +13,7 @@
   } from 'lucide-svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+  import { localizeApiError } from '$lib/errorLocalization';
   import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
 
@@ -155,7 +156,7 @@
       freq = cw.freq;
       records = prog;
     } catch (e) {
-      loadError = e instanceof Error ? e.message : 'Failed to load profile';
+      loadError = localizeApiError(e, () => m.settings_load_error());
     } finally {
       loading = false;
     }

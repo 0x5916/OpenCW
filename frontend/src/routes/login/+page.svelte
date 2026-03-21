@@ -1,5 +1,6 @@
 <script lang="ts">
   import { login } from '$lib/auth';
+  import { localizeApiError } from '$lib/errorLocalization';
   import { goto } from '$app/navigation';
   import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
@@ -17,7 +18,7 @@
       await login(username, password);
       await goto(localizeHref('/'));
     } catch (error) {
-      err = error instanceof Error ? error.message : m.login_error_unknown();
+      err = localizeApiError(error, () => m.login_error_unknown());
     } finally {
       loading = false;
     }

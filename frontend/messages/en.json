@@ -178,5 +178,27 @@
 	"profile_history_wpm": "WPM",
 	"profile_history_date": "Date",
 	"profile_history_empty": "No sessions yet. Start training!",
-	"profile_not_logged_in": "Please log in to view your profile."
+	"profile_not_logged_in": "Please log in to view your profile.",
+
+	"api_error_invalid_request_body": "Invalid request body.",
+	"api_error_internal_server_error": "An internal server error occurred.",
+	"api_error_database_failure": "Database error. Please try again later.",
+	"api_error_invalid_credentials": "Invalid username/email or password.",
+	"api_error_conflict": "This account information is already in use.",
+	"api_error_invalid_token": "Your session token is invalid.",
+	"api_error_expired_token": "Your session has expired. Please log in again.",
+	"api_error_auth_header_required": "Authentication is required.",
+	"api_error_invalid_auth_header_format": "Invalid authorization header format.",
+	"api_error_user_not_found": "User not found.",
+	"api_error_settings_fetch_failed": "Failed to load settings.",
+	"api_error_settings_update_failed": "Failed to save settings.",
+	"api_error_progress_query_failed": "Failed to load progress.",
+	"api_error_progress_create_failed": "Failed to save progress.",
+	"api_error_password_hash_failed": "Password processing failed.",
+	"api_error_token_issue_failed": "Failed to issue token.",
+	"api_error_email_already_in_use": "Email is already in use.",
+	"api_error_email_unchanged": "New email must be different from your current email.",
+	"api_error_validation_failed": "Some fields are invalid. Please review your input.",
+	"api_error_login_failed": "Login failed.",
+	"api_error_register_failed": "Registration failed."
 }

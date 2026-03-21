@@ -178,5 +178,27 @@
   "profile_history_wpm": "WPM",
   "profile_history_date": "Datum",
   "profile_history_empty": "Noch keine Sitzungen. Starte dein Training!",
-  "profile_not_logged_in": "Bitte melde dich an, um dein Profil zu sehen."
+  "profile_not_logged_in": "Bitte melde dich an, um dein Profil zu sehen.",
+
+  "api_error_invalid_request_body": "Ungültiger Anfragetext.",
+  "api_error_internal_server_error": "Interner Serverfehler.",
+  "api_error_database_failure": "Datenbankfehler. Bitte versuche es später erneut.",
+  "api_error_invalid_credentials": "Ungültiger Benutzername/E-Mail oder Passwort.",
+  "api_error_conflict": "Diese Kontoinformation wird bereits verwendet.",
+  "api_error_invalid_token": "Dein Sitzungstoken ist ungültig.",
+  "api_error_expired_token": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.",
+  "api_error_auth_header_required": "Authentifizierung ist erforderlich.",
+  "api_error_invalid_auth_header_format": "Ungültiges Format des Authorization-Headers.",
+  "api_error_user_not_found": "Benutzer nicht gefunden.",
+  "api_error_settings_fetch_failed": "Einstellungen konnten nicht geladen werden.",
+  "api_error_settings_update_failed": "Einstellungen konnten nicht gespeichert werden.",
+  "api_error_progress_query_failed": "Fortschritt konnte nicht geladen werden.",
+  "api_error_progress_create_failed": "Fortschritt konnte nicht gespeichert werden.",
+  "api_error_password_hash_failed": "Passwortverarbeitung fehlgeschlagen.",
+  "api_error_token_issue_failed": "Token konnte nicht ausgestellt werden.",
+  "api_error_email_already_in_use": "E-Mail wird bereits verwendet.",
+  "api_error_email_unchanged": "Die neue E-Mail muss sich von der aktuellen unterscheiden.",
+  "api_error_validation_failed": "Einige Felder sind ungültig. Bitte überprüfe deine Eingaben.",
+  "api_error_login_failed": "Anmeldung fehlgeschlagen.",
+  "api_error_register_failed": "Registrierung fehlgeschlagen."
 }

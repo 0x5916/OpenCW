@@ -5,11 +5,14 @@ class ApiError extends Error {
 
   body: unknown;
 
-  constructor(message: string, status: number, body: unknown) {
-    super(message);
+  code: string;
+
+  constructor(code: string, status: number, body: unknown) {
+    super(code);
     this.name = 'ApiError';
     this.status = status;
     this.body = body;
+    this.code = code;
   }
 }
 
@@ -19,17 +22,30 @@ const JSON_HEADERS = {
 } as const;
 const inFlightGetRequests = new Map<string, Promise<unknown>>();
 
-function pickErrorMessage(body: unknown, fallback: string): string {
+function isErrorCode(value: string): boolean {
+  return /^[A-Z0-9_]+$/.test(value);
+}
+
+function pickErrorCode(body: unknown, fallback: string): string {
   if (!body || typeof body !== 'object') return fallback;
 
-  const candidate = (body as Record<string, unknown>).error;
-  if (typeof candidate === 'string' && candidate.trim() !== '') return candidate;
+  const code = (body as Record<string, unknown>).code;
+  if (typeof code === 'string' && code.trim() !== '') return code;
+
+  const error = (body as Record<string, unknown>).error;
+  if (typeof error === 'string' && error.trim() !== '' && isErrorCode(error.trim())) {
+    return error;
+  }
 
   const message = (body as Record<string, unknown>).message;
-  if (typeof message === 'string' && message.trim() !== '') return message;
+  if (typeof message === 'string' && message.trim() !== '' && isErrorCode(message.trim())) {
+    return message;
+  }
 
   const detail = (body as Record<string, unknown>).detail;
-  if (typeof detail === 'string' && detail.trim() !== '') return detail;
+  if (typeof detail === 'string' && detail.trim() !== '' && isErrorCode(detail.trim())) {
+    return detail;
+  }
 
   return fallback;
 }
@@ -54,7 +70,7 @@ async function parseJsonBody<T>(res: Response): Promise<T> {
 
 async function throwApiError(res: Response, fallback: string): Promise<never> {
   const body = await parseJsonBody<unknown>(res).catch(() => null);
-  throw new ApiError(pickErrorMessage(body, fallback), res.status, body);
+  throw new ApiError(pickErrorCode(body, fallback), res.status, body);
 }
 
 async function apiGetJson<T>(path: string, fallback: string): Promise<T> {
@@ -117,31 +133,31 @@ export interface CombinedSettings {
 }
 
 export async function getCWSettings(): Promise<CWSettings> {
-  return apiGetJson<CWSettings>('/settings/cw', 'Failed to load settings');
+  return apiGetJson<CWSettings>('/settings/cw', 'SETTINGS_FETCH_FAILED');
 }
 
 export async function saveCWSettings(settings: CWSettings): Promise<void> {
-  await apiSendJson('/settings/cw', 'POST', settings, 'Failed to save settings');
+  await apiSendJson('/settings/cw', 'POST', settings, 'SETTINGS_UPDATE_FAILED');
 }
 
 export async function getSettings(): Promise<CombinedSettings> {
-  return apiGetJson<CombinedSettings>('/settings/all', 'Failed to load settings');
+  return apiGetJson<CombinedSettings>('/settings/all', 'SETTINGS_FETCH_FAILED');
 }
 
 export async function getUserInfo(): Promise<UserInfo> {
-  return apiGetJson<UserInfo>('/user/me', 'Failed to load user info');
+  return apiGetJson<UserInfo>('/user/me', 'INTERNAL_SERVER_ERROR');
 }
 
 export async function savePageSettings(settings: PageSettings): Promise<void> {
-  await apiSendJson('/settings/page', 'POST', settings, 'Failed to save page settings');
+  await apiSendJson('/settings/page', 'POST', settings, 'SETTINGS_UPDATE_FAILED');
 }
 
 export async function getPageSettings(): Promise<PageSettings> {
-  return apiGetJson<PageSettings>('/settings/page', 'Failed to load page settings');
+  return apiGetJson<PageSettings>('/settings/page', 'SETTINGS_FETCH_FAILED');
 }
 
 export async function updateEmail(email: string): Promise<void> {
-  await apiSendJson('/user/email', 'PUT', { email }, 'Failed to update email');
+  await apiSendJson('/user/email', 'PUT', { email }, 'INTERNAL_SERVER_ERROR');
 }
 
 export interface ProgressRecord {
@@ -155,7 +171,7 @@ export interface ProgressRecord {
 export async function getProgress(): Promise<ProgressRecord[]> {
   const data = await apiGetJson<{
     data?: Array<Omit<ProgressRecord, 'lesson'> & { lesson: string | number }>;
-  }>('/cw/progress', 'Failed to load progress');
+  }>('/cw/progress', 'PROGRESS_QUERY_FAILED');
 
   return (data.data ?? []).map((record) => ({
     ...record,
@@ -173,7 +189,7 @@ export async function submitProgress(
     '/cw/progress',
     'PUT',
     { lesson, char_wpm: charWpm, eff_wpm: effWpm, accuracy },
-    'Failed to submit progress'
+    'PROGRESS_CREATE_FAILED'
   );
 }
 
@@ -182,6 +198,6 @@ export async function updatePassword(oldPassword: string, newPassword: string): 
     '/user/password',
     'PUT',
     { old_password: oldPassword, new_password: newPassword },
-    'Failed to update password'
+    'INTERNAL_SERVER_ERROR'
   );
 }

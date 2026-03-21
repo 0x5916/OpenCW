@@ -18,6 +18,7 @@
     applyClientPageSettings,
     syncSettingsToServer
   } from '$lib/cwSync';
+  import { localizeApiError } from '$lib/errorLocalization';
   import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
 
@@ -115,7 +116,7 @@
       }
     } catch (error) {
       if (showFeedback) {
-        syncError = error instanceof Error ? error.message : m.trainer_error_sync_settings();
+        syncError = localizeApiError(error, () => m.trainer_error_sync_settings());
         setTimeout(() => (syncError = ''), 4000);
       }
     } finally {
@@ -143,7 +144,7 @@
       startDelay = cw.start_delay;
       chosenLesson = applyClientPageSettings(page, LESSONS.length, setLangPreference);
     } catch (error) {
-      restoreError = error instanceof Error ? error.message : m.trainer_error_load_settings();
+      restoreError = localizeApiError(error, () => m.trainer_error_load_settings());
       setTimeout(() => (restoreError = ''), 4000);
     } finally {
       suppressAutoSync = false;

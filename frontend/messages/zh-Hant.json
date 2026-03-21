@@ -178,5 +178,27 @@
   "profile_history_wpm": "WPM",
   "profile_history_date": "日期",
   "profile_history_empty": "尚無訓練紀錄。開始訓練吧！",
-  "profile_not_logged_in": "請登入以查看你的個人資料。"
+  "profile_not_logged_in": "請登入以查看你的個人資料。",
+
+  "api_error_invalid_request_body": "請求內容無效。",
+  "api_error_internal_server_error": "伺服器內部錯誤。",
+  "api_error_database_failure": "資料庫錯誤，請稍後再試。",
+  "api_error_invalid_credentials": "使用者名稱/電郵或密碼不正確。",
+  "api_error_conflict": "此帳戶資訊已被使用。",
+  "api_error_invalid_token": "工作階段權杖無效。",
+  "api_error_expired_token": "工作階段已過期，請重新登入。",
+  "api_error_auth_header_required": "需要身分驗證。",
+  "api_error_invalid_auth_header_format": "Authorization 標頭格式無效。",
+  "api_error_user_not_found": "找不到使用者。",
+  "api_error_settings_fetch_failed": "載入設定失敗。",
+  "api_error_settings_update_failed": "儲存設定失敗。",
+  "api_error_progress_query_failed": "載入進度失敗。",
+  "api_error_progress_create_failed": "儲存進度失敗。",
+  "api_error_password_hash_failed": "密碼處理失敗。",
+  "api_error_token_issue_failed": "簽發權杖失敗。",
+  "api_error_email_already_in_use": "此電郵已被使用。",
+  "api_error_email_unchanged": "新電郵必須與目前電郵不同。",
+  "api_error_validation_failed": "部分欄位無效，請檢查輸入內容。",
+  "api_error_login_failed": "登入失敗。",
+  "api_error_register_failed": "註冊失敗。"
 }

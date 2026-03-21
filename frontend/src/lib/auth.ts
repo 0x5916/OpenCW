@@ -10,6 +10,20 @@ export const user = writable<AuthUser | null>(null);
 const API_BASE = PUBLIC_API_BASE;
 let refreshInFlight: Promise<boolean> | null = null;
 
+function readErrorCode(body: unknown, fallback: string): string {
+  if (!body || typeof body !== 'object') return fallback;
+
+  const code = (body as Record<string, unknown>).code;
+  if (typeof code === 'string' && code.trim() !== '') return code;
+
+  const error = (body as Record<string, unknown>).error;
+  if (typeof error === 'string' && /^[A-Z0-9_]+$/.test(error.trim())) {
+    return error;
+  }
+
+  return fallback;
+}
+
 /** Rehydrate user from stored tokens on app start */
 export function initAuth() {
   const token = localStorage.getItem('access_token');
@@ -28,7 +42,7 @@ export async function register(username: string, email: string, password: string
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(body.error ?? 'Registration failed');
+    throw new Error(readErrorCode(body, 'REGISTER_FAILED'));
   }
 
   const data = await response.json();
@@ -46,7 +60,7 @@ export async function login(username: string, password: string): Promise<void> {
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(body.error ?? 'Login failed');
+    throw new Error(readErrorCode(body, 'LOGIN_FAILED'));
   }
 
   const data = await response.json();

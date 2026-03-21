@@ -178,5 +178,27 @@
   "profile_history_wpm": "WPM",
   "profile_history_date": "日付",
   "profile_history_empty": "まだセッションがありません。トレーニングを始めましょう！",
-  "profile_not_logged_in": "プロフィールを表示するにはログインしてください。"
+  "profile_not_logged_in": "プロフィールを表示するにはログインしてください。",
+
+  "api_error_invalid_request_body": "リクエスト内容が正しくありません。",
+  "api_error_internal_server_error": "サーバー内部エラーが発生しました。",
+  "api_error_database_failure": "データベースエラーが発生しました。しばらくしてから再試行してください。",
+  "api_error_invalid_credentials": "ユーザー名/メールアドレスまたはパスワードが正しくありません。",
+  "api_error_conflict": "このアカウント情報は既に使用されています。",
+  "api_error_invalid_token": "セッショントークンが無効です。",
+  "api_error_expired_token": "セッションの有効期限が切れました。再度ログインしてください。",
+  "api_error_auth_header_required": "認証が必要です。",
+  "api_error_invalid_auth_header_format": "Authorization ヘッダーの形式が正しくありません。",
+  "api_error_user_not_found": "ユーザーが見つかりません。",
+  "api_error_settings_fetch_failed": "設定の読み込みに失敗しました。",
+  "api_error_settings_update_failed": "設定の保存に失敗しました。",
+  "api_error_progress_query_failed": "進捗の読み込みに失敗しました。",
+  "api_error_progress_create_failed": "進捗の保存に失敗しました。",
+  "api_error_password_hash_failed": "パスワード処理に失敗しました。",
+  "api_error_token_issue_failed": "トークンの発行に失敗しました。",
+  "api_error_email_already_in_use": "このメールアドレスは既に使用されています。",
+  "api_error_email_unchanged": "新しいメールアドレスは現在のものと異なる必要があります。",
+  "api_error_validation_failed": "入力が無効な項目があります。内容を確認してください。",
+  "api_error_login_failed": "ログインに失敗しました。",
+  "api_error_register_failed": "登録に失敗しました。"
 }
