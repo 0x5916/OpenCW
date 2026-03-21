@@ -1,25 +1,25 @@
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: opencw-backend:latest
-    restart: unless-stopped
-    environment:
-      - PORT=8080
-#      - GIN_MODE=release
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - JWT_SECRET=${JWT_SECRET}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173}
-    ports:
-      - "${PORT:-8080}:8080"
-    depends_on:
-      db:
-        condition: service_healthy
+#  app:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    image: opencw-backend:latest
+#    restart: unless-stopped
+#    environment:
+#      - PORT=8080
+##      - GIN_MODE=release
+#      - DB_HOST=db
+#      - DB_PORT=5432
+#      - DB_USER=${DB_USER}
+#      - DB_PASSWORD=${DB_PASSWORD}
+#      - DB_NAME=${DB_NAME}
+#      - JWT_SECRET=${JWT_SECRET}
+#      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173}
+#    ports:
+#      - "${PORT:-8080}:8080"
+#    depends_on:
+#      db:
+#        condition: service_healthy
 
   db:
     image: postgres:18.3-alpine3.23

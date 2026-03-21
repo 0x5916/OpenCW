@@ -20,29 +20,33 @@ func (h UserHandler) GetUserInfo(c *gin.Context) {
 	user := c.MustGet("user").(*models.User)
 
 	c.JSON(http.StatusOK, common2.UserInfoResponse{
-		Username:  user.Username,
-		Email:     user.Email,
-		CreatedAt: user.CreatedAt,
+		CallSign:      user.CallSign,
+		Username:      user.Username,
+		Email:         user.Email,
+		EmailVerified: user.EmailVerified,
+		CreatedAt:     user.CreatedAt,
 	})
 }
 
 func (h UserHandler) GetOtherUserInfo(c *gin.Context) {
-	otherUserId := c.Param("id")
+	username := c.Param("username")
 
-	var otherUser models.User
-	if err := h.DB.Take(&otherUser, "id = ?", otherUserId).Error; err != nil {
+	var user models.User
+	if err := h.DB.Take(&user, "username = ?", username).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, common2.ErrorResponse{Error: "User not found"})
 		} else {
-			slog.Error("GetOtherUserInfo DB error", "id", otherUserId, "err", err)
+			slog.Error("GetOtherUserInfo DB error", "username", username, "err", err)
 			c.JSON(http.StatusInternalServerError, common2.ErrorResponse{Error: "Internal server error"})
 		}
 		return
 	}
 
 	c.JSON(http.StatusOK, common2.UserInfoResponse{
-		Username:  otherUser.Username,
-		CreatedAt: otherUser.CreatedAt,
+		CallSign:      user.CallSign,
+		Username:      user.Username,
+		EmailVerified: user.EmailVerified,
+		CreatedAt:     user.CreatedAt,
 	})
 }
 
