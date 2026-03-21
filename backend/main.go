@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"opencw/common"
 	"opencw/utils"
 	"os"
 	"os/signal"
@@ -109,7 +110,7 @@ func main() {
 
 			protected.GET("/hello", func(c *gin.Context) {
 				user := c.MustGet("user").(models.User)
-				c.JSON(http.StatusOK, utils.MessageResponse{Message: "Hello, authenticated user {" + user.Username + "}!"})
+				c.JSON(http.StatusOK, common.MessageResponse{Message: "Hello, authenticated user {" + user.Username + "}!"})
 			})
 		}
 	}
