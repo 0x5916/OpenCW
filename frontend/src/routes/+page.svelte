@@ -61,3 +61,85 @@
     </p>
   </div>
 </section>
+
+<style>
+  .hero {
+    text-align: center;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  .hero-title {
+    color: var(--accent);
+    font-size: 3rem;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    margin-bottom: 1rem;
+  }
+
+  .hero-sub {
+    color: var(--text-secondary);
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    max-width: 44rem;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 2rem;
+  }
+
+  .about-grid {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .about-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .feature-grid {
+    display: grid;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  @media (min-width: 640px) {
+    .feature-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .feature-icon {
+    color: var(--accent);
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    margin-bottom: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .feature-icon :global(svg) {
+    width: 1.875rem;
+    height: 1.875rem;
+  }
+
+  .feature-title {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .feature-body {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+</style>

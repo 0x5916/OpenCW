@@ -464,3 +464,216 @@
     onRegenerate={regenerate}
   />
 {/if}
+
+<style>
+  .learn-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .learn-col-left,
+  .learn-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .learn-heading {
+    margin-bottom: 1rem;
+  }
+
+  .learn-page :global(.card-label) {
+    color: var(--text-label);
+  }
+
+  .learn-answer-card :global(.card-label) {
+    margin-bottom: 0;
+  }
+
+  .page-title-sub {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-top: 0.25rem;
+  }
+
+  .lesson-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .lesson-current-label {
+    margin: 0;
+    color: var(--accent);
+    font-weight: 500;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    white-space: nowrap;
+  }
+
+  .lesson-select {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background-color: var(--bg-inset);
+    color: var(--text-primary);
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  }
+
+  .lesson-select:hover {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+  }
+
+  .lesson-select:focus {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  .lesson-char-row {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.65rem;
+    row-gap: 0.45rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .lesson-char-preview {
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 2.15rem;
+    white-space: nowrap;
+  }
+
+  .lesson-char-select {
+    margin-left: 0;
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+  }
+
+  .lesson-char-play-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .lesson-char-play-row :global(.btn-regen) {
+    margin-top: 0;
+    flex: 1;
+  }
+
+  .settings-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+
+  .settings-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .settings-adv {
+    margin-top: 0.5rem;
+  }
+
+  .settings-adv-toggle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0;
+  }
+
+  .settings-adv-toggle::before {
+    content: '›';
+    display: inline-block;
+    transition: transform 0.2s;
+  }
+
+  .settings-adv[open] .settings-adv-toggle::before {
+    transform: rotate(90deg);
+  }
+
+  .answer-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    min-width: 0;
+    box-shadow: var(--shadow-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: background-color var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+  }
+
+  .answer-card:hover {
+    box-shadow: var(--shadow-lift);
+  }
+
+  @media (max-width: 767px) {
+    .learn-col-right .learn-answer-textarea {
+      min-height: 11rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .learn-page {
+      display: grid;
+      grid-template-columns: 5fr 7fr;
+      column-gap: 1rem;
+      row-gap: 1rem;
+    }
+
+    .learn-col-right > .learn-answer-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .learn-col-right .learn-answer-textarea {
+      flex: 1 1 0;
+      min-height: 6rem;
+      field-sizing: fixed;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .lesson-char-row {
+      grid-template-columns: max-content minmax(0, 1fr);
+      align-items: center;
+      column-gap: 0.45rem;
+    }
+
+    .lesson-char-select {
+      max-width: none;
+    }
+
+    .lesson-char-preview {
+      font-size: 0.78rem;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .settings-grid-2 {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

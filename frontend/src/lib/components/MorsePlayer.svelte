@@ -167,3 +167,88 @@
     </div>
   </div>
 {/if}
+
+<style>
+  .player-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .player-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .player-label {
+    margin-bottom: 0;
+  }
+
+  .player-top {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .player-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .player-progress {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .player-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .player-timer {
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    white-space: nowrap;
+    min-width: 9ch;
+    text-align: right;
+  }
+
+  .player-timer-delay {
+    color: var(--text-muted);
+  }
+
+  .player-buttons {
+    display: flex;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .player-buttons .hidden {
+    display: none;
+  }
+
+  @media (max-width: 900px) {
+    .player-top {
+      gap: 0.45rem;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .player-buttons {
+      flex-wrap: wrap;
+    }
+
+    .player-buttons > * {
+      flex: 1 1 100%;
+    }
+  }
+</style>
