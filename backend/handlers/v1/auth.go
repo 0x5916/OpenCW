@@ -4,7 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	common2 "opencw/common"
+	"opencw/common"
 	"opencw/utils"
 	"strings"
 	"time"
@@ -20,9 +20,9 @@ type AuthHandler struct {
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
-	var input common2.RegisterInput
+	var input common.RegisterInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, common2.NewErrorResponse(common2.ErrorCodeInvalidRequestBody, "Invalid request body"))
+		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid request body"))
 		return
 	}
 
@@ -32,23 +32,23 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		First(&user).Error
 	if err == nil {
 		if user.Username == input.Username && user.Email == input.Email {
-			c.JSON(http.StatusConflict, common2.NewErrorResponse(common2.ErrorCodeConflict, "Username and email already exists"))
+			c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeUsernameEmailAlreadyInUse, "Username and email already exists"))
 		} else if user.Username == input.Username {
-			c.JSON(http.StatusConflict, common2.NewErrorResponse(common2.ErrorCodeConflict, "Username already exists"))
+			c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeUsernameAlreadyInUse, "Username already exists"))
 		} else {
-			c.JSON(http.StatusConflict, common2.NewErrorResponse(common2.ErrorCodeConflict, "Email already exists"))
+			c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailAlreadyInUse, "Email already exists"))
 		}
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		slog.Error("Failed to query user", "err", err, "username", input.Username)
-		c.JSON(http.StatusInternalServerError, common2.NewErrorResponse(common2.ErrorCodeDatabaseFailure, "Database failure"))
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeDatabaseFailure, "Database failure"))
 		return
 	}
 
 	hash, err := utils.HashPassword(input.Password)
 	if err != nil {
 		slog.Error("Failed to hash password", "err", err)
-		c.JSON(http.StatusInternalServerError, common2.NewErrorResponse(common2.ErrorCodePasswordHashFailed, "Failed to hash password"))
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodePasswordHashFailed, "Failed to hash password"))
 		return
 	}
 
@@ -59,32 +59,32 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 	if err := h.DB.Create(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			c.JSON(http.StatusConflict, common2.NewErrorResponse(common2.ErrorCodeConflict, "Registration conflict, please try again"))
+			c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeConflict, "Registration conflict, please try again"))
 			return
 		}
 
 		slog.Error("Failed to create user", "err", err, "username", input.Username)
-		c.JSON(http.StatusInternalServerError, common2.NewErrorResponse(common2.ErrorCodeInternalServerError, "Failed to create user"))
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeInternalServerError, "Failed to create user"))
 		return
 	}
 
 	rawToken, accessToken, err := utils.IssueTokenPair(h.DB, user.ID, time.Now())
 	if err != nil {
 		slog.Error("Failed to issue token pair", "user_id", user.ID, "err", err)
-		c.JSON(http.StatusInternalServerError, common2.NewErrorResponse(common2.ErrorCodeTokenIssueFailed, "Failed to issue token, try to login."))
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeTokenIssueFailed, "Failed to issue token, try to login."))
 		return
 	}
 
-	c.JSON(http.StatusOK, common2.AuthTokenPairResponse{
+	c.JSON(http.StatusOK, common.AuthTokenPairResponse{
 		RefreshToken: rawToken,
 		AccessToken:  accessToken,
 	})
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
-	var input common2.LoginInput
+	var input common.LoginInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, common2.NewErrorResponse(common2.ErrorCodeInvalidRequestBody, "Invalid request body"))
+		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid request body"))
 		return
 	}
 
@@ -98,50 +98,50 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	var user models.User
 	if err := h.DB.Take(&user, queryString, input.Identifier).Error; err != nil {
 		slog.Warn("Login failed", "identifier", input.Identifier, "ip", c.ClientIP())
-		c.JSON(http.StatusUnauthorized, common2.NewErrorResponse(common2.ErrorCodeInvalidCredentials, "Invalid credentials"))
+		c.JSON(http.StatusUnauthorized, common.NewErrorResponse(common.ErrorCodeInvalidCredentials, "Invalid credentials"))
 		return
 	}
 
 	match, err := utils.ComparePasswordAndHash(input.Password, user.Password)
 	if err != nil {
 		slog.Error("Failed to compare password hash", "user_id", user.ID, "err", err)
-		c.JSON(http.StatusInternalServerError, common2.NewErrorResponse(common2.ErrorCodeInternalServerError, "internal error"))
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeInternalServerError, "internal error"))
 		return
 	}
 	if !match {
 		slog.Warn("Login failed: invalid password", "user_id", user.ID, "ip", c.ClientIP())
-		c.JSON(http.StatusUnauthorized, common2.NewErrorResponse(common2.ErrorCodeInvalidCredentials, "Invalid credentials"))
+		c.JSON(http.StatusUnauthorized, common.NewErrorResponse(common.ErrorCodeInvalidCredentials, "Invalid credentials"))
 		return
 	}
 
 	rawToken, accessToken, err := utils.IssueTokenPair(h.DB, user.ID, time.Now())
 	if err != nil {
 		slog.Error("Failed to issue token pair on login", "user_id", user.ID, "err", err)
-		c.JSON(http.StatusInternalServerError, common2.NewErrorResponse(common2.ErrorCodeTokenIssueFailed, "Failed to issue token"))
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeTokenIssueFailed, "Failed to issue token"))
 		return
 	}
 
-	c.JSON(http.StatusOK, common2.AuthTokenPairResponse{
+	c.JSON(http.StatusOK, common.AuthTokenPairResponse{
 		RefreshToken: rawToken,
 		AccessToken:  accessToken,
 	})
 }
 
 func (h *AuthHandler) Refresh(c *gin.Context) {
-	var input common2.RefreshInput
+	var input common.RefreshInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, common2.NewErrorResponse(common2.ErrorCodeInvalidRequestBody, "Invalid request body"))
+		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid request body"))
 		return
 	}
 	now := time.Now()
 
-	var result common2.HttpErrorResponse
+	var result common.HttpErrorResponse
 	var newRefreshToken models.RefreshToken
 	var newRawToken string
 
 	hashedInput, err := utils.HashStringRefreshToken(input.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, common2.NewErrorResponse(common2.ErrorCodeInvalidToken, "Invalid refresh token"))
+		c.JSON(http.StatusUnauthorized, common.NewErrorResponse(common.ErrorCodeInvalidToken, "Invalid refresh token"))
 		return
 	}
 
@@ -149,23 +149,23 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		var refreshToken models.RefreshToken
 
 		if err := tx.Take(&refreshToken, "token = ? AND revoked = false", hashedInput).Error; err != nil {
-			result = common2.HttpErrorResponse{Status: http.StatusUnauthorized, Code: common2.ErrorCodeInvalidToken, Err: "Invalid refresh token"}
-			return common2.ErrInvalidToken
+			result = common.HttpErrorResponse{Status: http.StatusUnauthorized, Code: common.ErrorCodeInvalidToken, Err: "Invalid refresh token"}
+			return common.ErrInvalidToken
 		}
 
 		if now.After(refreshToken.ExpiresAt) {
-			result = common2.HttpErrorResponse{Status: http.StatusUnauthorized, Code: common2.ErrorCodeExpiredToken, Err: "Refresh token expired"}
-			return common2.ErrExpiredToken
+			result = common.HttpErrorResponse{Status: http.StatusUnauthorized, Code: common.ErrorCodeExpiredToken, Err: "Refresh token expired"}
+			return common.ErrExpiredToken
 		}
 
 		if err := tx.Model(&refreshToken).Update("revoked", true).Error; err != nil {
-			result = common2.HttpErrorResponse{Status: http.StatusInternalServerError, Code: common2.ErrorCodeInternalServerError, Err: "Failed to revoke refresh token"}
+			result = common.HttpErrorResponse{Status: http.StatusInternalServerError, Code: common.ErrorCodeInternalServerError, Err: "Failed to revoke refresh token"}
 			return err
 		}
 
 		rawToken, hashedToken, err := utils.GenerateRefreshToken()
 		if err != nil {
-			result = common2.HttpErrorResponse{Status: http.StatusInternalServerError, Code: common2.ErrorCodeInternalServerError, Err: "Failed to generate refresh token"}
+			result = common.HttpErrorResponse{Status: http.StatusInternalServerError, Code: common.ErrorCodeInternalServerError, Err: "Failed to generate refresh token"}
 			return err
 		}
 		newRawToken = rawToken
@@ -176,7 +176,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 			ExpiresAt: now.Add(time.Hour * 24 * 30),
 		}
 		if err := tx.Create(&newRefreshToken).Error; err != nil {
-			result = common2.HttpErrorResponse{Status: http.StatusInternalServerError, Code: common2.ErrorCodeInternalServerError, Err: "Failed to create new refresh token"}
+			result = common.HttpErrorResponse{Status: http.StatusInternalServerError, Code: common.ErrorCodeInternalServerError, Err: "Failed to create new refresh token"}
 			return err
 		}
 		return nil
@@ -188,18 +188,18 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		} else {
 			slog.Warn("Refresh failed", "reason", result.Err, "ip", c.ClientIP())
 		}
-		c.JSON(result.Status, common2.NewErrorResponse(result.Code, result.Err))
+		c.JSON(result.Status, common.NewErrorResponse(result.Code, result.Err))
 		return
 	}
 
 	accessToken, err := utils.GenerateAccessToken(newRefreshToken.UserID, now)
 	if err != nil {
 		slog.Error("Failed to generate token", "user_id", newRefreshToken.UserID, "err", err)
-		c.JSON(http.StatusInternalServerError, common2.NewErrorResponse(common2.ErrorCodeTokenIssueFailed, "Failed to generate access token"))
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeTokenIssueFailed, "Failed to generate access token"))
 		return
 	}
 
-	c.JSON(http.StatusOK, common2.AuthTokenPairResponse{
+	c.JSON(http.StatusOK, common.AuthTokenPairResponse{
 		RefreshToken: newRawToken,
 		AccessToken:  accessToken,
 	})

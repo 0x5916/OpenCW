@@ -197,7 +197,10 @@
   "api_error_password_hash_failed": "密码处理失败。",
   "api_error_token_issue_failed": "签发令牌失败。",
   "api_error_email_already_in_use": "该邮箱已被使用。",
+  "api_error_username_already_in_use": "该用户名已被使用。",
+  "api_error_username_email_already_in_use": "该用户名和邮箱均已被使用。",
   "api_error_email_unchanged": "新邮箱必须与当前邮箱不同。",
+  "api_error_call_sign_already_in_use": "该呼号已被使用。",
   "api_error_validation_failed": "部分字段无效，请检查输入内容。",
   "api_error_login_failed": "登录失败。",
   "api_error_register_failed": "注册失败。"

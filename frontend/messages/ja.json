@@ -197,7 +197,10 @@
   "api_error_password_hash_failed": "パスワード処理に失敗しました。",
   "api_error_token_issue_failed": "トークンの発行に失敗しました。",
   "api_error_email_already_in_use": "このメールアドレスは既に使用されています。",
+  "api_error_username_already_in_use": "このユーザー名は既に使用されています。",
+  "api_error_username_email_already_in_use": "このユーザー名とメールアドレスは既に使用されています。",
   "api_error_email_unchanged": "新しいメールアドレスは現在のものと異なる必要があります。",
+  "api_error_call_sign_already_in_use": "このコールサインは既に使用されています。",
   "api_error_validation_failed": "入力が無効な項目があります。内容を確認してください。",
   "api_error_login_failed": "ログインに失敗しました。",
   "api_error_register_failed": "登録に失敗しました。"

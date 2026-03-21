@@ -197,7 +197,10 @@
   "api_error_password_hash_failed": "密碼處理失敗。",
   "api_error_token_issue_failed": "簽發權杖失敗。",
   "api_error_email_already_in_use": "此電郵已被使用。",
+  "api_error_username_already_in_use": "此使用者名稱已被使用。",
+  "api_error_username_email_already_in_use": "此使用者名稱與電郵均已被使用。",
   "api_error_email_unchanged": "新電郵必須與目前電郵不同。",
+  "api_error_call_sign_already_in_use": "此呼號已被使用。",
   "api_error_validation_failed": "部分欄位無效，請檢查輸入內容。",
   "api_error_login_failed": "登入失敗。",
   "api_error_register_failed": "註冊失敗。"

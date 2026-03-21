@@ -197,7 +197,10 @@
 	"api_error_password_hash_failed": "Password processing failed.",
 	"api_error_token_issue_failed": "Failed to issue token.",
 	"api_error_email_already_in_use": "Email is already in use.",
+	"api_error_username_already_in_use": "Username is already in use.",
+	"api_error_username_email_already_in_use": "Username and email are already in use.",
 	"api_error_email_unchanged": "New email must be different from your current email.",
+	"api_error_call_sign_already_in_use": "Call sign is already in use.",
 	"api_error_validation_failed": "Some fields are invalid. Please review your input.",
 	"api_error_login_failed": "Login failed.",
 	"api_error_register_failed": "Registration failed."

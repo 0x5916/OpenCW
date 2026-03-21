@@ -19,6 +19,10 @@ type RefreshInput struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
+type UpdateCallSignInput struct {
+	CallSign string `json:"call_sign" binding:"required,max=254"`
+}
+
 type UpdateEmailInput struct {
 	Email string `json:"email" binding:"required,email,max=254"`
 }
