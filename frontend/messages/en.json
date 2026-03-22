@@ -134,7 +134,7 @@
 	"player_duration_sec": "{duration}s",
 	"player_duration_min": "{min}:{sec}m",
 	"player_label": "Full Session Player",
-	"player_play": "Start Lesson",
+	"player_play": "Start",
 	"player_stop": "Stop",
 	"player_pause": "Pause",
 	"player_resume": "Resume",

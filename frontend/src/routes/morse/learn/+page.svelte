@@ -2,24 +2,13 @@
   import { generateTimedLesson, LESSONS } from '$lib/morse';
   import MorsePlayer from '$lib/components/MorsePlayer.svelte';
   import ResultOverlay from '$lib/components/ResultOverlay.svelte';
-  import ErrorAlert from '$lib/components/ErrorAlert.svelte';
-  import { untrack, onDestroy } from 'svelte';
-  import { RefreshCw, Play, Square, ClipboardCheck, Upload, Download, Info } from 'lucide-svelte';
+  import { untrack } from 'svelte';
+  import { ClipboardCheck } from 'lucide-svelte';
   import { score, diffWords } from '$lib/score';
   import type { DiffToken } from '$lib/score';
   import { user } from '$lib/auth';
   import { submitProgress } from '$lib/api';
-  import { langPreference, setLangPreference } from '$lib/i18n.svelte';
-  import {
-    type CWSettings,
-    normalizeLesson,
-    readClientPageSettings,
-    restoreSettingsFromServer,
-    applyClientPageSettings,
-    syncSettingsToServer
-  } from '$lib/cwSync';
-  import { localizeApiError } from '$lib/errorLocalization';
-  import { localizeHref } from '$lib/paraglide/runtime';
+  import { normalizeLesson } from '$lib/cwSync';
   import * as m from '$lib/paraglide/messages';
 
   let { data } = $props();
@@ -35,122 +24,8 @@
   let charWpm = $state(20);
   let effWpm = $state(10);
   let freq = $state(600);
+  let volume = $state(1);
   let startDelay = $state(0.5);
-
-  let syncing = $state(false);
-  let synced = $state(false);
-  let syncError = $state('');
-  let restoring = $state(false);
-  let restoreError = $state('');
-  let suppressAutoSync = $state(true);
-
-  let syncedTimeout: ReturnType<typeof setTimeout> | null = null;
-  let autoSyncTimeout: ReturnType<typeof setTimeout> | null = null;
-  let autoSyncQueued = $state(false);
-
-  $effect(() => {
-    if ($user) {
-      restoreSettingsFromServer()
-        .then(({ cw: cwSettings, page }) => {
-          charWpm = cwSettings.char_wpm;
-          effWpm = cwSettings.eff_wpm;
-          freq = cwSettings.freq;
-          startDelay = cwSettings.start_delay;
-
-          chosenLesson = applyClientPageSettings(page, LESSONS.length, setLangPreference, {
-            applyTheme: false,
-            applyLanguage: false
-          });
-        })
-        .catch(() => {
-          // Error silently handled, won't block UI
-        })
-        .finally(() => {
-          suppressAutoSync = false;
-        });
-    } else {
-      suppressAutoSync = false;
-    }
-  });
-
-  function scheduleAutoSync() {
-    if (!$user || suppressAutoSync || restoring) return;
-    autoSyncQueued = true;
-    if (autoSyncTimeout) clearTimeout(autoSyncTimeout);
-    autoSyncTimeout = setTimeout(() => {
-      void syncToAccount(false);
-    }, 1500);
-  }
-
-  async function syncToAccount(showFeedback = true) {
-    if (!$user) return;
-    if (syncing) {
-      autoSyncQueued = true;
-      return;
-    }
-
-    syncing = true;
-    autoSyncQueued = false;
-
-    if (showFeedback) {
-      synced = false;
-      syncError = '';
-      if (syncedTimeout) {
-        clearTimeout(syncedTimeout);
-        syncedTimeout = null;
-      }
-    }
-
-    const cw: CWSettings = { char_wpm: charWpm, eff_wpm: effWpm, freq, start_delay: startDelay };
-    const page = readClientPageSettings(chosenLesson, LESSONS.length, langPreference.value);
-
-    try {
-      await syncSettingsToServer(cw, page);
-      if (showFeedback) {
-        synced = true;
-        if (syncedTimeout) clearTimeout(syncedTimeout);
-        syncedTimeout = setTimeout(() => {
-          synced = false;
-          syncedTimeout = null;
-        }, 3000);
-      }
-    } catch (error) {
-      if (showFeedback) {
-        syncError = localizeApiError(error, () => m.trainer_error_sync_settings());
-        setTimeout(() => (syncError = ''), 4000);
-      }
-    } finally {
-      syncing = false;
-      if (autoSyncQueued) {
-        scheduleAutoSync();
-      }
-    }
-  }
-
-  async function restoreFromAccount() {
-    restoring = true;
-    restoreError = '';
-    suppressAutoSync = true;
-    autoSyncQueued = false;
-    if (autoSyncTimeout) {
-      clearTimeout(autoSyncTimeout);
-      autoSyncTimeout = null;
-    }
-    try {
-      const { cw, page } = await restoreSettingsFromServer();
-      charWpm = cw.char_wpm;
-      effWpm = cw.eff_wpm;
-      freq = cw.freq;
-      startDelay = cw.start_delay;
-      chosenLesson = applyClientPageSettings(page, LESSONS.length, setLangPreference);
-    } catch (error) {
-      restoreError = localizeApiError(error, () => m.trainer_error_load_settings());
-      setTimeout(() => (restoreError = ''), 4000);
-    } finally {
-      suppressAutoSync = false;
-      restoring = false;
-    }
-  }
 
   $effect(() => {
     const val = String(normalizeLesson(chosenLesson, LESSONS.length));
@@ -162,27 +37,11 @@
   let currentLessonWord = $derived(LESSONS.slice(0, chosenLesson).join(''));
   let currentLessonChars = $derived(currentLessonWord.split('').filter(Boolean));
   let selectedLessonChar = $state(LESSONS[0]?.[0] ?? '');
-  let selectedCharPlayer = $state<{
-    playNow: () => Promise<void>;
-    stopNow: () => Promise<void>;
-  } | null>(null);
   let fullLessonPlayer = $state<{
     playNow: () => Promise<void>;
     stopNow: () => Promise<void>;
     isStarted: () => boolean;
   } | null>(null);
-  let charPlaying = $state(false);
-
-  async function toggleSelectedLessonChar() {
-    if (charPlaying) {
-      await selectedCharPlayer?.stopNow();
-      charPlaying = false;
-    } else {
-      charPlaying = true;
-      await selectedCharPlayer?.playNow();
-    }
-  }
-
   function regenerate() {
     lessonText = generateTimedLesson(chosenLesson, 60, charWpm, effWpm);
     inputText = '';
@@ -210,7 +69,6 @@
     result = -1;
     diffTokens = [];
     showOverlay = false;
-    scheduleAutoSync();
   }
 
   function nextLesson() {
@@ -219,17 +77,13 @@
     result = -1;
     diffTokens = [];
     showOverlay = false;
-    scheduleAutoSync();
   }
 
   function onLessonSelectChange() {
     result = -1;
-    scheduleAutoSync();
   }
 
-  function onCwSettingInput() {
-    scheduleAutoSync();
-  }
+  function onCwSettingInput() {}
 
   $effect(() => {
     const char = LESSONS[chosenLesson - 1] ?? '';
@@ -242,11 +96,6 @@
         selectedLessonChar = chars[0];
       }
     });
-  });
-
-  onDestroy(() => {
-    if (syncedTimeout) clearTimeout(syncedTimeout);
-    if (autoSyncTimeout) clearTimeout(autoSyncTimeout);
   });
 
   function onSelectedCharChange(event: Event) {
@@ -313,124 +162,40 @@
           {/each}
         </select>
       </div>
-      <div class="lesson-char-play-row">
-        <button type="button" class="btn-regen" onclick={toggleSelectedLessonChar}>
-          {#if charPlaying}
-            <Square size={16} />{m.player_stop()}
-          {:else}
-            <Play size={16} />{m.trainer_play_letter()}
-          {/if}
-        </button>
-      </div>
       <MorsePlayer
-        bind:this={selectedCharPlayer}
-        text={selectedLessonChar}
+        text={Array(5).fill(selectedLessonChar).join("")}
         {charWpm}
         {effWpm}
         {freq}
+        {volume}
         compact
-        hideControls
+        showSettings
+        mediaStyle
+        onSettingsInput={onCwSettingInput}
         playLabel={currentLessonChars.length > 1
           ? `Play "${selectedLessonChar}"`
           : m.trainer_play_letter()}
-        repeat={3}
-        onEnded={() => (charPlaying = false)}
       />
     </div>
 
-    <div class="card-sm">
-      <h2 class="card-label">{m.trainer_label_settings()}</h2>
-      <div class="settings-grid settings-grid-2">
-        <label class="settings-field">
-          <span class="label-text">
-            {m.trainer_label_char_wpm()}
-            <span class="tooltip-icon" data-tooltip={m.trainer_tooltip_char_wpm()}><Info size={11} /></span>
-          </span>
-          <input type="number" bind:value={charWpm} min="5" max="50" class="input" oninput={onCwSettingInput} />
-        </label>
-        <label class="settings-field">
-          <span class="label-text">
-            {m.trainer_label_eff_wpm()}
-            <span class="tooltip-icon" data-tooltip={m.trainer_tooltip_eff_wpm()}><Info size={11} /></span>
-          </span>
-          <input type="number" bind:value={effWpm} min="5" max="50" class="input" oninput={onCwSettingInput} />
-        </label>
-      </div>
-      <details class="settings-adv">
-        <summary class="settings-adv-toggle">Advanced</summary>
-        <div class="settings-grid settings-grid-2">
-          <label class="settings-field">
-            <span class="label-text">{m.trainer_label_freq()}</span>
-            <input type="number" bind:value={freq} min="100" max="2000" class="input" oninput={onCwSettingInput} />
-          </label>
-          <label class="settings-field">
-            <span class="label-text">{m.trainer_label_start_delay()}</span>
-            <input
-              type="number"
-              bind:value={startDelay}
-              min="0"
-              max="10"
-              step="0.5"
-              class="input"
-              oninput={onCwSettingInput}
-            />
-          </label>
-        </div>
-      </details>
-      {#if $user}
-        <div class="lesson-char-play-row">
-          <button
-            type="button"
-            class="btn-regen"
-            class:btn-regen-success={synced}
-            onclick={() => void syncToAccount()}
-            disabled={syncing}
-          >
-            <Upload size={14} />{synced
-              ? m.trainer_synced()
-              : syncing
-                ? m.trainer_syncing()
-                : m.trainer_sync_settings()}
-          </button>
-          <button type="button" class="btn-regen" onclick={restoreFromAccount} disabled={restoring}>
-            <Download size={14} />{restoring ? m.trainer_restoring() : m.trainer_restore_settings()}
-          </button>
-        </div>
-        {#if syncError}
-          <ErrorAlert message={syncError} />
-        {:else if restoreError}
-          <ErrorAlert message={restoreError} />
-        {/if}
-      {:else}
-        <p class="body-text">
-          {m.trainer_guest_notice()}
-          <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
-          /
-          <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
-        </p>
-      {/if}
-    </div>
   </div>
 
   <!-- Right column: answer + result -->
   <div class="learn-col-right">
-    <div class="card-sm">
+    <div class="answer-card learn-answer-card">
       <MorsePlayer
         bind:this={fullLessonPlayer}
         text={lessonText}
         {charWpm}
         {effWpm}
         {freq}
+        {volume}
         {startDelay}
+        showSettings
+        mediaStyle
+        onSettingsInput={onCwSettingInput}
         label={m.player_label()}
       />
-      <button onclick={regenerate} class="btn-regen"
-        ><RefreshCw size={16} />{m.trainer_regenerate()}</button
-      >
-    </div>
-
-    <div class="answer-card learn-answer-card">
-      <h2 class="card-label">{m.trainer_answer_label()}</h2>
       <textarea
         placeholder={`${m.trainer_answer_placeholder()}\n${m.trainer_answer_shortcut_tip()}`}
         bind:value={inputText}
@@ -564,53 +329,6 @@
     max-width: none;
   }
 
-  .lesson-char-play-row {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-  }
-
-  .lesson-char-play-row :global(.btn-regen) {
-    margin-top: 0;
-    flex: 1;
-  }
-
-  .settings-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
-  }
-
-  .settings-grid-2 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .settings-adv {
-    margin-top: 0.5rem;
-  }
-
-  .settings-adv-toggle {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    cursor: pointer;
-    user-select: none;
-    list-style: none;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.15rem 0;
-  }
-
-  .settings-adv-toggle::before {
-    content: '›';
-    display: inline-block;
-    transition: transform 0.2s;
-  }
-
-  .settings-adv[open] .settings-adv-toggle::before {
-    transform: rotate(90deg);
-  }
-
   .answer-card {
     background-color: var(--bg-surface);
     border: 1px solid var(--border);
@@ -671,9 +389,4 @@
     }
   }
 
-  @media (max-width: 420px) {
-    .settings-grid-2 {
-      grid-template-columns: 1fr;
-    }
-  }
 </style>
