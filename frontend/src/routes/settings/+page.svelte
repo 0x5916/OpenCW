@@ -5,6 +5,8 @@
     getUserInfo,
     updateCallSign,
     updateEmail,
+    sendVerificationEmail,
+    verifyEmail,
     updatePassword,
     savePageSettings,
     type PageSettings
@@ -35,9 +37,17 @@
   let callSignSaved = $state(false);
   let email = $state('');
   let initialEmail = $state('');
+  let emailVerified = $state(false);
   let emailSaving = $state(false);
   let emailError = $state('');
   let emailSaved = $state(false);
+  let verificationCode = $state('');
+  let verificationSendLoading = $state(false);
+  let verificationSendError = $state('');
+  let verificationSent = $state(false);
+  let verificationCheckLoading = $state(false);
+  let verificationCheckError = $state('');
+  let verificationSuccess = $state(false);
 
   // Password section
   let currentPassword = $state('');
@@ -110,6 +120,12 @@
       initialCallSign = callSign;
       email = info.email;
       initialEmail = info.email;
+      emailVerified = info.email_verified;
+      verificationCode = '';
+      verificationSent = false;
+      verificationSuccess = false;
+      verificationSendError = '';
+      verificationCheckError = '';
       charWpm = cw.char_wpm;
       initialCharWpm = cw.char_wpm;
       effWpm = cw.eff_wpm;
@@ -163,12 +179,76 @@
     try {
       await updateEmail(email);
       initialEmail = email;
+      emailVerified = false;
+      verificationCode = '';
+      verificationSent = false;
+      verificationSuccess = false;
+      verificationSendError = '';
+      verificationCheckError = '';
       emailSaved = true;
       setTimeout(() => (emailSaved = false), 3000);
     } catch (err) {
       emailError = localizeApiError(err, () => m.settings_save_error());
     } finally {
       emailSaving = false;
+    }
+  }
+
+  async function requestEmailVerificationCode() {
+    if (emailDirty) {
+      verificationSendError = m.settings_email_verify_save_email_first();
+      return;
+    }
+    if (emailVerified) {
+      verificationSendError = '';
+      return;
+    }
+
+    verificationSendLoading = true;
+    verificationSendError = '';
+    verificationSent = false;
+    verificationSuccess = false;
+
+    try {
+      await sendVerificationEmail();
+      verificationSent = true;
+      setTimeout(() => (verificationSent = false), 8000);
+    } catch (err) {
+      verificationSendError = localizeApiError(err, () => m.settings_save_error());
+    } finally {
+      verificationSendLoading = false;
+    }
+  }
+
+  async function submitEmailVerification(e: SubmitEvent) {
+    e.preventDefault();
+
+    if (emailDirty) {
+      verificationCheckError = m.settings_email_verify_save_email_first();
+      return;
+    }
+
+    const code = verificationCode.trim();
+    if (code === '') {
+      verificationCheckError = m.settings_email_verify_code_required();
+      return;
+    }
+
+    verificationCheckLoading = true;
+    verificationCheckError = '';
+    verificationSuccess = false;
+
+    try {
+      await verifyEmail(code);
+      emailVerified = true;
+      verificationCode = '';
+      verificationSent = false;
+      verificationSuccess = true;
+      setTimeout(() => (verificationSuccess = false), 5000);
+    } catch (err) {
+      verificationCheckError = localizeApiError(err, () => m.settings_save_error());
+    } finally {
+      verificationCheckLoading = false;
     }
   }
 
@@ -329,6 +409,65 @@
           <p class="settings-error">⚠ {emailError}</p>
         {/if}
       </form>
+
+      <div class="settings-email-verification">
+        <p class={`settings-email-status ${emailVerified ? 'is-verified' : 'is-unverified'}`}>
+          {emailVerified
+            ? m.settings_email_verify_status_verified()
+            : m.settings_email_verify_status_unverified()}
+        </p>
+
+        {#if !emailVerified}
+          <div class="settings-input-action">
+            <button
+              type="button"
+              class="btn-primary settings-btn-compact"
+              onclick={requestEmailVerificationCode}
+              disabled={verificationSendLoading || emailDirty}
+            >
+              {verificationSendLoading
+                ? m.settings_saving()
+                : verificationSent
+                  ? m.settings_email_verify_code_sent()
+                  : m.settings_email_verify_send_code()}
+            </button>
+          </div>
+
+          <form onsubmit={submitEmailVerification} class="settings-form settings-verification-form">
+            <label class="settings-field">
+              <span class="label-text">{m.settings_email_verify_code_label()}</span>
+              <div class="settings-input-action">
+                <input
+                  type="text"
+                  bind:value={verificationCode}
+                  class="input"
+                  placeholder={m.settings_email_verify_code_placeholder()}
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                />
+                <button
+                  type="submit"
+                  class="btn-primary settings-btn-compact"
+                  disabled={verificationCheckLoading || emailDirty}
+                >
+                  {verificationCheckLoading
+                    ? m.settings_saving()
+                    : verificationSuccess
+                      ? m.settings_email_verify_verified()
+                      : m.settings_email_verify_confirm()}
+                </button>
+              </div>
+            </label>
+          </form>
+        {/if}
+
+        {#if verificationSendError}
+          <p class="settings-error">⚠ {verificationSendError}</p>
+        {/if}
+        {#if verificationCheckError}
+          <p class="settings-error">⚠ {verificationCheckError}</p>
+        {/if}
+      </div>
 
       <hr class="settings-divider" />
 
@@ -491,6 +630,26 @@
     border: none;
     border-top: 1px solid var(--border);
     margin: 1rem 0;
+  }
+  .settings-email-verification {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .settings-email-status {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .settings-email-status.is-verified {
+    color: var(--success, #10b981);
+  }
+  .settings-email-status.is-unverified {
+    color: var(--warning, #d97706);
+  }
+  .settings-verification-form {
+    margin-top: 0;
   }
   .settings-subtitle {
     margin: 0;

@@ -85,7 +85,10 @@ func (h UserHandler) UpdateEmail(c *gin.Context) {
 		return
 	}
 
-	if err := h.DB.Model(user).Update("email", input.Email).Error; err != nil {
+	if err := h.DB.Model(user).Updates(map[string]any{
+		"email":          input.Email,
+		"email_verified": false,
+	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailAlreadyInUse, "Email already in use"))
 			return

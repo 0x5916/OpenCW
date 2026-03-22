@@ -5,11 +5,11 @@ import (
 	"log/slog"
 	"net/http"
 	"opencw/common"
+	"opencw/models"
 	"opencw/utils"
+	"strconv"
 	"strings"
 	"time"
-
-	"opencw/models"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -125,6 +125,126 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		RefreshToken: rawToken,
 		AccessToken:  accessToken,
 	})
+}
+
+func (h *AuthHandler) SendVerificationEmail(c *gin.Context) {
+	user := c.MustGet("user").(*models.User)
+	now := time.Now()
+
+	if user.EmailVerified {
+		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeEmailAlreadyVerified, "Email is already verified"))
+		return
+	}
+
+	var latestOTP models.EmailOTP
+	err := h.DB.Where("email = ?", user.Email).Order("created_at DESC").First(&latestOTP).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		slog.Error("Failed to query latest verification code", "user_id", user.ID, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeDatabaseFailure, "Database failure"))
+		return
+	}
+
+	if err == nil {
+		retryAfter := int(time.Until(latestOTP.CreatedAt.Add(time.Minute)).Seconds())
+		if retryAfter > 0 {
+			c.Header("Retry-After", strconv.Itoa(retryAfter+1))
+			c.JSON(http.StatusTooManyRequests, common.NewErrorResponse(common.ErrorCodeVerificationRateLimited, "Please wait before requesting another verification email"))
+			return
+		}
+	}
+
+	code, err := utils.GenerateVerificationCode()
+	if err != nil {
+		slog.Error("Failed to generate verification code", "user_id", user.ID, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeInternalServerError, "Failed to generate verification code"))
+		return
+	}
+
+	expiresAt := now.Add(10 * time.Minute)
+	verification := models.EmailOTP{
+		Email:     user.Email,
+		Code:      code,
+		ExpiredAt: expiresAt,
+		Verified:  false,
+	}
+
+	if err := h.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("email = ? AND verified = ?", user.Email, false).Delete(&models.EmailOTP{}).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Create(&verification).Error; err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		slog.Error("Failed to persist verification code", "user_id", user.ID, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeDatabaseFailure, "Database failure"))
+		return
+	}
+
+	if err := utils.SendVerificationEmail(user.Email, code); err != nil {
+		slog.Error("Failed to send verification email", "user_id", user.ID, "err", err)
+		_ = h.DB.Delete(&verification).Error
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeVerificationSendFailed, "Failed to send verification email"))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.MessageResponse{Message: "Verification email sent"})
+}
+
+func (h *AuthHandler) VerifyEmail(c *gin.Context) {
+	user := c.MustGet("user").(*models.User)
+
+	if user.EmailVerified {
+		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeEmailAlreadyVerified, "Email is already verified"))
+		return
+	}
+
+	var input common.VerifyEmailInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid request body"))
+		return
+	}
+
+	var otp models.EmailOTP
+	err := h.DB.Where("email = ? AND code = ? AND verified = ?", user.Email, input.Code, false).
+		Order("created_at DESC").
+		First(&otp).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeVerificationCodeInvalid, "Invalid verification code"))
+			return
+		}
+
+		slog.Error("Failed to query verification code", "user_id", user.ID, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeDatabaseFailure, "Database failure"))
+		return
+	}
+
+	if time.Now().After(otp.ExpiredAt) {
+		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeVerificationCodeExpired, "Verification code expired"))
+		return
+	}
+
+	if err := h.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&otp).Update("verified", true).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Model(&models.User{}).Where("id = ?", user.ID).Update("email_verified", true).Error; err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		slog.Error("Failed to verify email", "user_id", user.ID, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeDatabaseFailure, "Database failure"))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.MessageResponse{Message: "Email verified"})
 }
 
 func (h *AuthHandler) Logout(c *gin.Context) {

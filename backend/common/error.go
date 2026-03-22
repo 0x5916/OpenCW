@@ -26,6 +26,11 @@ const (
 	ErrorCodeUsernameAlreadyInUse      = "USERNAME_ALREADY_IN_USE"
 	ErrorCodeUsernameEmailAlreadyInUse = "USERNAME_EMAIL_ALREADY_IN_USE"
 	ErrorCodeEmailUnchanged            = "EMAIL_UNCHANGED"
+	ErrorCodeEmailAlreadyVerified      = "EMAIL_ALREADY_VERIFIED"
+	ErrorCodeVerificationCodeInvalid   = "VERIFICATION_CODE_INVALID"
+	ErrorCodeVerificationCodeExpired   = "VERIFICATION_CODE_EXPIRED"
+	ErrorCodeVerificationSendFailed    = "VERIFICATION_SEND_FAILED"
+	ErrorCodeVerificationRateLimited   = "VERIFICATION_RATE_LIMITED"
 	ErrorCodeCallSignAlreadyInUse      = "CALL_SIGN_ALREADY_IN_USE"
 )
 

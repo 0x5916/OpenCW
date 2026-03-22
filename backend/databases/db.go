@@ -33,6 +33,7 @@ func Connect() {
 
 	if err := db.AutoMigrate(
 		&models.User{},
+		&models.EmailOTP{},
 		&models.RefreshToken{},
 		&models.CWSettings{},
 		&models.PageSettings{},

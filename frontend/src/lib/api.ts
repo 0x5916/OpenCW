@@ -108,6 +108,15 @@ async function apiSendJson(path: string, method: 'POST' | 'PUT', body: unknown, 
   if (!res.ok) return throwApiError(res, fallback);
 }
 
+async function apiPost(path: string, fallback: string): Promise<void> {
+  const res = await apiFetch(path, {
+    method: 'POST',
+    headers: { Accept: 'application/json' }
+  });
+
+  if (!res.ok) return throwApiError(res, fallback);
+}
+
 export interface CWSettings {
   char_wpm: number;
   eff_wpm: number;
@@ -160,6 +169,14 @@ export async function getPageSettings(): Promise<PageSettings> {
 
 export async function updateEmail(email: string): Promise<void> {
   await apiSendJson('/user/email', 'PUT', { email }, 'INTERNAL_SERVER_ERROR');
+}
+
+export async function sendVerificationEmail(): Promise<void> {
+  await apiPost('/auth/send-verification-email', 'VERIFICATION_SEND_FAILED');
+}
+
+export async function verifyEmail(code: string): Promise<void> {
+  await apiSendJson('/auth/verify-email', 'POST', { code }, 'VERIFICATION_CODE_INVALID');
 }
 
 export async function updateCallSign(callSign: string): Promise<void> {

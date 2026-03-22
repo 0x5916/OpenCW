@@ -10,6 +10,8 @@
 | POST   | /v1/auth/login            | Login and get tokens               |
 | POST   | /v1/auth/logout           | Logout and revoke refresh token     |
 | POST   | /v1/auth/refresh          | Refresh access/refresh tokens       |
+| POST   | /v1/auth/send-verification-email | Send verification code to current email |
+| POST   | /v1/auth/verify-email     | Verify current email with OTP code  |
 | GET    | /v1/settings/all          | Get all user settings               |
 | GET    | /v1/settings/cw           | Get CW settings                     |
 | GET    | /v1/settings/page         | Get page settings                   |
@@ -26,7 +28,9 @@
 ---
 
 ## Authentication
-All endpoints except `/v1/health`, `/v1/auth/*` require Bearer JWT authentication.
+Public endpoints: `/v1/health`, `/v1/auth/register`, `/v1/auth/login`, `/v1/auth/logout`, `/v1/auth/refresh`.
+
+All other endpoints require Bearer JWT authentication.
 
 ---
 
@@ -166,6 +170,71 @@ curl -X POST http://localhost:8080/v1/auth/logout \
 curl -X POST http://localhost:8080/v1/auth/refresh \
   -H "Content-Type: application/json" \
   -d '{"refresh_token":"..."}'
+```
+
+### POST /v1/auth/send-verification-email
+**Send a verification OTP to the authenticated user's current email**
+
+**Authentication:** Bearer JWT
+
+**Request Body:**
+None
+
+**Response (200):**
+```json
+{
+  "message": "Verification email sent"
+}
+```
+
+**Error Responses:**
+| Status | Error Code                 | Message                               |
+|--------|----------------------------|---------------------------------------|
+| 400    | `EMAIL_ALREADY_VERIFIED`   | "Email is already verified"          |
+| 429    | `VERIFICATION_RATE_LIMITED`| "Please wait before requesting another verification email" |
+| 500    | `DATABASE_FAILURE`         | "Database failure"                   |
+| 500    | `VERIFICATION_SEND_FAILED` | "Failed to send verification email"  |
+
+**Example cURL:**
+```bash
+curl -X POST http://localhost:8080/v1/auth/send-verification-email \
+  -H "Authorization: Bearer <token>"
+```
+
+### POST /v1/auth/verify-email
+**Verify authenticated user's current email using OTP code**
+
+**Authentication:** Bearer JWT
+
+**Request Body:**
+```json
+{
+  "code": "123456"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Email verified"
+}
+```
+
+**Error Responses:**
+| Status | Error Code                   | Message                       |
+|--------|------------------------------|-------------------------------|
+| 400    | `INVALID_REQUEST_BODY`       | "Invalid request body"       |
+| 400    | `EMAIL_ALREADY_VERIFIED`     | "Email is already verified"  |
+| 400    | `VERIFICATION_CODE_INVALID`  | "Invalid verification code"  |
+| 400    | `VERIFICATION_CODE_EXPIRED`  | "Verification code expired"  |
+| 500    | `DATABASE_FAILURE`           | "Database failure"           |
+
+**Example cURL:**
+```bash
+curl -X POST http://localhost:8080/v1/auth/verify-email \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"code":"123456"}'
 ```
 
 ---

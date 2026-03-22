@@ -81,6 +81,16 @@ export function localizeApiError(error: unknown, fallback: () => string): string
 			return m.api_error_email_unchanged();
 		case 'CALL_SIGN_ALREADY_IN_USE':
 			return m.api_error_call_sign_already_in_use();
+		case 'EMAIL_ALREADY_VERIFIED':
+			return m.api_error_email_already_verified();
+		case 'VERIFICATION_RATE_LIMITED':
+			return m.api_error_verification_rate_limited();
+		case 'VERIFICATION_SEND_FAILED':
+			return m.api_error_verification_send_failed();
+		case 'VERIFICATION_CODE_INVALID':
+			return m.api_error_verification_code_invalid();
+		case 'VERIFICATION_CODE_EXPIRED':
+			return m.api_error_verification_code_expired();
 		case 'VALIDATION_FAILED':
 			return m.api_error_validation_failed();
 		case 'LOGIN_FAILED':

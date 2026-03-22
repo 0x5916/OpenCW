@@ -84,6 +84,12 @@ func main() {
 		protected.Use(middlewares.AuthRequired())
 		protected.Use(middlewares.LoadUser(databases.DB))
 		{
+			authProtected := protected.Group("/auth")
+			{
+				authProtected.POST("/send-verification-email", authHandler.SendVerificationEmail)
+				authProtected.POST("/verify-email", authHandler.VerifyEmail)
+			}
+
 			settings := protected.Group("/settings")
 			settingsHandler := handlers.SettingsHandler{DB: databases.DB}
 			{

@@ -32,6 +32,8 @@ docker run --rm -p 8080:8080 \
   -e DB_PASSWORD=secret \
   -e DB_NAME=opencw \
   -e JWT_SECRET=<base64-secret> \
+  -e RESEND_API_KEY=<resend-api-key> \
+  -e RESEND_FROM_EMAIL='OpenCW <onboarding@resend.dev>' \
   opencw-backend:latest
 ```
 
