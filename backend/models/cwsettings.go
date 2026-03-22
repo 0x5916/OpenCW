@@ -19,7 +19,7 @@ func (CWSettings) TableName() string {
 func GetDefaultCWSettings() CWSettings {
 	return CWSettings{
 		CharWPM:    20,
-		EffWPM:     15,
+		EffWPM:     12,
 		Freq:       600,
 		StartDelay: 0.5,
 	}
