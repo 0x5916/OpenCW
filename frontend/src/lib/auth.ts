@@ -78,7 +78,7 @@ export async function refreshTokens(): Promise<boolean> {
   const refreshToken = localStorage.getItem('refresh_token');
   if (!refreshToken) {
     // No refresh token means the session can't be renewed.
-    logout();
+    await logout();
     return false;
   }
 
@@ -97,7 +97,7 @@ export async function refreshTokens(): Promise<boolean> {
   if (!response.ok) {
     // Only invalidate local auth state when refresh token is rejected.
     if (response.status === 400 || response.status === 401 || response.status === 403) {
-      logout();
+      await logout();
     }
     return false;
   }
@@ -160,7 +160,21 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
   return response;
 }
 
-export function logout() {
+export async function logout(): Promise<void> {
+  const refreshToken = localStorage.getItem('refresh_token');
+
+  if (refreshToken) {
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken })
+      });
+    } catch {
+      // Ignore network/logout API failures and clear local session anyway.
+    }
+  }
+
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('username');

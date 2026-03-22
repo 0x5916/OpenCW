@@ -127,6 +127,28 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	})
 }
 
+func (h *AuthHandler) Logout(c *gin.Context) {
+	var input common.RefreshInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid request body"))
+		return
+	}
+
+	hashedToken, err := utils.HashStringRefreshToken(input.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, common.NewErrorResponse(common.ErrorCodeInvalidToken, "Invalid refresh token"))
+		return
+	}
+
+	if err := h.DB.Model(&models.RefreshToken{}).Where("token = ?", hashedToken).Update("revoked", true).Error; err != nil {
+		slog.Error("Failed to revoke refresh token on logout", "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeInternalServerError, "Failed to logout"))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.MessageResponse{Message: "Logged out"})
+}
+
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	var input common.RefreshInput
 	if err := c.ShouldBindJSON(&input); err != nil {

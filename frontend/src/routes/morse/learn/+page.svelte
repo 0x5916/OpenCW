@@ -3,13 +3,19 @@
   import { generateTimedLesson, LESSONS } from '$lib/morse';
   import MorsePlayer from '$lib/components/MorsePlayer.svelte';
   import ResultOverlay from '$lib/components/ResultOverlay.svelte';
-  import { untrack } from 'svelte';
+  import { untrack, onDestroy } from 'svelte';
   import { ClipboardCheck } from 'lucide-svelte';
+  import { langPreference } from '$lib/i18n.svelte';
   import { score, diffWords } from '$lib/score';
   import type { DiffToken } from '$lib/score';
   import { user } from '$lib/auth';
   import { submitProgress } from '$lib/api';
-  import { normalizeLesson, restoreSettingsFromServer } from '$lib/cwSync';
+  import {
+    normalizeLesson,
+    readClientPageSettings,
+    restoreSettingsFromServer,
+    syncSettingsToServer
+  } from '$lib/cwSync';
   import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
 
@@ -30,6 +36,7 @@
   let freq = $state(600);
   let volume = $state(1);
   let startDelay = $state(0.5);
+  let autoSyncTimeout: ReturnType<typeof setTimeout> | null = null;
 
   $effect(() => {
     if (!browser) return;
@@ -107,6 +114,7 @@
     result = -1;
     diffTokens = [];
     showOverlay = false;
+    scheduleApiSync();
   }
 
   function nextLesson() {
@@ -115,13 +123,36 @@
     result = -1;
     diffTokens = [];
     showOverlay = false;
+    scheduleApiSync();
   }
 
   function onLessonSelectChange() {
     result = -1;
+    scheduleApiSync();
   }
 
-  function onCwSettingInput() {}
+  function onCwSettingInput() {
+    scheduleApiSync();
+  }
+
+  function scheduleApiSync() {
+    if (!$user) return;
+    if (autoSyncTimeout) clearTimeout(autoSyncTimeout);
+    autoSyncTimeout = setTimeout(() => {
+      void syncSettings();
+    }, 1000);
+  }
+
+  async function syncSettings() {
+    if (!$user) return;
+    const cw = { char_wpm: charWpm, eff_wpm: effWpm, freq, start_delay: startDelay };
+    const page = readClientPageSettings(chosenLesson, LESSONS.length, langPreference.value);
+    try {
+      await syncSettingsToServer(cw, page);
+    } catch {
+      // Keep training flow uninterrupted if sync fails.
+    }
+  }
 
   $effect(() => {
     const char = LESSONS[chosenLesson - 1] ?? '';
@@ -160,6 +191,10 @@
     event.preventDefault()
     await fullLessonPlayer?.playNow()
   }
+
+  onDestroy(() => {
+    if (autoSyncTimeout) clearTimeout(autoSyncTimeout);
+  });
 </script>
 
 <!-- Full-width heading -->
@@ -235,7 +270,7 @@
       </div>
     </div>
 
-    <div class="card-sm">
+    <div class="card-sm" class:lesson-char-highlight={showQuickStart && chosenLesson === 1}>
       <h2 class="card-label">{m.trainer_label_current_chars()}</h2>
       <div class="lesson-char-row">
         <p class="lesson-char-preview">{m.trainer_choose_letter()}</p>
@@ -482,6 +517,14 @@
     min-width: 0;
     width: 100%;
     max-width: none;
+  }
+
+  .lesson-char-highlight {
+    border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
+    box-shadow:
+      var(--shadow-soft),
+      0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent),
+      0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent);
   }
 
   .answer-card {

@@ -92,9 +92,9 @@
     setTheme(CYCLE[theme]);
   }
 
-  function handleLogout() {
-    logout();
-    goto(localizeHref('/', { locale: lang.value }));
+  async function handleLogout() {
+    await logout();
+    await goto(localizeHref('/', { locale: lang.value }));
   }
 
   function href(path: string) {
@@ -224,7 +224,7 @@
                 <button
                   type="button"
                   onclick={() => {
-                    handleLogout();
+                    void handleLogout();
                     userMenuOpen = false;
                   }}
                   class="user-dropdown-item"
