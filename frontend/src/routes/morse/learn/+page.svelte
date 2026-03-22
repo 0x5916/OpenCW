@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import { generateTimedLesson, LESSONS } from '$lib/morse';
   import MorsePlayer from '$lib/components/MorsePlayer.svelte';
   import ResultOverlay from '$lib/components/ResultOverlay.svelte';
@@ -8,7 +9,8 @@
   import type { DiffToken } from '$lib/score';
   import { user } from '$lib/auth';
   import { submitProgress } from '$lib/api';
-  import { normalizeLesson } from '$lib/cwSync';
+  import { normalizeLesson, restoreSettingsFromServer } from '$lib/cwSync';
+  import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
 
   let { data } = $props();
@@ -21,11 +23,47 @@
   let result = $state(-1);
   let showOverlay = $state(false);
   let diffTokens = $state<DiffToken[]>([]);
+  let showQuickStart = $state(false);
+  let showQuickTips = $state(false);
   let charWpm = $state(20);
   let effWpm = $state(10);
   let freq = $state(600);
   let volume = $state(1);
   let startDelay = $state(0.5);
+
+  $effect(() => {
+    if (!browser) return;
+    showQuickStart = localStorage.getItem('learn.quickstart.dismissed') !== '1';
+  });
+
+  function dismissQuickStart() {
+    showQuickStart = false;
+    showQuickTips = false;
+    if (!browser) return;
+    localStorage.setItem('learn.quickstart.dismissed', '1');
+  }
+
+  function openQuickTips() {
+    showQuickTips = true;
+  }
+
+  function closeQuickTips() {
+    showQuickTips = false;
+  }
+
+  $effect(() => {
+    if (!$user) return;
+    restoreSettingsFromServer()
+      .then(({ cw }) => {
+        charWpm = cw.char_wpm;
+        effWpm = cw.eff_wpm;
+        freq = cw.freq;
+        startDelay = cw.start_delay;
+      })
+      .catch(() => {
+        // Keep local defaults if server restore fails.
+      });
+  });
 
   $effect(() => {
     const val = String(normalizeLesson(chosenLesson, LESSONS.length));
@@ -132,6 +170,55 @@
     {m.trainer_subtitle_post()}
   </p>
 </header>
+
+{#if showQuickStart}
+  <section class="card-sm quickstart-card" aria-label="Quick start">
+    <h2 class="quickstart-title">How to Train</h2>
+    <ol class="quickstart-steps">
+      <li>Pick a lesson or single letter</li>
+      <li>Press ▶ to hear Morse code</li>
+      <li>Type what you hear → Check Result</li>
+    </ol>
+    <div class="quickstart-actions">
+      <button type="button" class="btn-success quickstart-btn" onclick={dismissQuickStart}>Start Training</button>
+      <button type="button" class="btn-ghost quickstart-btn" onclick={openQuickTips}>Tips</button>
+    </div>
+
+    {#if showQuickTips}
+      <div class="quickstart-modal-backdrop" role="presentation" onclick={closeQuickTips}>
+        <div
+          class="quickstart-modal card-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Training tips"
+          tabindex="-1"
+          onclick={(event) => event.stopPropagation()}
+          onkeydown={(event) => {
+            if (event.key === 'Escape') closeQuickTips();
+          }}
+        >
+          <h3 class="quickstart-modal-title">Tips</h3>
+          <ul class="quickstart-modal-list">
+            <li>Start with slower WPM and increase gradually.</li>
+            <li>Use the single-letter player to isolate difficult characters.</li>
+            <li>Check result often and focus on repeated mistakes.</li>
+            {#if !$user}
+              <li>
+                {m.trainer_guest_notice()}
+                <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
+                /
+                <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
+              </li>
+            {/if}
+          </ul>
+          <div class="quickstart-actions">
+            <button type="button" class="btn-ghost quickstart-btn" onclick={closeQuickTips}>Close</button>
+          </div>
+        </div>
+      </div>
+    {/if}
+  </section>
+{/if}
 
 <main class="learn-page">
   <!-- Left column: lesson + settings + player -->
@@ -265,6 +352,74 @@
     margin-top: 0.25rem;
   }
 
+  .quickstart-card {
+    margin-bottom: 1rem;
+    border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+    background:
+      linear-gradient(170deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 45%),
+      var(--bg-surface);
+  }
+
+  .quickstart-title {
+    margin: 0;
+    color: var(--accent);
+    font-size: 1rem;
+    line-height: 1.4;
+    letter-spacing: 0.01em;
+  }
+
+  .quickstart-steps {
+    margin: 0.75rem 0 0;
+    padding-left: 1.25rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .quickstart-actions {
+    margin-top: 0.9rem;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .quickstart-btn {
+    flex: 0 0 auto;
+    width: auto;
+    padding-inline: 1rem;
+  }
+
+  .quickstart-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(3, 7, 18, 0.62);
+    backdrop-filter: blur(2px);
+  }
+
+  .quickstart-modal {
+    width: min(26rem, calc(100vw - 2rem));
+    border-color: color-mix(in srgb, var(--accent) 26%, var(--border));
+  }
+
+  .quickstart-modal-title {
+    margin: 0;
+    color: var(--accent);
+    font-size: 0.95rem;
+  }
+
+  .quickstart-modal-list {
+    margin: 0.65rem 0 0;
+    padding-left: 1.1rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
   .lesson-row {
     display: flex;
     align-items: center;
@@ -347,6 +502,15 @@
   }
 
   @media (max-width: 767px) {
+    .quickstart-actions {
+      flex-wrap: wrap;
+    }
+
+    .quickstart-btn {
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+
     .learn-col-right .learn-answer-textarea {
       min-height: 11rem;
     }

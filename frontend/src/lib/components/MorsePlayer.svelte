@@ -2,12 +2,14 @@
   import { calculateDuration, getFarnsworthWpmSet, MORSE } from '$lib/morse';
   import { onDestroy } from 'svelte';
   import { Play, Square, Pause, SlidersHorizontal, SkipForward } from 'lucide-svelte';
+  import { user } from '$lib/auth';
+  import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
 
   let {
     text = '',
     charWpm = $bindable(20),
-    effWpm = $bindable(10),
+    effWpm = $bindable(12),
     freq = $bindable(600),
     startDelay = 0,
     volume = $bindable(1.0),
@@ -303,6 +305,14 @@
                   />
                 </label>
               {/if}
+              {#if !$user}
+                <p class="player-settings-auth-hint">
+                  {m.trainer_guest_notice()}
+                  <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
+                  /
+                  <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
+                </p>
+              {/if}
               <p class="player-settings-hint">Visit Settings to save permanently</p>
             </div>
           </details>
@@ -412,6 +422,7 @@
     color: var(--accent);
     white-space: nowrap;
     text-align: right;
+    min-width: 0;
   }
 
   .player-buttons > button {
@@ -491,6 +502,13 @@
     color: var(--text-muted);
   }
 
+  .player-settings-auth-hint {
+    margin: 0.1rem 0 0;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+
   .player-volume-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -519,21 +537,22 @@
   @media (max-width: 420px) {
     .player-buttons {
       flex-wrap: nowrap;
-      overflow-x: auto;
-      scrollbar-width: thin;
-      padding-bottom: 0.2rem;
+      overflow-x: visible;
     }
 
     .player-buttons > * {
       flex: 0 0 auto;
     }
 
-    .player-buttons > button {
-      min-width: max-content;
+    .player-media-controls {
+      flex: 1 1 auto;
+      min-width: 0;
+      gap: 0.4rem;
     }
 
-    .player-media-controls {
-      min-width: max-content;
+    .player-inline-timer {
+      font-size: 0.72rem;
+      letter-spacing: -0.01em;
     }
   }
 </style>
