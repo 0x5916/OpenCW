@@ -27,20 +27,20 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	var user models.User
-	err := h.DB.Select("username, email").
-		Where("username = ? OR email = ?", input.Username, input.Email).
-		First(&user).Error
-	if err == nil {
-		if user.Username == input.Username && user.Email == input.Email {
-			c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeUsernameEmailAlreadyInUse, "Username and email already exists"))
-		} else if user.Username == input.Username {
-			c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeUsernameAlreadyInUse, "Username already exists"))
-		} else {
-			c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailAlreadyInUse, "Email already exists"))
-		}
+	if err := h.DB.Select("id").Where("username = ?", input.Username).Take(&user).Error; err == nil {
+		c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeUsernameAlreadyInUse, "Username already exists"))
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		slog.Error("Failed to query user", "err", err, "username", input.Username)
+		slog.Error("Failed to query user by username", "err", err, "username", input.Username)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeDatabaseFailure, "Database failure"))
+		return
+	}
+
+	if err := h.DB.Select("id").Where("email = ? AND email_verified = ?", input.Email, true).Take(&user).Error; err == nil {
+		c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailAlreadyInUse, "Email already in use"))
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		slog.Error("Failed to query verified user by email", "err", err, "email", input.Email)
 		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeDatabaseFailure, "Database failure"))
 		return
 	}
@@ -239,6 +239,11 @@ func (h *AuthHandler) VerifyEmail(c *gin.Context) {
 
 		return nil
 	}); err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailAlreadyInUse, "Email already in use"))
+			return
+		}
+
 		slog.Error("Failed to verify email", "user_id", user.ID, "err", err)
 		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeDatabaseFailure, "Database failure"))
 		return

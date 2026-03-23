@@ -85,6 +85,18 @@ func (h UserHandler) UpdateEmail(c *gin.Context) {
 		return
 	}
 
+	var existingUser models.User
+	if err := h.DB.Select("id").
+		Where("email = ? AND email_verified = ? AND id <> ?", input.Email, true, user.ID).
+		Take(&existingUser).Error; err == nil {
+		c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailAlreadyInUse, "Email already in use"))
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		slog.Error("Failed to query verified user by email", "user_id", user.ID, "new_email", input.Email, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeDatabaseFailure, "Database failure"))
+		return
+	}
+
 	if err := h.DB.Model(user).Updates(map[string]any{
 		"email":          input.Email,
 		"email_verified": false,

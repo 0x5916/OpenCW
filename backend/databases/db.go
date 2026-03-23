@@ -42,6 +42,10 @@ func Connect() {
 		slog.Error("Failed to migrate database", "err", err)
 	}
 
+	if err := ensureUserEmailIndexes(db); err != nil {
+		slog.Error("Failed to migrate user email indexes", "err", err)
+	}
+
 	DB = db
 
 	sqlDB, err := db.DB()
@@ -55,4 +59,21 @@ func Connect() {
 	sqlDB.SetConnMaxIdleTime(time.Minute * 5)
 
 	slog.Info("Database connected and migrated successfully")
+}
+
+func ensureUserEmailIndexes(db *gorm.DB) error {
+	statements := []string{
+		`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key;`,
+		`DROP INDEX IF EXISTS idx_users_email;`,
+		`CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_verified_email ON users (email) WHERE email_verified = true AND deleted_at IS NULL;`,
+	}
+
+	for _, stmt := range statements {
+		if err := db.Exec(stmt).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
