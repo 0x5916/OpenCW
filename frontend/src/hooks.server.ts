@@ -2,6 +2,18 @@ import type { Handle } from '@sveltejs/kit';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 import { getStrategyForUrl, shouldRedirect } from '$lib/paraglide/runtime';
 
+const NO_CACHE_HEADER = 'no-cache, no-store, must-revalidate';
+
+function shouldDisableCachingForPwaAsset(pathname: string): boolean {
+  return (
+    pathname === '/service-worker.js' ||
+    pathname === '/sw.js' ||
+    pathname === '/site.webmanifest' ||
+    pathname.startsWith('/workbox-') ||
+    pathname.endsWith('/_app/version.json')
+  );
+}
+
 function isLikelyPageRequest(request: Request): boolean {
   if (request.method !== 'GET' && request.method !== 'HEAD') return false;
 
@@ -36,7 +48,15 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
   }
 
-  return paraglideMiddleware(event.request, () => {
-    return resolve(event);
+  return paraglideMiddleware(event.request, async () => {
+    const response = await resolve(event);
+
+    if (shouldDisableCachingForPwaAsset(event.url.pathname)) {
+      response.headers.set('Cache-Control', NO_CACHE_HEADER);
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+    }
+
+    return response;
   });
 };
