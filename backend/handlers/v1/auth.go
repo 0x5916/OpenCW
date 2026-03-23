@@ -37,7 +37,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	if err := h.DB.Select("id").Where("email = ? AND email_verified = ?", input.Email, true).Take(&user).Error; err == nil {
-		c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailAlreadyInUse, "Email already in use"))
+		c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailVerifiedByAnother, "This email is already verified by another account. Please change your email."))
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		slog.Error("Failed to query verified user by email", "err", err, "email", input.Email)
@@ -136,8 +136,20 @@ func (h *AuthHandler) SendVerificationEmail(c *gin.Context) {
 		return
 	}
 
+	var verifiedOwner models.User
+	if err := h.DB.Select("id").
+		Where("email = ? AND email_verified = ? AND id <> ?", user.Email, true, user.ID).
+		Take(&verifiedOwner).Error; err == nil {
+		c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailVerifiedByAnother, "This email is already verified by another account. Please change your email."))
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		slog.Error("Failed to query verified owner by email", "user_id", user.ID, "email", user.Email, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeDatabaseFailure, "Database failure"))
+		return
+	}
+
 	var latestOTP models.EmailOTP
-	err := h.DB.Where("email = ?", user.Email).Order("created_at DESC").First(&latestOTP).Error
+	err := h.DB.Where("user_id = ?", user.ID).Order("created_at DESC").First(&latestOTP).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		slog.Error("Failed to query latest verification code", "user_id", user.ID, "err", err)
 		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeDatabaseFailure, "Database failure"))
@@ -162,6 +174,7 @@ func (h *AuthHandler) SendVerificationEmail(c *gin.Context) {
 
 	expiresAt := now.Add(10 * time.Minute)
 	verification := models.EmailOTP{
+		UserID:    user.ID,
 		Email:     user.Email,
 		Code:      code,
 		ExpiredAt: expiresAt,
@@ -169,7 +182,7 @@ func (h *AuthHandler) SendVerificationEmail(c *gin.Context) {
 	}
 
 	if err := h.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("email = ? AND verified = ?", user.Email, false).Delete(&models.EmailOTP{}).Error; err != nil {
+		if err := tx.Where("user_id = ? AND verified = ?", user.ID, false).Delete(&models.EmailOTP{}).Error; err != nil {
 			return err
 		}
 
@@ -202,6 +215,18 @@ func (h *AuthHandler) VerifyEmail(c *gin.Context) {
 		return
 	}
 
+	var verifiedOwner models.User
+	if err := h.DB.Select("id").
+		Where("email = ? AND email_verified = ? AND id <> ?", user.Email, true, user.ID).
+		Take(&verifiedOwner).Error; err == nil {
+		c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailVerifiedByAnother, "This email is already verified by another account. Please change your email."))
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		slog.Error("Failed to query verified owner by email", "user_id", user.ID, "email", user.Email, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeDatabaseFailure, "Database failure"))
+		return
+	}
+
 	var input common.VerifyEmailInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid request body"))
@@ -209,7 +234,7 @@ func (h *AuthHandler) VerifyEmail(c *gin.Context) {
 	}
 
 	var otp models.EmailOTP
-	err := h.DB.Where("email = ? AND code = ? AND verified = ?", user.Email, input.Code, false).
+	err := h.DB.Where("user_id = ? AND email = ? AND code = ? AND verified = ?", user.ID, user.Email, input.Code, false).
 		Order("created_at DESC").
 		First(&otp).Error
 	if err != nil {
@@ -240,7 +265,7 @@ func (h *AuthHandler) VerifyEmail(c *gin.Context) {
 		return nil
 	}); err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailAlreadyInUse, "Email already in use"))
+			c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailVerifiedByAnother, "This email is already verified by another account. Please change your email."))
 			return
 		}
 

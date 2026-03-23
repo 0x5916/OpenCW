@@ -1,5 +1,5 @@
 # API Documentation
-*Generated: March 22, 2026*
+*Generated: March 23, 2026*
 *Base URL: http://localhost:8080*
 
 ## Endpoints Overview
@@ -62,8 +62,7 @@ All other endpoints require Bearer JWT authentication.
 |--------|-----------------------------------|----------------------------------|
 | 400    | `INVALID_REQUEST_BODY`            | "Invalid request body"           |
 | 409    | `USERNAME_ALREADY_IN_USE`         | "Username already exists"        |
-| 409    | `EMAIL_ALREADY_IN_USE`            | "Email already exists"           |
-| 409    | `USERNAME_EMAIL_ALREADY_IN_USE`   | "Username and email already exist"|
+| 409    | `EMAIL_VERIFIED_BY_ANOTHER_ACCOUNT` | "This email is already verified by another account. Please change your email." |
 | 500    | `DATABASE_FAILURE`                | "Database failure"               |
 | 500    | `PASSWORD_HASH_FAILED`            | "Failed to hash password"        |
 | 500    | `INTERNAL_SERVER_ERROR`           | "Failed to create user"          |
@@ -191,6 +190,7 @@ None
 | Status | Error Code                 | Message                               |
 |--------|----------------------------|---------------------------------------|
 | 400    | `EMAIL_ALREADY_VERIFIED`   | "Email is already verified"          |
+| 409    | `EMAIL_VERIFIED_BY_ANOTHER_ACCOUNT` | "This email is already verified by another account. Please change your email." |
 | 429    | `VERIFICATION_RATE_LIMITED`| "Please wait before requesting another verification email" |
 | 500    | `DATABASE_FAILURE`         | "Database failure"                   |
 | 500    | `VERIFICATION_SEND_FAILED` | "Failed to send verification email"  |
@@ -227,6 +227,7 @@ curl -X POST http://localhost:8080/v1/auth/send-verification-email \
 | 400    | `EMAIL_ALREADY_VERIFIED`     | "Email is already verified"  |
 | 400    | `VERIFICATION_CODE_INVALID`  | "Invalid verification code"  |
 | 400    | `VERIFICATION_CODE_EXPIRED`  | "Verification code expired"  |
+| 409    | `EMAIL_VERIFIED_BY_ANOTHER_ACCOUNT` | "This email is already verified by another account. Please change your email." |
 | 500    | `DATABASE_FAILURE`           | "Database failure"           |
 
 **Example cURL:**
@@ -482,6 +483,7 @@ curl -X PUT http://localhost:8080/v1/user/callsign \
 |--------|-----------------------------|----------------------------|
 | 400    | `INVALID_REQUEST_BODY`      | "Invalid request body"     |
 | 400    | `EMAIL_UNCHANGED`           | "New email must be different from current email"|
+| 409    | `EMAIL_VERIFIED_BY_ANOTHER_ACCOUNT` | "This email is already verified by another account. Please change your email." |
 | 409    | `EMAIL_ALREADY_IN_USE`      | "Email already in use"     |
 | 500    | `INTERNAL_SERVER_ERROR`     | "Failed to update email"   |
 
@@ -680,9 +682,14 @@ curl -X GET http://localhost:8080/v1/health
 | PASSWORD_HASH_FAILED           | Password hashing failed           |
 | TOKEN_ISSUE_FAILED             | Token generation failed           |
 | EMAIL_ALREADY_IN_USE           | Email already in use              |
+| EMAIL_VERIFIED_BY_ANOTHER_ACCOUNT | Email already verified by another account |
 | USERNAME_ALREADY_IN_USE        | Username already in use           |
-| USERNAME_EMAIL_ALREADY_IN_USE  | Username and email already in use |
 | EMAIL_UNCHANGED                | Email is unchanged                |
+| EMAIL_ALREADY_VERIFIED         | Email already verified            |
+| VERIFICATION_CODE_INVALID      | Verification code is invalid      |
+| VERIFICATION_CODE_EXPIRED      | Verification code is expired      |
+| VERIFICATION_SEND_FAILED       | Failed to send verification email |
+| VERIFICATION_RATE_LIMITED      | Verification email request throttled |
 | CALL_SIGN_ALREADY_IN_USE       | Call sign already in use          |
 
 ---

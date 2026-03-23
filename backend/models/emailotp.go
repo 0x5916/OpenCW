@@ -8,6 +8,7 @@ import (
 
 type EmailOTP struct {
 	gorm.Model
+	UserID    uint      `gorm:"index"`
 	Email     string    `gorm:"not null;index"`
 	Code      string    `gorm:"not null"`
 	ExpiredAt time.Time `gorm:"not null"`

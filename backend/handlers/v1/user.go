@@ -89,7 +89,7 @@ func (h UserHandler) UpdateEmail(c *gin.Context) {
 	if err := h.DB.Select("id").
 		Where("email = ? AND email_verified = ? AND id <> ?", input.Email, true, user.ID).
 		Take(&existingUser).Error; err == nil {
-		c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailAlreadyInUse, "Email already in use"))
+		c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeEmailVerifiedByAnother, "This email is already verified by another account. Please change your email."))
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		slog.Error("Failed to query verified user by email", "user_id", user.ID, "new_email", input.Email, "err", err)
