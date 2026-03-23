@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenCW Offline</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font-family: "Segoe UI", "Noto Sans", sans-serif;
+        background: radial-gradient(circle at top, #153e75 0%, #0f172a 45%, #020617 100%);
+        color: #e2e8f0;
+      }
+
+      main {
+        width: min(640px, calc(100vw - 2rem));
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        background: rgba(15, 23, 42, 0.82);
+        padding: 1.5rem;
+        backdrop-filter: blur(6px);
+        box-shadow: 0 12px 32px rgba(2, 6, 23, 0.45);
+      }
+
+      h1 {
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+        font-size: clamp(1.4rem, 3vw, 1.9rem);
+      }
+
+      p {
+        margin: 0.4rem 0;
+        line-height: 1.6;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1.25rem;
+      }
+
+      a {
+        display: inline-block;
+        color: #0f172a;
+        background: #f8fafc;
+        text-decoration: none;
+        padding: 0.6rem 1rem;
+        border-radius: 10px;
+        font-weight: 600;
+      }
+
+      .muted {
+        color: #cbd5e1;
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>You are offline</h1>
+      <p>OpenCW is currently running without a network connection.</p>
+      <p class="muted">Previously visited training pages and static assets are still available from cache.</p>
+      <div class="actions">
+        <a href="/">Try Home</a>
+        <a href="/en/morse/learn">Open Morse Practice</a>
+      </div>
+    </main>
+  </body>
+</html>

@@ -40,3 +40,32 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+
+## PWA and offline access
+
+This project includes a SvelteKit service worker at `src/service-worker.ts` and an offline fallback page at `static/offline.html`.
+
+Behavior summary:
+
+- Pre-caches build output and static assets.
+- Serves cached assets while offline.
+- Uses network-first navigation with fallback to the cached page or `offline.html`.
+- Skips runtime cache for dynamic API paths (`/auth`, `/user`, `/settings`, `/cw`, `/v1`).
+
+The web app manifest is `static/site.webmanifest`.
+
+### Cloudflare cache settings for opencw.net and dev.opencw.net
+
+To avoid stale service worker updates, disable edge/browser caching for these paths:
+
+- `/service-worker.js`
+- `/sw.js`
+- `/workbox-*`
+- `/_app/version.json`
+- `/site.webmanifest`
+
+Recommended cache policy for the paths above:
+
+- `Cache-Control: no-cache, no-store, must-revalidate`
+
+All other fingerprinted static assets can remain long-lived and immutable.
