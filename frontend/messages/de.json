@@ -218,6 +218,7 @@
   "api_error_password_hash_failed": "Passwortverarbeitung fehlgeschlagen.",
   "api_error_token_issue_failed": "Token konnte nicht ausgestellt werden.",
   "api_error_email_already_in_use": "E-Mail wird bereits verwendet.",
+  "api_error_email_verified_by_another_account": "Diese E-Mail ist bereits von einem anderen Konto verifiziert. Bitte ändere deine E-Mail.",
   "api_error_username_already_in_use": "Benutzername wird bereits verwendet.",
   "api_error_username_email_already_in_use": "Benutzername und E-Mail werden bereits verwendet.",
   "api_error_email_unchanged": "Die neue E-Mail muss sich von der aktuellen unterscheiden.",

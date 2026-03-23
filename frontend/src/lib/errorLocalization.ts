@@ -73,6 +73,8 @@ export function localizeApiError(error: unknown, fallback: () => string): string
 			return m.api_error_token_issue_failed();
 		case 'EMAIL_ALREADY_IN_USE':
 			return m.api_error_email_already_in_use();
+		case 'EMAIL_VERIFIED_BY_ANOTHER_ACCOUNT':
+			return m.api_error_email_verified_by_another_account();
 		case 'USERNAME_ALREADY_IN_USE':
 			return m.api_error_username_already_in_use();
 		case 'USERNAME_EMAIL_ALREADY_IN_USE':

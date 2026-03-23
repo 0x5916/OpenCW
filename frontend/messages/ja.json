@@ -218,6 +218,7 @@
   "api_error_password_hash_failed": "パスワード処理に失敗しました。",
   "api_error_token_issue_failed": "トークンの発行に失敗しました。",
   "api_error_email_already_in_use": "このメールアドレスは既に使用されています。",
+  "api_error_email_verified_by_another_account": "このメールアドレスは別のアカウントで既に認証されています。メールアドレスを変更してください。",
   "api_error_username_already_in_use": "このユーザー名は既に使用されています。",
   "api_error_username_email_already_in_use": "このユーザー名とメールアドレスは既に使用されています。",
   "api_error_email_unchanged": "新しいメールアドレスは現在のものと異なる必要があります。",

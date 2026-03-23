@@ -218,6 +218,7 @@
 	"api_error_password_hash_failed": "Password processing failed.",
 	"api_error_token_issue_failed": "Failed to issue token.",
 	"api_error_email_already_in_use": "Email is already in use.",
+	"api_error_email_verified_by_another_account": "This email is already verified by another account. Please change your email.",
 	"api_error_username_already_in_use": "Username is already in use.",
 	"api_error_username_email_already_in_use": "Username and email are already in use.",
 	"api_error_email_unchanged": "New email must be different from your current email.",

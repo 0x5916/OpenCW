@@ -218,6 +218,7 @@
   "api_error_password_hash_failed": "密碼處理失敗。",
   "api_error_token_issue_failed": "簽發權杖失敗。",
   "api_error_email_already_in_use": "此電郵已被使用。",
+  "api_error_email_verified_by_another_account": "此電郵已由其他帳戶驗證。請更換電郵。",
   "api_error_username_already_in_use": "此使用者名稱已被使用。",
   "api_error_username_email_already_in_use": "此使用者名稱與電郵均已被使用。",
   "api_error_email_unchanged": "新電郵必須與目前電郵不同。",
