@@ -10,6 +10,7 @@ const self = globalThis.self as unknown as ServiceWorkerGlobalScope;
 const CACHE = `opencw-${version}`;
 const OFFLINE_URL = '/offline.html';
 const API_PREFIXES = ['/auth', '/user', '/settings', '/cw', '/v1'];
+const NAVIGATION_FALLBACKS = ['/en/morse/learn', '/morse/learn', '/en', '/'];
 
 const ASSETS = new Set(
   [...build, ...files, ...prerendered]
@@ -40,6 +41,15 @@ function shouldBypassRuntimeCache(pathname: string): boolean {
   return API_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
+async function findCachedNavigationFallback(cache: Cache): Promise<Response | undefined> {
+  for (const path of NAVIGATION_FALLBACKS) {
+    const candidate = await cache.match(path);
+    if (candidate) return candidate;
+  }
+
+  return undefined;
+}
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
@@ -67,6 +77,9 @@ self.addEventListener('fetch', (event) => {
         } catch {
           const cachedPage = await cache.match(event.request);
           if (cachedPage) return cachedPage;
+
+          const cachedFallbackPage = await findCachedNavigationFallback(cache);
+          if (cachedFallbackPage) return cachedFallbackPage;
 
           const offline = await cache.match(OFFLINE_URL);
           if (offline) return offline;

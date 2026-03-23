@@ -47,6 +47,10 @@
         margin-top: 1.25rem;
       }
 
+      .actions.secondary {
+        margin-top: 0.8rem;
+      }
+
       a {
         display: inline-block;
         color: #0f172a;
@@ -61,6 +65,16 @@
         color: #cbd5e1;
         font-size: 0.95rem;
       }
+
+      .heading {
+        margin-top: 1.4rem;
+        margin-bottom: 0.4rem;
+        font-weight: 700;
+      }
+
+      .mono {
+        font-family: "Consolas", "Courier New", monospace;
+      }
     </style>
   </head>
   <body>
@@ -68,10 +82,69 @@
       <h1>You are offline</h1>
       <p>OpenCW is currently running without a network connection.</p>
       <p class="muted">Previously visited training pages and static assets are still available from cache.</p>
-      <div class="actions">
+      <div class="actions" id="default-actions">
         <a href="/">Try Home</a>
         <a href="/en/morse/learn">Open Morse Practice</a>
       </div>
+
+      <p class="heading">Available offline pages</p>
+      <p class="muted" id="cached-empty">No cached pages detected yet. Visit a few pages while online, then they will appear here.</p>
+      <div class="actions secondary" id="cached-pages" hidden></div>
+
+      <script>
+        (async () => {
+          if (!('caches' in window)) return;
+
+          const preferredOrder = ['/en/morse/learn', '/morse/learn', '/en', '/'];
+          const blocked = new Set(['/offline.html', '/service-worker.js', '/sw.js']);
+          const urls = new Set();
+
+          for (const key of await caches.keys()) {
+            const cache = await caches.open(key);
+            const requests = await cache.keys();
+
+            for (const request of requests) {
+              const url = new URL(request.url);
+              if (url.origin !== location.origin) continue;
+
+              const path = url.pathname;
+              if (blocked.has(path)) continue;
+
+              const lastSegment = path.split('/').filter(Boolean).at(-1) ?? '';
+              if (lastSegment.includes('.') || path.startsWith('/_app/')) continue;
+
+              urls.add(path || '/');
+            }
+          }
+
+          const sorted = [...urls].sort((a, b) => {
+            const ai = preferredOrder.indexOf(a);
+            const bi = preferredOrder.indexOf(b);
+            if (ai !== -1 || bi !== -1) {
+              return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+            }
+
+            return a.localeCompare(b);
+          });
+
+          if (sorted.length === 0) return;
+
+          const container = document.getElementById('cached-pages');
+          const empty = document.getElementById('cached-empty');
+          if (!container || !empty) return;
+
+          empty.hidden = true;
+          container.hidden = false;
+
+          for (const path of sorted) {
+            const link = document.createElement('a');
+            link.href = path;
+            link.className = 'mono';
+            link.textContent = path;
+            container.appendChild(link);
+          }
+        })();
+      </script>
     </main>
   </body>
 </html>
