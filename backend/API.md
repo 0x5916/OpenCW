@@ -549,7 +549,8 @@ curl -X PUT http://localhost:8080/v1/user/password \
       "char_wpm": 20,
       "eff_wpm": 15,
       "accuracy": 0.98,
-      "created_at": "2026-03-21T18:30:00Z"
+      "created_at": "2026-03-21T18:30:00Z",
+      "client_created_at": "2026-03-21T18:29:50Z"
     }
   ]
 }
@@ -577,10 +578,11 @@ curl -X GET http://localhost:8080/v1/cw/progress \
   "lesson": 1,
   "char_wpm": 20,
   "eff_wpm": 15,
-  "accuracy": 0.98
+  "accuracy": 0.98,
+  "client_created_at": "2026-03-21T18:29:50Z"
 }
 ```
-*Validation: lesson (required), char_wpm (5-50), eff_wpm (5-50), accuracy (0.0-1.0)*
+*Validation: lesson (required), char_wpm (5-50), eff_wpm (5-50), accuracy (0.0-1.0), client_created_at (optional RFC3339 timestamp)*
 
 **Response (201):**
 ```json
@@ -600,7 +602,7 @@ curl -X GET http://localhost:8080/v1/cw/progress \
 curl -X PUT http://localhost:8080/v1/cw/progress \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"lesson":1,"char_wpm":20,"eff_wpm":15,"accuracy":0.98}'
+  -d '{"lesson":1,"char_wpm":20,"eff_wpm":15,"accuracy":0.98,"client_created_at":"2026-03-21T18:29:50Z"}'
 ```
 
 ---

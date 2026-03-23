@@ -37,11 +37,12 @@ func (h ProgressHandler) AddProgress(c *gin.Context) {
 	}
 
 	progress := models.Progress{
-		UserID:   user.ID,
-		Lesson:   input.Lesson,
-		CharWPM:  input.CharWPM,
-		EffWPM:   input.EffWPM,
-		Accuracy: *input.Accuracy,
+		UserID:          user.ID,
+		Lesson:          input.Lesson,
+		CharWPM:         input.CharWPM,
+		EffWPM:          input.EffWPM,
+		Accuracy:        *input.Accuracy,
+		ClientCreatedAt: input.ClientCreatedAt,
 	}
 
 	if err := h.DB.Create(&progress).Error; err != nil {

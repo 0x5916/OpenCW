@@ -3,11 +3,12 @@ package common
 import "time"
 
 type ProgressResponse struct {
-	Lesson    string    `json:"lesson"`
-	CharWPM   int       `json:"char_wpm"`
-	EffWPM    int       `json:"eff_wpm"`
-	Accuracy  float64   `json:"accuracy"`
-	CreatedAt time.Time `json:"created_at"`
+	Lesson          string     `json:"lesson"`
+	CharWPM         int        `json:"char_wpm"`
+	EffWPM          int        `json:"eff_wpm"`
+	Accuracy        float64    `json:"accuracy"`
+	CreatedAt       time.Time  `json:"created_at"`
+	ClientCreatedAt *time.Time `json:"client_created_at"`
 }
 
 type CWSettingsResponse struct {

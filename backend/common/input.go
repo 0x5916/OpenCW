@@ -2,6 +2,7 @@ package common
 
 import (
 	"opencw/models"
+	"time"
 )
 
 type RegisterInput struct {
@@ -67,8 +68,9 @@ func FromPageSettingsModel(obj models.PageSettings) PageSettingsInput {
 }
 
 type ProgressInput struct {
-	Lesson   int      `json:"lesson"   binding:"required"`
-	CharWPM  int      `json:"char_wpm" binding:"required,min=5,max=50"`
-	EffWPM   int      `json:"eff_wpm"  binding:"required,min=5,max=50"`
-	Accuracy *float64 `json:"accuracy" binding:"required,min=0.0,max=1.0"`
+	Lesson          int        `json:"lesson"            binding:"required"`
+	CharWPM         int        `json:"char_wpm"          binding:"required,min=5,max=50"`
+	EffWPM          int        `json:"eff_wpm"           binding:"required,min=5,max=50"`
+	Accuracy        *float64   `json:"accuracy"          binding:"required,min=0.0,max=1.0"`
+	ClientCreatedAt *time.Time `json:"client_created_at"`
 }
