@@ -9,7 +9,7 @@
   import { score, diffWords } from '$lib/score';
   import type { DiffToken } from '$lib/score';
   import { user } from '$lib/auth';
-  import { submitProgress } from '$lib/api';
+  import { saveProgressOfflineFirst } from '$lib/progressSync';
   import {
     normalizeLesson,
     readClientPageSettings,
@@ -100,7 +100,12 @@
     diffTokens = diffWords(lessonText, inputText);
     showOverlay = true;
     if ($user && result > 0) {
-      submitProgress(chosenLesson, charWpm, effWpm, result).catch(() => {});
+      saveProgressOfflineFirst({
+        lesson: chosenLesson,
+        char_wpm: charWpm,
+        eff_wpm: effWpm,
+        accuracy: result
+      }).catch(() => {});
     }
   }
 

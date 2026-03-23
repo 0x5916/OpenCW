@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import favicon from '$lib/assets/favicon.svg';
   import '../app.css';
   import { user, initAuth, logout } from '$lib/auth';
+  import { flushQueuedProgress, initializeProgressSync } from '$lib/progressSync';
   import { goto, afterNavigate } from '$app/navigation';
+  import { registerSW } from 'virtual:pwa-register';
   import {
     ChevronDown,
     Menu,
@@ -67,6 +70,21 @@
     theme = load();
     apply(theme);
     initAuth();
+  });
+
+  $effect(() => {
+    if (!$user) return;
+    void flushQueuedProgress();
+  });
+
+  onMount(() => {
+    initializeProgressSync();
+
+    const updateServiceWorker = registerSW({
+      immediate: true
+    });
+
+    updateServiceWorker();
   });
 
   function langLabel(locale: Locale): string {

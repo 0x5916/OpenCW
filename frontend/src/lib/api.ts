@@ -189,6 +189,7 @@ export interface ProgressRecord {
   eff_wpm: number;
   accuracy: number;
   created_at: string;
+  client_created_at?: string;
 }
 
 export async function getProgress(): Promise<ProgressRecord[]> {
@@ -206,12 +207,30 @@ export async function submitProgress(
   lesson: number,
   charWpm: number,
   effWpm: number,
-  accuracy: number
+  accuracy: number,
+  clientCreatedAt?: string
 ): Promise<void> {
+  const payload: {
+    lesson: number;
+    char_wpm: number;
+    eff_wpm: number;
+    accuracy: number;
+    client_created_at?: string;
+  } = {
+    lesson,
+    char_wpm: charWpm,
+    eff_wpm: effWpm,
+    accuracy
+  };
+
+  if (clientCreatedAt) {
+    payload.client_created_at = clientCreatedAt;
+  }
+
   await apiSendJson(
     '/cw/progress',
     'PUT',
-    { lesson, char_wpm: charWpm, eff_wpm: effWpm, accuracy },
+    payload,
     'PROGRESS_CREATE_FAILED'
   );
 }
