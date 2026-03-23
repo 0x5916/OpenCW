@@ -107,8 +107,14 @@
               const url = new URL(request.url);
               if (url.origin !== location.origin) continue;
 
-              const path = url.pathname;
+              let path = url.pathname;
               if (blocked.has(path)) continue;
+
+              if (path.endsWith('/index.html')) {
+                path = path.slice(0, -'/index.html'.length) || '/';
+              } else if (path.endsWith('.html')) {
+                path = path.slice(0, -'.html'.length) || '/';
+              }
 
               const lastSegment = path.split('/').filter(Boolean).at(-1) ?? '';
               if (lastSegment.includes('.') || path.startsWith('/_app/')) continue;
