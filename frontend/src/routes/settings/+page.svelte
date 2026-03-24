@@ -127,6 +127,34 @@
     return normalizeLesson(parsedLesson, LESSONS.length);
   }
 
+  function applyCwState(cw: { char_wpm: number; eff_wpm: number; freq: number; start_delay: number }) {
+    charWpm = cw.char_wpm;
+    initialCharWpm = cw.char_wpm;
+    effWpm = cw.eff_wpm;
+    initialEffWpm = cw.eff_wpm;
+    freq = cw.freq;
+    initialFreq = cw.freq;
+    startDelay = cw.start_delay;
+    initialStartDelay = cw.start_delay;
+  }
+
+  function applyPageState(page: PageSettings) {
+    pageTheme = page.theme;
+    initialPageTheme = page.theme;
+    pageLanguage = normalizeLocalePreference(page.language);
+    initialPageLanguage = pageLanguage;
+    pageLesson = normalizeLesson(page.cur_lesson, LESSONS.length);
+    initialPageLesson = pageLesson;
+  }
+
+  function resetEmailVerificationState() {
+    verificationCode = '';
+    verificationSent = false;
+    verificationSuccess = false;
+    verificationSendError = '';
+    verificationCheckError = '';
+  }
+
   async function loadAll() {
     loading = true;
     loadError = '';
@@ -135,21 +163,8 @@
       const localCw = readClientCwSettings();
       const localPage = readClientPageSettings(getStoredLesson(), LESSONS.length, langPreference.value);
 
-      charWpm = localCw.char_wpm;
-      initialCharWpm = localCw.char_wpm;
-      effWpm = localCw.eff_wpm;
-      initialEffWpm = localCw.eff_wpm;
-      freq = localCw.freq;
-      initialFreq = localCw.freq;
-      startDelay = localCw.start_delay;
-      initialStartDelay = localCw.start_delay;
-
-      pageTheme = localPage.theme;
-      initialPageTheme = localPage.theme;
-      pageLanguage = normalizeLocalePreference(localPage.language);
-      initialPageLanguage = pageLanguage;
-      pageLesson = normalizeLesson(localPage.cur_lesson, LESSONS.length);
-      initialPageLesson = pageLesson;
+      applyCwState(localCw);
+      applyPageState(localPage);
 
       loading = false;
       return;
@@ -164,25 +179,9 @@
       email = info.email;
       initialEmail = info.email;
       emailVerified = info.email_verified;
-      verificationCode = '';
-      verificationSent = false;
-      verificationSuccess = false;
-      verificationSendError = '';
-      verificationCheckError = '';
-      charWpm = cw.char_wpm;
-      initialCharWpm = cw.char_wpm;
-      effWpm = cw.eff_wpm;
-      initialEffWpm = cw.eff_wpm;
-      freq = cw.freq;
-      initialFreq = cw.freq;
-      startDelay = cw.start_delay;
-      initialStartDelay = cw.start_delay;
-      pageTheme = page.theme;
-      initialPageTheme = page.theme;
-      pageLanguage = normalizeLocalePreference(page.language);
-      initialPageLanguage = pageLanguage;
-      pageLesson = normalizeLesson(page.cur_lesson, LESSONS.length);
-      initialPageLesson = pageLesson;
+      resetEmailVerificationState();
+      applyCwState(cw);
+      applyPageState(page);
     } catch (e) {
       loadError = localizeApiError(e, () => m.settings_load_error());
     } finally {
@@ -223,11 +222,7 @@
       await updateEmail(email);
       initialEmail = email;
       emailVerified = false;
-      verificationCode = '';
-      verificationSent = false;
-      verificationSuccess = false;
-      verificationSendError = '';
-      verificationCheckError = '';
+      resetEmailVerificationState();
       emailSaved = true;
       setTimeout(() => (emailSaved = false), 3000);
     } catch (err) {

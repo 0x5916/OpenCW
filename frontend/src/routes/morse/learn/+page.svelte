@@ -22,6 +22,8 @@
   import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
 
+  const QUICKSTART_DISMISSED_KEY = 'learn.quickstart.dismissed';
+
   let { data } = $props();
 
   let inputText = $state('');
@@ -43,7 +45,7 @@
 
   $effect(() => {
     if (!browser) return;
-    showQuickStart = localStorage.getItem('learn.quickstart.dismissed') !== '1';
+    showQuickStart = localStorage.getItem(QUICKSTART_DISMISSED_KEY) !== '1';
   });
 
   $effect(() => {
@@ -59,7 +61,7 @@
     showQuickStart = false;
     showQuickTips = false;
     if (!browser) return;
-    localStorage.setItem('learn.quickstart.dismissed', '1');
+    localStorage.setItem(QUICKSTART_DISMISSED_KEY, '1');
   }
 
   function openQuickTips() {
@@ -102,10 +104,7 @@
   } | null>(null);
   function regenerate() {
     lessonText = generateTimedLesson(chosenLesson, 60, charWpm, effWpm);
-    inputText = '';
-    result = -1;
-    diffTokens = [];
-    showOverlay = false;
+    resetResultState({ clearInput: true });
   }
 
   async function checkResult() {
@@ -128,20 +127,24 @@
 
   function prevLesson() {
     chosenLesson -= 1;
-    inputText = '';
-    result = -1;
-    diffTokens = [];
-    showOverlay = false;
+    resetResultState({ clearInput: true });
     scheduleApiSync();
   }
 
   function nextLesson() {
     chosenLesson += 1;
-    inputText = '';
+    resetResultState({ clearInput: true });
+    scheduleApiSync();
+  }
+
+  function resetResultState(options: { clearInput?: boolean } = {}) {
+    if (options.clearInput) {
+      inputText = '';
+    }
+
     result = -1;
     diffTokens = [];
     showOverlay = false;
-    scheduleApiSync();
   }
 
   function onLessonSelectChange() {
@@ -207,8 +210,8 @@
 
   async function onAnswerKeydown(event: KeyboardEvent) {
     if (event.code !== 'Space' || inputText.trim() !== '' || fullLessonPlayer?.isStarted()) return;
-    event.preventDefault()
-    await fullLessonPlayer?.playNow()
+    event.preventDefault();
+    await fullLessonPlayer?.playNow();
   }
 
   onDestroy(() => {
