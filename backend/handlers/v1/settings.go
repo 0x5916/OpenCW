@@ -47,11 +47,13 @@ func (h SettingsHandler) GetAllSettings(c *gin.Context) {
 		EffWPM:     cwSettings.EffWPM,
 		Freq:       cwSettings.Freq,
 		StartDelay: cwSettings.StartDelay,
+		UpdatedAt:  cwSettings.UpdatedAt,
 	}
 	response.PageSettings = common.PageSettingsResponse{
 		Theme:     pageSettings.Theme,
 		Lang:      pageSettings.Lang,
 		CurLesson: pageSettings.CurLesson,
+		UpdatedAt: cwSettings.UpdatedAt,
 	}
 	c.JSON(http.StatusOK, response)
 }
