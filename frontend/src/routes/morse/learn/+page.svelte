@@ -5,6 +5,7 @@
   import ResultOverlay from '$lib/components/ResultOverlay.svelte';
   import { untrack, onDestroy } from 'svelte';
   import { ClipboardCheck } from 'lucide-svelte';
+  import { CW_STORAGE_KEYS } from '$lib/storageKeys';
   import { langPreference } from '$lib/i18n.svelte';
   import { score, diffWords } from '$lib/score';
   import type { DiffToken } from '$lib/score';
@@ -86,8 +87,8 @@
 
   $effect(() => {
     const val = String(normalizeLesson(chosenLesson, LESSONS.length));
-    localStorage.setItem('learn.lesson', val);
-    document.cookie = `learn.lesson=${val}; path=/; max-age=31536000; SameSite=Lax`;
+    localStorage.setItem(CW_STORAGE_KEYS.lesson, val);
+    document.cookie = `${CW_STORAGE_KEYS.lesson}=${val}; path=/; max-age=31536000; SameSite=Lax`;
   });
 
   let lessonText = $derived(generateTimedLesson(chosenLesson, 60, charWpm, effWpm));

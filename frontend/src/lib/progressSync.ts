@@ -1,5 +1,6 @@
 import { submitProgress } from '$lib/api';
 import type { ProgressRecord } from '$lib/api';
+import { AUTH_STORAGE_KEYS, CW_STORAGE_KEYS } from '$lib/storageKeys';
 
 type ProgressPayload = {
   lesson: number;
@@ -11,7 +12,6 @@ type ProgressPayload = {
   queued_at: string;
 };
 
-const PROGRESS_QUEUE_STORAGE_KEY = 'cw.progress.queue.v1';
 const MAX_QUEUE_SIZE = 500;
 
 let syncInitialized = false;
@@ -24,7 +24,7 @@ function canUseStorage(): boolean {
 function readQueue(): ProgressPayload[] {
   if (!canUseStorage()) return [];
 
-  const raw = localStorage.getItem(PROGRESS_QUEUE_STORAGE_KEY);
+  const raw = localStorage.getItem(CW_STORAGE_KEYS.progressQueue);
   if (!raw) return [];
 
   try {
@@ -54,11 +54,11 @@ function writeQueue(queue: ProgressPayload[]): void {
   if (!canUseStorage()) return;
 
   if (queue.length === 0) {
-    localStorage.removeItem(PROGRESS_QUEUE_STORAGE_KEY);
+    localStorage.removeItem(CW_STORAGE_KEYS.progressQueue);
     return;
   }
 
-  localStorage.setItem(PROGRESS_QUEUE_STORAGE_KEY, JSON.stringify(queue));
+  localStorage.setItem(CW_STORAGE_KEYS.progressQueue, JSON.stringify(queue));
 }
 
 function enqueue(item: ProgressPayload): void {
@@ -74,7 +74,7 @@ function enqueue(item: ProgressPayload): void {
 
 function shouldAttemptUpload(): boolean {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return false;
-  return Boolean(localStorage.getItem('access_token'));
+  return Boolean(localStorage.getItem(AUTH_STORAGE_KEYS.accessToken));
 }
 
 function sortQueue(queue: ProgressPayload[]): ProgressPayload[] {
@@ -98,7 +98,9 @@ function sortQueue(queue: ProgressPayload[]): ProgressPayload[] {
 }
 
 export function getLocalProgressRecords(): ProgressRecord[] {
-  const currentUsername = canUseStorage() ? (localStorage.getItem('username') ?? undefined) : undefined;
+  const currentUsername = canUseStorage()
+    ? (localStorage.getItem(AUTH_STORAGE_KEYS.username) ?? undefined)
+    : undefined;
 
   return sortQueue(readQueue())
     .filter((item) => {
@@ -126,7 +128,7 @@ export async function flushQueuedProgress(): Promise<void> {
   }
 
   flushInFlight = (async () => {
-    const currentUsername = localStorage.getItem('username') ?? undefined;
+    const currentUsername = localStorage.getItem(AUTH_STORAGE_KEYS.username) ?? undefined;
     const originalQueue = sortQueue(readQueue());
     if (originalQueue.length === 0) return;
 
@@ -176,7 +178,7 @@ export async function saveProgressOfflineFirst(args: {
   const payload: ProgressPayload = {
     ...args,
     client_created_at: new Date().toISOString(),
-    username: localStorage.getItem('username') ?? undefined,
+    username: localStorage.getItem(AUTH_STORAGE_KEYS.username) ?? undefined,
     queued_at: new Date().toISOString()
   };
 

@@ -29,6 +29,7 @@
     saveClientCwSettings
   } from '$lib/cwSync';
   import { localizeApiError } from '$lib/errorLocalization';
+  import { CW_STORAGE_KEYS } from '$lib/storageKeys';
   import { Settings } from 'lucide-svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
@@ -121,7 +122,7 @@
   function getStoredLesson(): number {
     if (!browser) return 1;
 
-    const rawLesson = localStorage.getItem('learn.lesson');
+    const rawLesson = localStorage.getItem(CW_STORAGE_KEYS.lesson);
     const parsedLesson = Number.parseInt(rawLesson ?? '1', 10);
     return normalizeLesson(parsedLesson, LESSONS.length);
   }

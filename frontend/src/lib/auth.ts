@@ -1,6 +1,7 @@
 import { PUBLIC_API_BASE } from '$env/static/public';
 import { writable } from 'svelte/store';
 import { extractErrorCodeFromBody } from '$lib/errorCode';
+import { AUTH_STORAGE_KEYS } from '$lib/storageKeys';
 
 export interface AuthUser {
   username: string;
@@ -13,8 +14,8 @@ let refreshInFlight: Promise<boolean> | null = null;
 
 /** Rehydrate user from stored tokens on app start */
 export function initAuth() {
-  const token = localStorage.getItem('access_token');
-  const username = localStorage.getItem('username');
+  const token = localStorage.getItem(AUTH_STORAGE_KEYS.accessToken);
+  const username = localStorage.getItem(AUTH_STORAGE_KEYS.username);
   if (token && username) {
     user.set({ username });
   }
@@ -61,8 +62,17 @@ export async function refreshTokens(): Promise<boolean> {
     return refreshInFlight;
   }
 
-  refreshInFlight = (async () => {
-  const refreshToken = localStorage.getItem('refresh_token');
+  refreshInFlight = runTokenRefresh();
+
+  try {
+    return await refreshInFlight;
+  } finally {
+    refreshInFlight = null;
+  }
+}
+
+async function runTokenRefresh(): Promise<boolean> {
+  const refreshToken = localStorage.getItem(AUTH_STORAGE_KEYS.refreshToken);
   if (!refreshToken) {
     // No refresh token means the session can't be renewed.
     await logout();
@@ -90,16 +100,9 @@ export async function refreshTokens(): Promise<boolean> {
   }
 
   const data = await response.json();
-  const username = localStorage.getItem('username') ?? '';
+  const username = localStorage.getItem(AUTH_STORAGE_KEYS.username) ?? '';
   persistTokens(data.access_token, data.refresh_token, username);
   return true;
-  })();
-
-  try {
-    return await refreshInFlight;
-  } finally {
-    refreshInFlight = null;
-  }
 }
 
 /** Decode JWT payload and return true if the token is expired (or invalid). */
@@ -117,13 +120,13 @@ function isTokenExpired(token: string, bufferSeconds: number = 60): boolean {
  * sending, and retries once on a 401 as a safety net.
  */
 export async function apiFetch(input: string, init: RequestInit = {}): Promise<Response> {
-  let token = localStorage.getItem('access_token');
+  let token = localStorage.getItem(AUTH_STORAGE_KEYS.accessToken);
   const headers = new Headers(init.headers);
 
   // Proactively refresh if the token is already expired
   if (token && isTokenExpired(token)) {
     const refreshed = await refreshTokens();
-    token = refreshed ? localStorage.getItem('access_token') : null;
+    token = refreshed ? localStorage.getItem(AUTH_STORAGE_KEYS.accessToken) : null;
   }
 
   if (token) headers.set('Authorization', `Bearer ${token}`);
@@ -134,7 +137,7 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
   if (response.status === 401) {
     const refreshed = await refreshTokens();
     if (refreshed) {
-      const renewedToken = localStorage.getItem('access_token');
+      const renewedToken = localStorage.getItem(AUTH_STORAGE_KEYS.accessToken);
       if (renewedToken) {
         headers.set('Authorization', `Bearer ${renewedToken}`);
       } else {
@@ -148,7 +151,7 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
 }
 
 export async function logout(): Promise<void> {
-  const refreshToken = localStorage.getItem('refresh_token');
+  const refreshToken = localStorage.getItem(AUTH_STORAGE_KEYS.refreshToken);
 
   if (refreshToken) {
     try {
@@ -162,16 +165,16 @@ export async function logout(): Promise<void> {
     }
   }
 
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
-  localStorage.removeItem('username');
+  localStorage.removeItem(AUTH_STORAGE_KEYS.accessToken);
+  localStorage.removeItem(AUTH_STORAGE_KEYS.refreshToken);
+  localStorage.removeItem(AUTH_STORAGE_KEYS.username);
   user.set(null);
 }
 
 function persistTokens(accessToken: string, refreshToken: string, username: string) {
-  localStorage.setItem('access_token', accessToken);
-  localStorage.setItem('refresh_token', refreshToken);
-  localStorage.setItem('username', username);
+  localStorage.setItem(AUTH_STORAGE_KEYS.accessToken, accessToken);
+  localStorage.setItem(AUTH_STORAGE_KEYS.refreshToken, refreshToken);
+  localStorage.setItem(AUTH_STORAGE_KEYS.username, username);
 }
 
 async function resolveUsername(accessToken: string, fallback: string): Promise<string> {

@@ -12,14 +12,15 @@ import {
   normalizeLocalePreference,
   type LocalePreference
 } from '$lib/locale';
+import { CW_STORAGE_KEYS, UI_STORAGE_KEYS } from '$lib/storageKeys';
 
 export type { CWSettings, PageSettings };
 
-const LESSON_COOKIE = 'learn.lesson';
+const LESSON_COOKIE = CW_STORAGE_KEYS.lesson;
 const ONE_YEAR_SECONDS = 31536000;
-const CW_SETTINGS_STORAGE_KEY = 'cw.settings.v1';
-const CW_SETTINGS_UPDATED_AT_STORAGE_KEY = 'cw.settings.updated_at.v1';
-const PAGE_SETTINGS_UPDATED_AT_STORAGE_KEY = 'cw.page_settings.updated_at.v1';
+const CW_SETTINGS_STORAGE_KEY = CW_STORAGE_KEYS.cwSettings;
+const CW_SETTINGS_UPDATED_AT_STORAGE_KEY = CW_STORAGE_KEYS.cwSettingsUpdatedAt;
+const PAGE_SETTINGS_UPDATED_AT_STORAGE_KEY = CW_STORAGE_KEYS.pageSettingsUpdatedAt;
 
 const DEFAULT_CW_SETTINGS: CWSettings = {
   char_wpm: 20,
@@ -72,7 +73,7 @@ export function touchLocalCwSettingsUpdatedAt(isoTimestamp: string = nowIso()): 
 
 function readStoredLesson(maxLesson: number): number {
   if (typeof localStorage === 'undefined') return 1;
-  const storedLessonString = localStorage.getItem('learn.lesson');
+  const storedLessonString = localStorage.getItem(CW_STORAGE_KEYS.lesson);
   const parsedLesson = Number.parseInt(storedLessonString ?? '1', 10);
   return normalizeLesson(parsedLesson, maxLesson);
 }
@@ -128,7 +129,8 @@ export function readClientPageSettings(
   maxLesson: number,
   fallbackLanguagePreference: LocalePreference
 ): PageSettings {
-  const themeRaw = typeof localStorage === 'undefined' ? null : localStorage.getItem('theme');
+  const themeRaw =
+    typeof localStorage === 'undefined' ? null : localStorage.getItem(UI_STORAGE_KEYS.theme);
   const theme: PageSettings['theme'] =
     themeRaw === 'dark' || themeRaw === 'light' || themeRaw === 'auto' ? themeRaw : 'auto';
 
@@ -157,9 +159,9 @@ export function applyClientPageSettings(
 
   if (typeof localStorage !== 'undefined') {
     if (applyTheme) {
-      localStorage.setItem('theme', page.theme);
+      localStorage.setItem(UI_STORAGE_KEYS.theme, page.theme);
     }
-    localStorage.setItem('learn.lesson', String(lesson));
+    localStorage.setItem(CW_STORAGE_KEYS.lesson, String(lesson));
     if (applyLanguage) {
       localStorage.setItem(LOCALE_PREFERENCE_STORAGE_KEY, language);
     }
