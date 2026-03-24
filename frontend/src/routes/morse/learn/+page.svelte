@@ -9,11 +9,13 @@
   import { score, diffWords } from '$lib/score';
   import type { DiffToken } from '$lib/score';
   import { user } from '$lib/auth';
-  import { submitProgress } from '$lib/api';
+  import { saveProgressOfflineFirst } from '$lib/progressSync';
   import {
     normalizeLesson,
+    readClientCwSettings,
     readClientPageSettings,
     restoreSettingsFromServer,
+    saveClientCwSettings,
     syncSettingsToServer
   } from '$lib/cwSync';
   import { localizeHref } from '$lib/paraglide/runtime';
@@ -43,6 +45,15 @@
     showQuickStart = localStorage.getItem('learn.quickstart.dismissed') !== '1';
   });
 
+  $effect(() => {
+    if (!browser) return;
+    const localCw = readClientCwSettings();
+    charWpm = localCw.char_wpm;
+    effWpm = localCw.eff_wpm;
+    freq = localCw.freq;
+    startDelay = localCw.start_delay;
+  });
+
   function dismissQuickStart() {
     showQuickStart = false;
     showQuickTips = false;
@@ -66,6 +77,7 @@
         effWpm = cw.eff_wpm;
         freq = cw.freq;
         startDelay = cw.start_delay;
+        saveClientCwSettings(cw);
       })
       .catch(() => {
         // Keep local defaults if server restore fails.
@@ -99,8 +111,13 @@
     result = score(lessonText, inputText);
     diffTokens = diffWords(lessonText, inputText);
     showOverlay = true;
-    if ($user && result > 0) {
-      submitProgress(chosenLesson, charWpm, effWpm, result).catch(() => {});
+    if (result > 0) {
+      saveProgressOfflineFirst({
+        lesson: chosenLesson,
+        char_wpm: charWpm,
+        eff_wpm: effWpm,
+        accuracy: result
+      }).catch(() => {});
     }
   }
 
@@ -132,6 +149,7 @@
   }
 
   function onCwSettingInput() {
+    saveClientCwSettings({ char_wpm: charWpm, eff_wpm: effWpm, freq, start_delay: startDelay });
     scheduleApiSync();
   }
 

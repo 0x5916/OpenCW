@@ -47,11 +47,13 @@ func (h SettingsHandler) GetAllSettings(c *gin.Context) {
 		EffWPM:     cwSettings.EffWPM,
 		Freq:       cwSettings.Freq,
 		StartDelay: cwSettings.StartDelay,
+		UpdatedAt:  cwSettings.UpdatedAt,
 	}
 	response.PageSettings = common.PageSettingsResponse{
 		Theme:     pageSettings.Theme,
 		Lang:      pageSettings.Lang,
 		CurLesson: pageSettings.CurLesson,
+		UpdatedAt: cwSettings.UpdatedAt,
 	}
 	c.JSON(http.StatusOK, response)
 }
@@ -62,7 +64,8 @@ func (h SettingsHandler) GetCWSettings(c *gin.Context) {
 	var settings common.CWSettingsResponse
 	if err := h.DB.Model(&models.CWSettings{}).Take(&settings, "user_id = ?", user.ID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusOK, common.FromCwSettingsModel(models.GetDefaultCWSettings()))
+			cwSettings := models.GetDefaultCWSettings()
+			c.JSON(http.StatusOK, common.FromCwSettingsModel(cwSettings))
 			return
 		}
 		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeSettingsFetchFailed, "Failed to get settings"))
@@ -79,6 +82,8 @@ func (h SettingsHandler) GetPageSettings(c *gin.Context) {
 	var settings common.PageSettingsResponse
 	if err := h.DB.Model(&models.PageSettings{}).Take(&settings, "user_id = ?", user.ID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			pageSettings := models.GetDefaultPageSettings()
+			c.JSON(http.StatusOK, common.FromPageSettingsModel(pageSettings))
 			c.JSON(http.StatusOK, common.FromPageSettingsModel(models.GetDefaultPageSettings()))
 			return
 		}

@@ -52,3 +52,32 @@ func (h ProgressHandler) AddProgress(c *gin.Context) {
 	}
 	c.JSON(http.StatusCreated, common.MessageResponse{Message: "Progress Created"})
 }
+
+func (h ProgressHandler) AddProgresses(c *gin.Context) {
+	user := c.MustGet("user").(*models.User)
+
+	var inputs []common.ProgressInput
+	if err := c.ShouldBindJSON(&inputs); err != nil || len(inputs) == 0 {
+		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid request body"))
+		return
+	}
+
+	progresses := make([]models.Progress, 0, len(inputs))
+	for _, input := range inputs {
+		progresses = append(progresses, models.Progress{
+			UserID:          user.ID,
+			Lesson:          input.Lesson,
+			CharWPM:         input.CharWPM,
+			EffWPM:          input.EffWPM,
+			Accuracy:        *input.Accuracy,
+			ClientCreatedAt: input.ClientCreatedAt,
+		})
+	}
+
+	if err := h.DB.Create(&progresses).Error; err != nil {
+		slog.Error("Failed to create progress", "user_id", user.ID, "count", len(progresses), "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeProgressCreateFailed, "Failed to create progress"))
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"message": "Progress Created", "count": len(progresses)})
+}

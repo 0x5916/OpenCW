@@ -12,16 +12,18 @@ type ProgressResponse struct {
 }
 
 type CWSettingsResponse struct {
-	CharWPM    int     `json:"char_wpm"`
-	EffWPM     int     `json:"eff_wpm"`
-	Freq       int     `json:"freq"`
-	StartDelay float64 `json:"start_delay"`
+	CharWPM    int       `json:"char_wpm"`
+	EffWPM     int       `json:"eff_wpm"`
+	Freq       int       `json:"freq"`
+	StartDelay float64   `json:"start_delay"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 type PageSettingsResponse struct {
-	Theme     string `json:"theme"`
-	Lang      string `json:"language"`
-	CurLesson int    `json:"cur_lesson"`
+	Theme     string    `json:"theme"`
+	Lang      string    `json:"language"`
+	CurLesson int       `json:"cur_lesson"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type AuthTokenPairResponse struct {

@@ -1,7 +1,11 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import favicon from '$lib/assets/favicon.svg';
   import '../app.css';
   import { user, initAuth, logout } from '$lib/auth';
+  import { flushQueuedProgress, initializeProgressSync } from '$lib/progressSync';
+  import { LESSONS } from '$lib/morse';
+  import { reconcileSettingsWithServer, touchLocalPageSettingsUpdatedAt } from '$lib/cwSync';
   import { goto, afterNavigate } from '$app/navigation';
   import {
     ChevronDown,
@@ -22,7 +26,7 @@
     Settings,
     LayoutDashboard
   } from 'lucide-svelte';
-  import { lang, setLang, initLang } from '$lib/i18n.svelte';
+  import { lang, setLang, setLangPreference, initLang } from '$lib/i18n.svelte';
   import { locales, localizeHref } from '$lib/paraglide/runtime';
   import { getLocaleLongLabel, getLocaleShortLabel } from '$lib/locale';
   import * as m from '$lib/paraglide/messages';
@@ -57,6 +61,7 @@
   let langMenuEl = $state<HTMLElement | null>(null);
   let langMenuOpen = $state(false);
   let ThemeIcon = $derived(themeIconFor(theme));
+  let reconciledSettingsForUser = $state<string | null>(null);
 
   // initLang receives the locale the server read from the cookie —
   // so SSR renders the correct language from the very first request.
@@ -69,6 +74,58 @@
     initAuth();
   });
 
+  $effect(() => {
+    if (!$user) {
+      reconciledSettingsForUser = null;
+      return;
+    }
+
+    void flushQueuedProgress();
+
+    if (reconciledSettingsForUser === $user.username) return;
+    reconciledSettingsForUser = $user.username;
+
+    void reconcileSettingsWithServer({
+      maxLesson: LESSONS.length,
+      fallbackLanguagePreference: data.localePreference,
+      onLocale: setLangPreference
+    }).catch(() => {
+      // Keep app startup/login resilient if reconciliation fails.
+    });
+  });
+
+  onMount(() => {
+    initializeProgressSync();
+
+    if ('serviceWorker' in navigator) {
+      const localePrefixes = ['/en', '/zh-Hant', '/zh-Hans', '/ja', '/de'];
+
+      void (async () => {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+
+          for (const registration of registrations) {
+            const scriptUrl = registration.active?.scriptURL ?? registration.installing?.scriptURL ?? registration.waiting?.scriptURL;
+            const scriptPath = scriptUrl ? new URL(scriptUrl).pathname : '';
+            const scopePath = new URL(registration.scope).pathname.replace(/\/$/, '') || '/';
+            const scopeIsLocale = localePrefixes.some((prefix) => scopePath === prefix || scopePath.startsWith(`${prefix}/`));
+            const scriptIsLegacy = scriptPath === '/service-worker.js' || scriptPath.endsWith('/sw.js') && scriptPath !== '/sw.js';
+
+            if (scopeIsLocale || scriptIsLegacy) {
+              await registration.unregister();
+            }
+          }
+        } catch {
+          // Ignore cleanup failures and continue with root registration.
+        }
+
+        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      })().catch(() => {
+        // Avoid breaking page initialization if SW registration fails.
+      });
+    }
+  });
+
   function langLabel(locale: Locale): string {
     return getLocaleShortLabel(locale);
   }
@@ -79,6 +136,7 @@
 
   function setLanguage(locale: Locale): void {
     setLang(locale);
+    touchLocalPageSettingsUpdatedAt();
     langMenuOpen = false;
   }
 
@@ -86,6 +144,7 @@
     theme = nextTheme;
     localStorage.setItem('theme', theme);
     apply(theme);
+    touchLocalPageSettingsUpdatedAt();
   }
 
   function cycleTheme() {
@@ -257,23 +316,39 @@
             >
               <span class="nav-label-icon">
                 <User class="nav-icon" aria-hidden="true" />
-                {m.nav_login()}
+                Guest
                 <ChevronDown class="nav-icon" aria-hidden="true" />
               </span>
             </button>
             {#if guestMenuOpen}
               <div class="user-dropdown" id="guest-menu" role="menu">
                 <a
+                  href={href('/profile')}
+                  class="user-dropdown-item"
+                  role="menuitem"
+                  onclick={() => (guestMenuOpen = false)}
+                  ><LayoutDashboard size={14} style="pointer-events:none" /> {m.nav_profile()}</a
+                >
+                <a
+                  href={href('/settings')}
+                  class="user-dropdown-item"
+                  role="menuitem"
+                  onclick={() => (guestMenuOpen = false)}
+                  ><Settings size={14} style="pointer-events:none" /> {m.nav_settings()}</a
+                >
+                <a
                   href={href('/login')}
                   class="user-dropdown-item"
                   role="menuitem"
-                  onclick={() => (guestMenuOpen = false)}>{m.nav_login()}</a
+                  onclick={() => (guestMenuOpen = false)}
+                  ><LogIn size={14} style="pointer-events:none" /> {m.nav_login()}</a
                 >
                 <a
                   href={href('/register')}
                   class="user-dropdown-item"
                   role="menuitem"
-                  onclick={() => (guestMenuOpen = false)}>{m.nav_register()}</a
+                  onclick={() => (guestMenuOpen = false)}
+                  ><UserPlus size={14} style="pointer-events:none" /> {m.nav_register()}</a
                 >
               </div>
             {/if}
@@ -392,6 +467,12 @@
             ><LogOut size={16} />{m.nav_logout()} ({$user.username})</button
           >
         {:else}
+          <a href={href('/profile')} class="mobile-link" onclick={() => (menuOpen = false)}
+            ><LayoutDashboard size={16} />{m.nav_profile()}</a
+          >
+          <a href={href('/settings')} class="mobile-link" onclick={() => (menuOpen = false)}
+            ><Settings size={16} />{m.nav_settings()}</a
+          >
           <a href={href('/login')} class="mobile-link" onclick={() => (menuOpen = false)}
             ><LogIn size={16} />{m.nav_login()}</a
           >
