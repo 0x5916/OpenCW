@@ -42,23 +42,13 @@ export default defineConfig({
 				]
 			},
 			workbox: {
+				cleanupOutdatedCaches: true,
+				clientsClaim: true,
+				skipWaiting: true,
 				navigateFallback: '/offline.html',
 				navigateFallbackDenylist: [/^\/v1\//],
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,json}'],
-				additionalManifestEntries: [
-					{ url: '/', revision: null },
-					{ url: '/en', revision: null },
-					{ url: '/zh-Hant', revision: null },
-					{ url: '/zh-Hans', revision: null },
-					{ url: '/ja', revision: null },
-					{ url: '/de', revision: null },
-					{ url: '/en/morse/learn', revision: null },
-					{ url: '/zh-Hant/morse/learn', revision: null },
-					{ url: '/zh-Hans/morse/learn', revision: null },
-					{ url: '/ja/morse/learn', revision: null },
-					{ url: '/de/morse/learn', revision: null },
-					{ url: '/offline.html', revision: null }
-				],
+				additionalManifestEntries: [{ url: '/offline.html', revision: null }],
 				runtimeCaching: [
 					{
 						urlPattern: ({ url }) => url.pathname.startsWith('/v1/'),

@@ -7,6 +7,7 @@
   import { LESSONS } from '$lib/morse';
   import { reconcileSettingsWithServer, touchLocalPageSettingsUpdatedAt } from '$lib/cwSync';
   import { goto, afterNavigate } from '$app/navigation';
+  import { registerSW } from 'virtual:pwa-register';
   import {
     ChevronDown,
     Menu,
@@ -97,6 +98,10 @@
   onMount(() => {
     initializeProgressSync();
 
+    const updateServiceWorker = registerSW({
+      immediate: true
+    });
+
     if ('serviceWorker' in navigator) {
       const localePrefixes = ['/en', '/zh-Hant', '/zh-Hans', '/ja', '/de'];
 
@@ -119,11 +124,15 @@
           // Ignore cleanup failures and continue with root registration.
         }
 
-        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        updateServiceWorker();
       })().catch(() => {
         // Avoid breaking page initialization if SW registration fails.
       });
+
+      return;
     }
+
+    updateServiceWorker();
   });
 
   function langLabel(locale: Locale): string {
