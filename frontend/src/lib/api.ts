@@ -198,12 +198,7 @@ export async function submitProgress(
     payload.client_created_at = clientCreatedAt;
   }
 
-  await apiSendJson(
-    '/cw/progress',
-    'PUT',
-    payload,
-    'PROGRESS_CREATE_FAILED'
-  );
+  await apiSendJson('/cw/progress', 'PUT', payload, 'PROGRESS_CREATE_FAILED');
 }
 
 export async function updatePassword(oldPassword: string, newPassword: string): Promise<void> {

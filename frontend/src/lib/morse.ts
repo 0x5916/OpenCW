@@ -82,7 +82,7 @@ export const MORSE: Record<string, string> = {
   '.': '.-.-.-',
   ',': '--..--',
   '/': '-..-.',
-  '?': '..--..',
+  '?': '..--..'
 };
 
 function getGroupSize(groupSize: number | null) {

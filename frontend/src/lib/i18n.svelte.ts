@@ -32,9 +32,7 @@ function browserLanguages(): readonly string[] {
 function applyPreference(preference: LocalePreference): void {
   langPreference.value = preference;
   lang.value =
-    preference === 'auto'
-      ? detectLocaleFromAcceptedLanguages(browserLanguages())
-      : preference;
+    preference === 'auto' ? detectLocaleFromAcceptedLanguages(browserLanguages()) : preference;
   overwriteGetLocale(() => lang.value);
   applyDocumentLocale(lang.value);
 }
@@ -75,7 +73,10 @@ export function initLang(initialLocale: string, initialPreference: string = 'aut
   applyPreference(preference);
 }
 
-export function setLangPreference(preference: LocalePreference, options: { navigate?: boolean } = {}) {
+export function setLangPreference(
+  preference: LocalePreference,
+  options: { navigate?: boolean } = {}
+) {
   applyPreference(preference);
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(LOCALE_PREFERENCE_STORAGE_KEY, preference);

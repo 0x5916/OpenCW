@@ -12,9 +12,7 @@
 <section class="hero">
   <h1 class="hero-title">OpenCW</h1>
   <p class="hero-sub">
-    {m.home_hero_subtitle_pre()}<a
-      href={href('/about')}
-      class="hero-link">{m.home_hero_koch()}</a
+    {m.home_hero_subtitle_pre()}<a href={href('/about')} class="hero-link">{m.home_hero_koch()}</a
     >{m.home_hero_subtitle_post()}
   </p>
   <a href={href('/morse/learn')} class="btn-cta">{m.home_cta()}</a>

@@ -6,15 +6,7 @@
   import { LESSONS } from '$lib/morse';
   import { readClientCwSettings } from '$lib/cwSync';
   import { getLocalProgressRecords } from '$lib/progressSync';
-  import {
-    User,
-    Radio,
-    Calendar,
-    Activity,
-    Zap,
-    Check,
-    X
-  } from 'lucide-svelte';
+  import { User, Radio, Calendar, Activity, Zap, Check, X } from 'lucide-svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
   import { localizeApiError } from '$lib/errorLocalization';
@@ -86,18 +78,21 @@
 
   function scrollHeatmapToEnd() {
     if (!heatmapScrollEl) return;
-    heatmapScrollEl.scrollLeft = Math.max(0, heatmapScrollEl.scrollWidth - heatmapScrollEl.clientWidth);
+    heatmapScrollEl.scrollLeft = Math.max(
+      0,
+      heatmapScrollEl.scrollWidth - heatmapScrollEl.clientWidth
+    );
   }
 
   function scrollHeatmapToCurrentWeek() {
     if (!heatmapScrollEl) return;
 
-    const currentWeekEl = heatmapScrollEl.querySelector('.profile-heatmap-week.is-current-week') as
-      | HTMLElement
-      | null;
-    const currentDayEl = heatmapScrollEl.querySelector('.profile-heatmap-cell.is-today') as
-      | HTMLElement
-      | null;
+    const currentWeekEl = heatmapScrollEl.querySelector(
+      '.profile-heatmap-week.is-current-week'
+    ) as HTMLElement | null;
+    const currentDayEl = heatmapScrollEl.querySelector(
+      '.profile-heatmap-cell.is-today'
+    ) as HTMLElement | null;
     const targetEl = currentWeekEl ?? currentDayEl;
 
     if (!targetEl) {
@@ -230,7 +225,7 @@
   }
 
   function mondayIndexFromDayNumber(dayNumber: number): number {
-    return ((dayNumber + 3) % 7 + 7) % 7;
+    return (((dayNumber + 3) % 7) + 7) % 7;
   }
 
   function startOfWeekMondayMs(ms: number): number {
@@ -290,13 +285,20 @@
     return count;
   }
 
-  function buildHeatmap(items: ProgressRecord[], createdAtMs: number | null, year: number): HeatmapWeek[] {
+  function buildHeatmap(
+    items: ProgressRecord[],
+    createdAtMs: number | null,
+    year: number
+  ): HeatmapWeek[] {
     const todayMs = utcDayStart(Date.now());
     const yearStartMs = utcDayStart(Date.UTC(year, 0, 1));
     const yearEndMs = utcDayStart(Date.UTC(year, 11, 31));
     const startWeekStartMs = startOfWeekMondayMs(yearStartMs);
     const endWeekStartMs = startOfWeekMondayMs(yearEndMs);
-    const weekCount = Math.max(1, Math.floor((endWeekStartMs - startWeekStartMs) / (7 * DAY_MS)) + 1);
+    const weekCount = Math.max(
+      1,
+      Math.floor((endWeekStartMs - startWeekStartMs) / (7 * DAY_MS)) + 1
+    );
 
     const byDay: Record<string, number> = {};
 
@@ -405,9 +407,17 @@
           {#if !isGuest}
             <p class="profile-meta-item">
               {#if emailVerified}
-                <Check size={14} class="profile-status-icon profile-status-icon-ok" aria-hidden="true" />
+                <Check
+                  size={14}
+                  class="profile-status-icon profile-status-icon-ok"
+                  aria-hidden="true"
+                />
               {:else}
-                <X size={14} class="profile-status-icon profile-status-icon-bad" aria-hidden="true" />
+                <X
+                  size={14}
+                  class="profile-status-icon profile-status-icon-bad"
+                  aria-hidden="true"
+                />
               {/if}
               <span
                 >{emailVerified
@@ -457,7 +467,9 @@
             <div class="profile-heatmap-months-spacer"></div>
             <div class="profile-heatmap-months-grid">
               {#each heatmapWeeks as week, i (week.startMs)}
-                <span class="profile-heatmap-month" style={`grid-column:${i + 1}`}>{week.monthLabel}</span>
+                <span class="profile-heatmap-month" style={`grid-column:${i + 1}`}
+                  >{week.monthLabel}</span
+                >
               {/each}
             </div>
           </div>
@@ -483,13 +495,15 @@
                   {#each week.cells as cell (cell.dateKey)}
                     <span
                       class={`profile-heatmap-cell level-${cell.level} ${cell.inFuture ? 'is-future' : ''} ${cell.beforeAccount ? 'is-before-account' : ''} ${cell.outsideYear ? 'is-outside-year' : ''} ${
-                        selectedYear === CURRENT_YEAR && cell.dateMs === todayDayMs ? 'is-today' : ''
+                        selectedYear === CURRENT_YEAR && cell.dateMs === todayDayMs
+                          ? 'is-today'
+                          : ''
                       }`}
                       title={cell.outsideYear
                         ? `Outside ${selectedYear}`
                         : cell.beforeAccount
-                        ? `Before account creation (${DAY_FORMATTER.format(cell.dateMs)})`
-                        : `${cell.count} session${cell.count === 1 ? '' : 's'} on ${DAY_FORMATTER.format(cell.dateMs)}`}
+                          ? `Before account creation (${DAY_FORMATTER.format(cell.dateMs)})`
+                          : `${cell.count} session${cell.count === 1 ? '' : 's'} on ${DAY_FORMATTER.format(cell.dateMs)}`}
                     ></span>
                   {/each}
                 </div>
@@ -686,7 +700,10 @@
     font-size: 0.72rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease;
   }
   .profile-heatmap-year-btn:hover {
     color: var(--text-primary);

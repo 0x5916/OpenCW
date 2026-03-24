@@ -127,7 +127,12 @@
     return normalizeLesson(parsedLesson, LESSONS.length);
   }
 
-  function applyCwState(cw: { char_wpm: number; eff_wpm: number; freq: number; start_delay: number }) {
+  function applyCwState(cw: {
+    char_wpm: number;
+    eff_wpm: number;
+    freq: number;
+    start_delay: number;
+  }) {
     charWpm = cw.char_wpm;
     initialCharWpm = cw.char_wpm;
     effWpm = cw.eff_wpm;
@@ -172,7 +177,11 @@
 
     if (!$user) {
       const localCw = readClientCwSettings();
-      const localPage = readClientPageSettings(getStoredLesson(), LESSONS.length, langPreference.value);
+      const localPage = readClientPageSettings(
+        getStoredLesson(),
+        LESSONS.length,
+        langPreference.value
+      );
 
       applyCwState(localCw);
       applyPageState(localPage);
@@ -450,7 +459,11 @@
                 maxlength="32"
               />
               {#if callSignDirty || callSignSaving || callSignSaved}
-                <button type="submit" class="btn-primary settings-btn-compact" disabled={callSignSaving}>
+                <button
+                  type="submit"
+                  class="btn-primary settings-btn-compact"
+                  disabled={callSignSaving}
+                >
                   {saveButtonLabel(callSignSaved, callSignSaving)}
                 </button>
               {/if}
@@ -469,7 +482,11 @@
             <div class="settings-input-action">
               <input type="email" bind:value={email} class="input" required />
               {#if emailDirty || emailSaving || emailSaved}
-                <button type="submit" class="btn-primary settings-btn-compact" disabled={emailSaving}>
+                <button
+                  type="submit"
+                  class="btn-primary settings-btn-compact"
+                  disabled={emailSaving}
+                >
                   {saveButtonLabel(emailSaved, emailSaving)}
                 </button>
               {/if}
@@ -503,7 +520,10 @@
               </button>
             </div>
 
-            <form onsubmit={submitEmailVerification} class="settings-form settings-verification-form">
+            <form
+              onsubmit={submitEmailVerification}
+              class="settings-form settings-verification-form"
+            >
               <label class="settings-field">
                 <span class="label-text">{m.settings_email_verify_code_label()}</span>
                 <div class="settings-input-action">
@@ -581,7 +601,11 @@
           {/if}
           {#if passwordDirty || passwordSaving || passwordSaved}
             <div class="settings-action-row">
-              <button type="submit" class="btn-primary settings-btn-compact" disabled={passwordSaving}>
+              <button
+                type="submit"
+                class="btn-primary settings-btn-compact"
+                disabled={passwordSaving}
+              >
                 {saveButtonLabel(passwordSaved, passwordSaving)}
               </button>
             </div>

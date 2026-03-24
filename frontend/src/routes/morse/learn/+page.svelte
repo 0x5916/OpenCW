@@ -207,7 +207,6 @@
     inputText = value.toUpperCase();
   }
 
-
   async function onAnswerKeydown(event: KeyboardEvent) {
     if (event.code !== 'Space' || inputText.trim() !== '' || fullLessonPlayer?.isStarted()) return;
     event.preventDefault();
@@ -237,7 +236,9 @@
       <li>Type what you hear → Check Result</li>
     </ol>
     <div class="quickstart-actions">
-      <button type="button" class="btn-success quickstart-btn" onclick={dismissQuickStart}>Start Training</button>
+      <button type="button" class="btn-success quickstart-btn" onclick={dismissQuickStart}
+        >Start Training</button
+      >
       <button type="button" class="btn-ghost quickstart-btn" onclick={openQuickTips}>Tips</button>
     </div>
 
@@ -269,7 +270,9 @@
             {/if}
           </ul>
           <div class="quickstart-actions">
-            <button type="button" class="btn-ghost quickstart-btn" onclick={closeQuickTips}>Close</button>
+            <button type="button" class="btn-ghost quickstart-btn" onclick={closeQuickTips}
+              >Close</button
+            >
           </div>
         </div>
       </div>
@@ -307,7 +310,7 @@
         </select>
       </div>
       <MorsePlayer
-        text={Array(5).fill(selectedLessonChar).join("")}
+        text={Array(5).fill(selectedLessonChar).join('')}
         {charWpm}
         {effWpm}
         {freq}
@@ -321,7 +324,6 @@
           : m.trainer_play_letter()}
       />
     </div>
-
   </div>
 
   <!-- Right column: answer + result -->
@@ -504,7 +506,10 @@
     border: 1px solid var(--border-subtle);
     background-color: var(--bg-inset);
     color: var(--text-primary);
-    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    transition:
+      background-color 0.2s,
+      border-color 0.2s,
+      color 0.2s;
   }
 
   .lesson-select:hover {
@@ -559,7 +564,10 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    transition: background-color var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+    transition:
+      background-color var(--transition-base),
+      border-color var(--transition-base),
+      box-shadow var(--transition-base);
   }
 
   .answer-card:hover {
@@ -617,5 +625,4 @@
       font-size: 0.78rem;
     }
   }
-
 </style>

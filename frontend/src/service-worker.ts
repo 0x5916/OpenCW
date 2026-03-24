@@ -12,9 +12,7 @@ const OFFLINE_URL = '/offline.html';
 const API_PREFIXES = ['/auth', '/user', '/settings', '/cw', '/v1'];
 const NAVIGATION_FALLBACKS = ['/en/morse/learn', '/morse/learn', '/en', '/'];
 
-const ASSETS = new Set(
-  [...build, ...files, ...prerendered]
-);
+const ASSETS = new Set([...build, ...files, ...prerendered]);
 ASSETS.add(OFFLINE_URL);
 
 self.addEventListener('install', (event) => {

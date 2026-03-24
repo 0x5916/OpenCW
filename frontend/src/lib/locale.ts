@@ -24,9 +24,7 @@ function parseAcceptLanguage(header: string): WeightedLanguage[] {
       const value = rawValue?.trim();
       if (!value) return null;
 
-      const qParam = params
-        .map((p) => p.trim())
-        .find((p) => p.startsWith('q='));
+      const qParam = params.map((p) => p.trim()).find((p) => p.startsWith('q='));
       const q = qParam ? Number.parseFloat(qParam.slice(2)) : 1;
 
       return {

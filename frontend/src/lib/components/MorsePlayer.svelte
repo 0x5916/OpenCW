@@ -461,7 +461,9 @@
     background: var(--bg-inset);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: border-color var(--transition-fast), color var(--transition-fast);
+    transition:
+      border-color var(--transition-fast),
+      color var(--transition-fast);
   }
 
   .player-settings-trigger::-webkit-details-marker {

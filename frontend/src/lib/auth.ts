@@ -202,4 +202,3 @@ async function resolveUsername(accessToken: string, fallback: string): Promise<s
 
   return fallback;
 }
-

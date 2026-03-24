@@ -105,10 +105,15 @@
           const registrations = await navigator.serviceWorker.getRegistrations();
 
           for (const registration of registrations) {
-            const scriptUrl = registration.active?.scriptURL ?? registration.installing?.scriptURL ?? registration.waiting?.scriptURL;
+            const scriptUrl =
+              registration.active?.scriptURL ??
+              registration.installing?.scriptURL ??
+              registration.waiting?.scriptURL;
             const scriptPath = scriptUrl ? new URL(scriptUrl).pathname : '';
             const scopePath = new URL(registration.scope).pathname.replace(/\/$/, '') || '/';
-            const scopeIsLocale = localePrefixes.some((prefix) => scopePath === prefix || scopePath.startsWith(`${prefix}/`));
+            const scopeIsLocale = localePrefixes.some(
+              (prefix) => scopePath === prefix || scopePath.startsWith(`${prefix}/`)
+            );
             const scriptIsLegacy = scriptPath.endsWith('/sw.js');
 
             if (scopeIsLocale || scriptIsLegacy) {
@@ -488,7 +493,10 @@
         >
         <div class="mobile-divider"></div>
         {#each locales as locale (locale)}
-          <button type="button" class="mobile-link mobile-link-btn" onclick={() => setLanguage(locale)}
+          <button
+            type="button"
+            class="mobile-link mobile-link-btn"
+            onclick={() => setLanguage(locale)}
             ><Languages size={16} />{languageLabel(locale)}</button
           >
         {/each}

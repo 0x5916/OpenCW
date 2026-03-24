@@ -120,7 +120,10 @@ export function saveClientCwSettings(settings: CWSettings): CWSettings {
 function readCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
   const target = `${name}=`;
-  const item = document.cookie.split(';').map((part) => part.trim()).find((part) => part.startsWith(target));
+  const item = document.cookie
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(target));
   return item ? decodeURIComponent(item.slice(target.length)) : null;
 }
 
@@ -135,7 +138,9 @@ export function readClientPageSettings(
     themeRaw === 'dark' || themeRaw === 'light' || themeRaw === 'auto' ? themeRaw : 'auto';
 
   const localLang =
-    typeof localStorage === 'undefined' ? null : localStorage.getItem(LOCALE_PREFERENCE_STORAGE_KEY);
+    typeof localStorage === 'undefined'
+      ? null
+      : localStorage.getItem(LOCALE_PREFERENCE_STORAGE_KEY);
   const cookieLang = readCookie(LOCALE_COOKIE);
   const language = normalizeLocalePreference(localLang ?? cookieLang ?? fallbackLanguagePreference);
 
