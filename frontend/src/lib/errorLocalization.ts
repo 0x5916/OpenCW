@@ -1,42 +1,8 @@
 import * as m from '$lib/paraglide/messages';
-
-function isErrorCode(value: string): boolean {
-	return /^[A-Z0-9_]+$/.test(value);
-}
-
-function readCodeFromBody(body: unknown): string | null {
-	if (!body || typeof body !== 'object') return null;
-
-	const code = (body as Record<string, unknown>).code;
-	if (typeof code === 'string' && code.trim() !== '') return code;
-
-	const error = (body as Record<string, unknown>).error;
-	if (typeof error === 'string' && isErrorCode(error.trim())) return error;
-
-	const message = (body as Record<string, unknown>).message;
-	if (typeof message === 'string' && isErrorCode(message.trim())) return message;
-
-	return null;
-}
-
-function readErrorCode(error: unknown): string | null {
-	if (!error || typeof error !== 'object') return null;
-
-	const code = (error as { code?: unknown }).code;
-	if (typeof code === 'string' && code.trim() !== '') return code;
-
-	const bodyCode = readCodeFromBody((error as { body?: unknown }).body);
-	if (bodyCode) return bodyCode;
-
-	if (error instanceof Error && isErrorCode(error.message.trim())) {
-		return error.message;
-	}
-
-	return null;
-}
+import { extractErrorCode } from '$lib/errorCode';
 
 export function localizeApiError(error: unknown, fallback: () => string): string {
-	const code = readErrorCode(error);
+	const code = extractErrorCode(error);
 
 	switch (code) {
 		case 'INVALID_REQUEST_BODY':

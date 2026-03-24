@@ -1,4 +1,5 @@
 import { apiFetch } from './auth';
+import { extractErrorCodeFromBody } from './errorCode';
 
 class ApiError extends Error {
   status: number;
@@ -22,34 +23,6 @@ const JSON_HEADERS = {
 } as const;
 const inFlightGetRequests = new Map<string, Promise<unknown>>();
 
-function isErrorCode(value: string): boolean {
-  return /^[A-Z0-9_]+$/.test(value);
-}
-
-function pickErrorCode(body: unknown, fallback: string): string {
-  if (!body || typeof body !== 'object') return fallback;
-
-  const code = (body as Record<string, unknown>).code;
-  if (typeof code === 'string' && code.trim() !== '') return code;
-
-  const error = (body as Record<string, unknown>).error;
-  if (typeof error === 'string' && error.trim() !== '' && isErrorCode(error.trim())) {
-    return error;
-  }
-
-  const message = (body as Record<string, unknown>).message;
-  if (typeof message === 'string' && message.trim() !== '' && isErrorCode(message.trim())) {
-    return message;
-  }
-
-  const detail = (body as Record<string, unknown>).detail;
-  if (typeof detail === 'string' && detail.trim() !== '' && isErrorCode(detail.trim())) {
-    return detail;
-  }
-
-  return fallback;
-}
-
 async function parseJsonBody<T>(res: Response): Promise<T> {
   if (res.status === 204) {
     return undefined as T;
@@ -70,7 +43,7 @@ async function parseJsonBody<T>(res: Response): Promise<T> {
 
 async function throwApiError(res: Response, fallback: string): Promise<never> {
   const body = await parseJsonBody<unknown>(res).catch(() => null);
-  throw new ApiError(pickErrorCode(body, fallback), res.status, body);
+  throw new ApiError(extractErrorCodeFromBody(body) ?? fallback, res.status, body);
 }
 
 async function apiGetJson<T>(path: string, fallback: string): Promise<T> {
@@ -163,10 +136,6 @@ export async function getUserInfo(): Promise<UserInfo> {
 
 export async function savePageSettings(settings: PageSettings): Promise<void> {
   await apiSendJson('/settings/page', 'POST', settings, 'SETTINGS_UPDATE_FAILED');
-}
-
-export async function getPageSettings(): Promise<PageSettings> {
-  return apiGetJson<PageSettings>('/settings/page', 'SETTINGS_FETCH_FAILED');
 }
 
 export async function updateEmail(email: string): Promise<void> {

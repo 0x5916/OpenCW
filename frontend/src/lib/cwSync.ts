@@ -72,8 +72,8 @@ export function touchLocalCwSettingsUpdatedAt(isoTimestamp: string = nowIso()): 
 
 function readStoredLesson(maxLesson: number): number {
   if (typeof localStorage === 'undefined') return 1;
-  const rawLesson = localStorage.getItem('learn.lesson');
-  const parsedLesson = Number.parseInt(rawLesson ?? '1', 10);
+  const storedLessonString = localStorage.getItem('learn.lesson');
+  const parsedLesson = Number.parseInt(storedLessonString ?? '1', 10);
   return normalizeLesson(parsedLesson, maxLesson);
 }
 
