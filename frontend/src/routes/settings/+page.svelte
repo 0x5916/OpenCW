@@ -155,6 +155,17 @@
     verificationCheckError = '';
   }
 
+  function showSavedFlag(setter: (value: boolean) => void, durationMs: number = 3000) {
+    setter(true);
+    setTimeout(() => setter(false), durationMs);
+  }
+
+  function saveButtonLabel(saved: boolean, saving: boolean): string {
+    if (saved) return m.settings_saved();
+    if (saving) return m.settings_saving();
+    return m.settings_update();
+  }
+
   async function loadAll() {
     loading = true;
     loadError = '';
@@ -199,8 +210,9 @@
       await updateCallSign(callSign.trim().toUpperCase());
       callSign = callSign.trim().toUpperCase();
       initialCallSign = callSign;
-      callSignSaved = true;
-      setTimeout(() => (callSignSaved = false), 3000);
+      showSavedFlag((value) => {
+        callSignSaved = value;
+      });
     } catch (err) {
       callSignError = localizeApiError(err, () => m.settings_save_error());
     } finally {
@@ -223,8 +235,9 @@
       initialEmail = email;
       emailVerified = false;
       resetEmailVerificationState();
-      emailSaved = true;
-      setTimeout(() => (emailSaved = false), 3000);
+      showSavedFlag((value) => {
+        emailSaved = value;
+      });
     } catch (err) {
       emailError = localizeApiError(err, () => m.settings_save_error());
     } finally {
@@ -317,8 +330,9 @@
       initialEffWpm = normalized.eff_wpm;
       initialFreq = normalized.freq;
       initialStartDelay = normalized.start_delay;
-      cwSaved = true;
-      setTimeout(() => (cwSaved = false), 3000);
+      showSavedFlag((value) => {
+        cwSaved = value;
+      });
     } catch (err) {
       cwError = localizeApiError(err, () => m.settings_save_error());
     } finally {
@@ -350,8 +364,9 @@
       currentPassword = '';
       newPassword = '';
       confirmPassword = '';
-      passwordSaved = true;
-      setTimeout(() => (passwordSaved = false), 3000);
+      showSavedFlag((value) => {
+        passwordSaved = value;
+      });
     } catch (err) {
       passwordError = localizeApiError(err, () => m.settings_save_error());
     } finally {
@@ -382,8 +397,9 @@
       initialPageTheme = pageTheme;
       initialPageLanguage = pageLanguage;
       initialPageLesson = pageLesson;
-      pageSaved = true;
-      setTimeout(() => (pageSaved = false), 3000);
+      showSavedFlag((value) => {
+        pageSaved = value;
+      });
     } catch (err) {
       pageError = localizeApiError(err, () => m.settings_save_error());
     } finally {
@@ -435,11 +451,7 @@
               />
               {#if callSignDirty || callSignSaving || callSignSaved}
                 <button type="submit" class="btn-primary settings-btn-compact" disabled={callSignSaving}>
-                  {callSignSaved
-                    ? m.settings_saved()
-                    : callSignSaving
-                      ? m.settings_saving()
-                      : m.settings_update()}
+                  {saveButtonLabel(callSignSaved, callSignSaving)}
                 </button>
               {/if}
             </div>
@@ -458,11 +470,7 @@
               <input type="email" bind:value={email} class="input" required />
               {#if emailDirty || emailSaving || emailSaved}
                 <button type="submit" class="btn-primary settings-btn-compact" disabled={emailSaving}>
-                  {emailSaved
-                    ? m.settings_saved()
-                    : emailSaving
-                      ? m.settings_saving()
-                      : m.settings_update()}
+                  {saveButtonLabel(emailSaved, emailSaving)}
                 </button>
               {/if}
             </div>
@@ -574,11 +582,7 @@
           {#if passwordDirty || passwordSaving || passwordSaved}
             <div class="settings-action-row">
               <button type="submit" class="btn-primary settings-btn-compact" disabled={passwordSaving}>
-                {passwordSaved
-                  ? m.settings_saved()
-                  : passwordSaving
-                    ? m.settings_saving()
-                    : m.settings_update()}
+                {saveButtonLabel(passwordSaved, passwordSaving)}
               </button>
             </div>
           {/if}
@@ -617,7 +621,7 @@
         {#if pageDirty || pageSaving || pageSaved}
           <div class="settings-action-row">
             <button type="submit" class="btn-primary settings-btn-compact" disabled={pageSaving}>
-              {pageSaved ? m.settings_saved() : pageSaving ? m.settings_saving() : m.settings_update()}
+              {saveButtonLabel(pageSaved, pageSaving)}
             </button>
           </div>
         {/if}
@@ -650,7 +654,7 @@
         {#if cwDirty || cwSaving || cwSaved}
           <div class="settings-action-row">
             <button type="submit" class="btn-primary settings-btn-compact" disabled={cwSaving}>
-              {cwSaved ? m.settings_saved() : cwSaving ? m.settings_saving() : m.settings_update()}
+              {saveButtonLabel(cwSaved, cwSaving)}
             </button>
           </div>
         {/if}
