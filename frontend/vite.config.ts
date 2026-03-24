@@ -9,6 +9,7 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit(),
 		VitePWA({
+			injectRegister: false,
 			registerType: 'autoUpdate',
 			includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'favicon-96x96.png'],
 			manifest: {
@@ -41,9 +42,23 @@ export default defineConfig({
 				]
 			},
 			workbox: {
-				navigateFallback: '/offline',
+				navigateFallback: '/offline.html',
 				navigateFallbackDenylist: [/^\/v1\//],
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,json}'],
+				additionalManifestEntries: [
+					{ url: '/', revision: null },
+					{ url: '/en', revision: null },
+					{ url: '/zh-Hant', revision: null },
+					{ url: '/zh-Hans', revision: null },
+					{ url: '/ja', revision: null },
+					{ url: '/de', revision: null },
+					{ url: '/en/morse/learn', revision: null },
+					{ url: '/zh-Hant/morse/learn', revision: null },
+					{ url: '/zh-Hans/morse/learn', revision: null },
+					{ url: '/ja/morse/learn', revision: null },
+					{ url: '/de/morse/learn', revision: null },
+					{ url: '/offline.html', revision: null }
+				],
 				runtimeCaching: [
 					{
 						urlPattern: ({ url }) => url.pathname.startsWith('/v1/'),

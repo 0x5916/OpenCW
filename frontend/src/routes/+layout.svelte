@@ -7,7 +7,6 @@
   import { LESSONS } from '$lib/morse';
   import { reconcileSettingsWithServer, touchLocalPageSettingsUpdatedAt } from '$lib/cwSync';
   import { goto, afterNavigate } from '$app/navigation';
-  import { registerSW } from 'virtual:pwa-register';
   import {
     ChevronDown,
     Menu,
@@ -98,11 +97,33 @@
   onMount(() => {
     initializeProgressSync();
 
-    const updateServiceWorker = registerSW({
-      immediate: true
-    });
+    if ('serviceWorker' in navigator) {
+      const localePrefixes = ['/en', '/zh-Hant', '/zh-Hans', '/ja', '/de'];
 
-    updateServiceWorker();
+      void (async () => {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+
+          for (const registration of registrations) {
+            const scriptUrl = registration.active?.scriptURL ?? registration.installing?.scriptURL ?? registration.waiting?.scriptURL;
+            const scriptPath = scriptUrl ? new URL(scriptUrl).pathname : '';
+            const scopePath = new URL(registration.scope).pathname.replace(/\/$/, '') || '/';
+            const scopeIsLocale = localePrefixes.some((prefix) => scopePath === prefix || scopePath.startsWith(`${prefix}/`));
+            const scriptIsLegacy = scriptPath === '/service-worker.js' || scriptPath.endsWith('/sw.js') && scriptPath !== '/sw.js';
+
+            if (scopeIsLocale || scriptIsLegacy) {
+              await registration.unregister();
+            }
+          }
+        } catch {
+          // Ignore cleanup failures and continue with root registration.
+        }
+
+        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      })().catch(() => {
+        // Avoid breaking page initialization if SW registration fails.
+      });
+    }
   });
 
   function langLabel(locale: Locale): string {
