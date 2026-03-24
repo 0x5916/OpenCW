@@ -4,6 +4,8 @@
   import { getUserInfo, getCWSettings, getProgress } from '$lib/api';
   import type { ProgressRecord } from '$lib/api';
   import { LESSONS } from '$lib/morse';
+  import { readClientCwSettings } from '$lib/cwSync';
+  import { getLocalProgressRecords } from '$lib/progressSync';
   import {
     User,
     Radio,
@@ -34,6 +36,7 @@
   let freq = $state(0);
   let records = $state<ProgressRecord[]>([]);
   let heatmapScrollEl = $state<HTMLDivElement | null>(null);
+  let lastAuthLoaded = $state<boolean | null>(null);
 
   const WEEKDAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', ''] as const;
   const CURRENT_YEAR = new Date().getFullYear();
@@ -71,10 +74,14 @@
   let heatmapWeekCount = $derived(Math.max(1, heatmapWeeks.length));
   let todayDayMs = $derived(utcDayStart(Date.now()));
   let recentRecords = $derived([...records].reverse().slice(0, 20));
+  let isGuest = $derived(!$user);
 
   $effect(() => {
-    if ($user) loadAll();
-    else loading = false;
+    const isAuthenticated = Boolean($user);
+    if (lastAuthLoaded === isAuthenticated) return;
+
+    lastAuthLoaded = isAuthenticated;
+    loadAll();
   });
 
   function scrollHeatmapToEnd() {
@@ -141,6 +148,35 @@
   async function loadAll() {
     loading = true;
     loadError = '';
+
+    if (!$user) {
+      const cw = readClientCwSettings();
+      const localRecords = getLocalProgressRecords();
+      const parsedCreatedAt = localRecords
+        .map((record) => Date.parse(record.created_at))
+        .filter((value) => !Number.isNaN(value));
+      const earliestCreatedAtMs =
+        parsedCreatedAt.length === 0 ? Date.now() : Math.min(...parsedCreatedAt);
+
+      username = 'Guest';
+      email = '';
+      callSign = null;
+      emailVerified = false;
+      memberCreatedAtMs = utcDayStart(earliestCreatedAtMs);
+      memberSince = new Date(earliestCreatedAtMs).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      selectedYear = new Date().getFullYear();
+      charWpm = cw.char_wpm;
+      effWpm = cw.eff_wpm;
+      freq = cw.freq;
+      records = localRecords;
+      loading = false;
+      return;
+    }
+
     try {
       const [info, cw, prog] = await Promise.all([getUserInfo(), getCWSettings(), getProgress()]);
       username = info.username;
@@ -335,17 +371,22 @@
 </script>
 
 <main class="profile-page">
-  {#if !$user && !loading}
-    <div class="card">
-      <p class="body-text">
-        {m.profile_not_logged_in()} <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
-      </p>
-    </div>
-  {:else if loading}
+  {#if loading}
     <LoadingSpinner variant="spinner" />
   {:else if loadError}
     <ErrorAlert message={loadError} />
   {:else}
+    {#if isGuest}
+      <section class="card">
+        <p class="body-text">
+          {m.trainer_guest_notice()}
+          <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
+          /
+          <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
+        </p>
+      </section>
+    {/if}
+
     <!-- Header -->
     <header class="profile-header card">
       <div class="profile-avatar">
@@ -353,24 +394,28 @@
       </div>
       <div class="profile-header-info">
         <h1 class="profile-username">{username}</h1>
-        <p class="profile-email">{email}</p>
+        {#if !isGuest}
+          <p class="profile-email">{email}</p>
+        {/if}
         <div class="profile-meta-row">
           <p class="profile-meta-item">
             <span class="profile-meta-label">{m.profile_call_sign_label()}:</span>
             <span>{callSign ?? m.profile_call_sign_none()}</span>
           </p>
-          <p class="profile-meta-item">
-            {#if emailVerified}
-              <Check size={14} class="profile-status-icon profile-status-icon-ok" aria-hidden="true" />
-            {:else}
-              <X size={14} class="profile-status-icon profile-status-icon-bad" aria-hidden="true" />
-            {/if}
-            <span
-              >{emailVerified
-                ? m.profile_email_status_verified()
-                : m.profile_email_status_not_verified()}</span
-            >
-          </p>
+          {#if !isGuest}
+            <p class="profile-meta-item">
+              {#if emailVerified}
+                <Check size={14} class="profile-status-icon profile-status-icon-ok" aria-hidden="true" />
+              {:else}
+                <X size={14} class="profile-status-icon profile-status-icon-bad" aria-hidden="true" />
+              {/if}
+              <span
+                >{emailVerified
+                  ? m.profile_email_status_verified()
+                  : m.profile_email_status_not_verified()}</span
+              >
+            </p>
+          {/if}
         </div>
         <p class="profile-joined">
           <Calendar size={13} />
@@ -513,7 +558,7 @@
               </tr>
             </thead>
             <tbody>
-              {#each recentRecords as rec (rec.created_at)}
+              {#each recentRecords as rec, idx (`${rec.created_at}-${rec.lesson}-${idx}`)}
                 <tr>
                   <td class="profile-lesson-cell">{formatLesson(rec.lesson)}</td>
                   <td

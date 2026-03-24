@@ -122,12 +122,14 @@ export interface CWSettings {
   eff_wpm: number;
   freq: number;
   start_delay: number;
+  updated_at?: string;
 }
 
 export interface PageSettings {
   theme: 'auto' | 'dark' | 'light';
   language: string;
   cur_lesson: number;
+  updated_at?: string;
 }
 
 export interface UserInfo {

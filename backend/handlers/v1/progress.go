@@ -30,6 +30,32 @@ func (h ProgressHandler) GetAllProgress(c *gin.Context) {
 func (h ProgressHandler) AddProgress(c *gin.Context) {
 	user := c.MustGet("user").(*models.User)
 
+	var input common.ProgressInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid request body"))
+		return
+	}
+
+	progress := models.Progress{
+		UserID:          user.ID,
+		Lesson:          input.Lesson,
+		CharWPM:         input.CharWPM,
+		EffWPM:          input.EffWPM,
+		Accuracy:        *input.Accuracy,
+		ClientCreatedAt: input.ClientCreatedAt,
+	}
+
+	if err := h.DB.Create(&progress).Error; err != nil {
+		slog.Error("Failed to create progress", "user_id", user.ID, "lesson", progress.Lesson, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeProgressCreateFailed, "Failed to create progress"))
+		return
+	}
+	c.JSON(http.StatusCreated, common.MessageResponse{Message: "Progress Created"})
+}
+
+func (h ProgressHandler) AddProgresses(c *gin.Context) {
+	user := c.MustGet("user").(*models.User)
+
 	var inputs []common.ProgressInput
 	if err := c.ShouldBindJSON(&inputs); err != nil || len(inputs) == 0 {
 		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid request body"))

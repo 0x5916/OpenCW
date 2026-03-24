@@ -1,4 +1,5 @@
 import { submitProgress } from '$lib/api';
+import type { ProgressRecord } from '$lib/api';
 
 type ProgressPayload = {
   lesson: number;
@@ -94,6 +95,27 @@ function sortQueue(queue: ProgressPayload[]): ProgressPayload[] {
 
     return 0;
   });
+}
+
+export function getLocalProgressRecords(): ProgressRecord[] {
+  const currentUsername = canUseStorage() ? (localStorage.getItem('username') ?? undefined) : undefined;
+
+  return sortQueue(readQueue())
+    .filter((item) => {
+      if (currentUsername) {
+        return item.username === undefined || item.username === currentUsername;
+      }
+
+      return item.username === undefined;
+    })
+    .map((item) => ({
+      lesson: String(item.lesson),
+      char_wpm: item.char_wpm,
+      eff_wpm: item.eff_wpm,
+      accuracy: item.accuracy,
+      created_at: item.client_created_at,
+      client_created_at: item.client_created_at
+    }));
 }
 
 export async function flushQueuedProgress(): Promise<void> {

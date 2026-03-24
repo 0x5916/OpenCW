@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import { user } from '$lib/auth';
   import {
     saveCWSettings,
@@ -19,7 +20,14 @@
     type LocalePreference
   } from '$lib/locale';
   import { LESSONS } from '$lib/morse';
-  import { applyClientPageSettings, normalizeLesson, restoreSettingsFromServer } from '$lib/cwSync';
+  import {
+    applyClientPageSettings,
+    normalizeLesson,
+    readClientCwSettings,
+    readClientPageSettings,
+    restoreSettingsFromServer,
+    saveClientCwSettings
+  } from '$lib/cwSync';
   import { localizeApiError } from '$lib/errorLocalization';
   import { Settings } from 'lucide-svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
@@ -83,6 +91,7 @@
 
   let loading = $state(true);
   let loadError = $state('');
+  let lastAuthLoaded = $state<boolean | null>(null);
 
   const passwordDirty = $derived(
     currentPassword.trim() !== '' || newPassword.trim() !== '' || confirmPassword.trim() !== ''
@@ -102,16 +111,49 @@
   );
 
   $effect(() => {
-    if ($user) {
-      loadAll();
-    } else {
-      loading = false;
-    }
+    const isAuthenticated = Boolean($user);
+    if (lastAuthLoaded === isAuthenticated) return;
+
+    lastAuthLoaded = isAuthenticated;
+    loadAll();
   });
+
+  function getStoredLesson(): number {
+    if (!browser) return 1;
+
+    const rawLesson = localStorage.getItem('learn.lesson');
+    const parsedLesson = Number.parseInt(rawLesson ?? '1', 10);
+    return normalizeLesson(parsedLesson, LESSONS.length);
+  }
 
   async function loadAll() {
     loading = true;
     loadError = '';
+
+    if (!$user) {
+      const localCw = readClientCwSettings();
+      const localPage = readClientPageSettings(getStoredLesson(), LESSONS.length, langPreference.value);
+
+      charWpm = localCw.char_wpm;
+      initialCharWpm = localCw.char_wpm;
+      effWpm = localCw.eff_wpm;
+      initialEffWpm = localCw.eff_wpm;
+      freq = localCw.freq;
+      initialFreq = localCw.freq;
+      startDelay = localCw.start_delay;
+      initialStartDelay = localCw.start_delay;
+
+      pageTheme = localPage.theme;
+      initialPageTheme = localPage.theme;
+      pageLanguage = normalizeLocalePreference(localPage.language);
+      initialPageLanguage = pageLanguage;
+      pageLesson = normalizeLesson(localPage.cur_lesson, LESSONS.length);
+      initialPageLesson = pageLesson;
+
+      loading = false;
+      return;
+    }
+
     try {
       const [info, settings] = await Promise.all([getUserInfo(), restoreSettingsFromServer()]);
       const { cw, page } = settings;
@@ -259,11 +301,26 @@
     cwError = '';
     cwSaved = false;
     try {
-      await saveCWSettings({ char_wpm: charWpm, eff_wpm: effWpm, freq, start_delay: startDelay });
-      initialCharWpm = charWpm;
-      initialEffWpm = effWpm;
-      initialFreq = freq;
-      initialStartDelay = startDelay;
+      const normalized = saveClientCwSettings({
+        char_wpm: charWpm,
+        eff_wpm: effWpm,
+        freq,
+        start_delay: startDelay
+      });
+
+      charWpm = normalized.char_wpm;
+      effWpm = normalized.eff_wpm;
+      freq = normalized.freq;
+      startDelay = normalized.start_delay;
+
+      if ($user) {
+        await saveCWSettings(normalized);
+      }
+
+      initialCharWpm = normalized.char_wpm;
+      initialEffWpm = normalized.eff_wpm;
+      initialFreq = normalized.freq;
+      initialStartDelay = normalized.start_delay;
       cwSaved = true;
       setTimeout(() => (cwSaved = false), 3000);
     } catch (err) {
@@ -320,7 +377,11 @@
         language: pageLanguage,
         cur_lesson: pageLesson
       };
-      await savePageSettings(pagePayload);
+
+      if ($user) {
+        await savePageSettings(pagePayload);
+      }
+
       applyClientPageSettings(pagePayload, LESSONS.length, setLangPreference);
       initialPageTheme = pageTheme;
       initialPageLanguage = pageLanguage;
@@ -341,187 +402,193 @@
     <h1 class="page-title">{m.settings_title()}</h1>
   </div>
 
-  {#if !$user && !loading}
-    <div class="card">
-      <p class="body-text">
-        {m.settings_not_logged_in()}
-        <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
-      </p>
-    </div>
-  {:else if loading}
+  {#if loading}
     <LoadingSpinner variant="spinner" padded />
   {:else if loadError}
     <ErrorAlert message={loadError} />
   {:else}
-    <!-- Account -->
-    <section class="card settings-card">
-      <h2 class="card-label">{m.settings_account_section()}</h2>
-      <form onsubmit={saveCallSign} class="settings-form">
-        <label class="settings-field">
-          <span class="label-text">{m.settings_username_label()}</span>
-          <input type="text" value={username} class="input" disabled />
-        </label>
-        <label class="settings-field">
-          <span class="label-text">{m.settings_call_sign_label()}</span>
-          <div class="settings-input-action">
-            <input
-              type="text"
-              bind:value={callSign}
-              class="input"
-              placeholder={m.settings_call_sign_placeholder()}
-              maxlength="32"
-            />
-            {#if callSignDirty || callSignSaving || callSignSaved}
-              <button type="submit" class="btn-primary settings-btn-compact" disabled={callSignSaving}>
-                {callSignSaved
-                  ? m.settings_saved()
-                  : callSignSaving
-                    ? m.settings_saving()
-                    : m.settings_update()}
-              </button>
-            {/if}
-          </div>
-        </label>
-        {#if callSignError}
-          <p class="settings-error">⚠ {callSignError}</p>
-        {/if}
-      </form>
-
-      <hr class="settings-divider" />
-
-      <form onsubmit={saveEmail} class="settings-form">
-        <label class="settings-field">
-          <span class="label-text">{m.settings_email_label()}</span>
-          <div class="settings-input-action">
-            <input type="email" bind:value={email} class="input" required />
-            {#if emailDirty || emailSaving || emailSaved}
-              <button type="submit" class="btn-primary settings-btn-compact" disabled={emailSaving}>
-                {emailSaved
-                  ? m.settings_saved()
-                  : emailSaving
-                    ? m.settings_saving()
-                    : m.settings_update()}
-              </button>
-            {/if}
-          </div>
-        </label>
-        {#if emailError}
-          <p class="settings-error">⚠ {emailError}</p>
-        {/if}
-      </form>
-
-      <div class="settings-email-verification">
-        <p class={`settings-email-status ${emailVerified ? 'is-verified' : 'is-unverified'}`}>
-          {emailVerified
-            ? m.settings_email_verify_status_verified()
-            : m.settings_email_verify_status_unverified()}
+    {#if !$user}
+      <section class="card settings-card">
+        <p class="body-text">
+          {m.trainer_guest_notice()}
+          <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
+          /
+          <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
         </p>
+      </section>
+    {/if}
 
-        {#if !emailVerified}
-          <div class="settings-input-action">
-            <button
-              type="button"
-              class="btn-primary settings-btn-compact"
-              onclick={requestEmailVerificationCode}
-              disabled={verificationSendLoading || emailDirty}
-            >
-              {verificationSendLoading
-                ? m.settings_saving()
-                : verificationSent
-                  ? m.settings_email_verify_code_sent()
-                  : m.settings_email_verify_send_code()}
-            </button>
-          </div>
-
-          <form onsubmit={submitEmailVerification} class="settings-form settings-verification-form">
-            <label class="settings-field">
-              <span class="label-text">{m.settings_email_verify_code_label()}</span>
-              <div class="settings-input-action">
-                <input
-                  type="text"
-                  bind:value={verificationCode}
-                  class="input"
-                  placeholder={m.settings_email_verify_code_placeholder()}
-                  inputmode="numeric"
-                  autocomplete="one-time-code"
-                />
-                <button
-                  type="submit"
-                  class="btn-primary settings-btn-compact"
-                  disabled={verificationCheckLoading || emailDirty}
-                >
-                  {verificationCheckLoading
-                    ? m.settings_saving()
-                    : verificationSuccess
-                      ? m.settings_email_verify_verified()
-                      : m.settings_email_verify_confirm()}
+    {#if $user}
+      <!-- Account -->
+      <section class="card settings-card">
+        <h2 class="card-label">{m.settings_account_section()}</h2>
+        <form onsubmit={saveCallSign} class="settings-form">
+          <label class="settings-field">
+            <span class="label-text">{m.settings_username_label()}</span>
+            <input type="text" value={username} class="input" disabled />
+          </label>
+          <label class="settings-field">
+            <span class="label-text">{m.settings_call_sign_label()}</span>
+            <div class="settings-input-action">
+              <input
+                type="text"
+                bind:value={callSign}
+                class="input"
+                placeholder={m.settings_call_sign_placeholder()}
+                maxlength="32"
+              />
+              {#if callSignDirty || callSignSaving || callSignSaved}
+                <button type="submit" class="btn-primary settings-btn-compact" disabled={callSignSaving}>
+                  {callSignSaved
+                    ? m.settings_saved()
+                    : callSignSaving
+                      ? m.settings_saving()
+                      : m.settings_update()}
                 </button>
-              </div>
-            </label>
-          </form>
-        {/if}
+              {/if}
+            </div>
+          </label>
+          {#if callSignError}
+            <p class="settings-error">⚠ {callSignError}</p>
+          {/if}
+        </form>
 
-        {#if verificationSendError}
-          <p class="settings-error">⚠ {verificationSendError}</p>
-        {/if}
-        {#if verificationCheckError}
-          <p class="settings-error">⚠ {verificationCheckError}</p>
-        {/if}
-      </div>
+        <hr class="settings-divider" />
 
-      <hr class="settings-divider" />
+        <form onsubmit={saveEmail} class="settings-form">
+          <label class="settings-field">
+            <span class="label-text">{m.settings_email_label()}</span>
+            <div class="settings-input-action">
+              <input type="email" bind:value={email} class="input" required />
+              {#if emailDirty || emailSaving || emailSaved}
+                <button type="submit" class="btn-primary settings-btn-compact" disabled={emailSaving}>
+                  {emailSaved
+                    ? m.settings_saved()
+                    : emailSaving
+                      ? m.settings_saving()
+                      : m.settings_update()}
+                </button>
+              {/if}
+            </div>
+          </label>
+          {#if emailError}
+            <p class="settings-error">⚠ {emailError}</p>
+          {/if}
+        </form>
 
-      <h3 class="settings-subtitle">{m.settings_password_section()}</h3>
-      <form onsubmit={savePassword} class="settings-form">
-        <label class="settings-field">
-          <span class="label-text">{m.settings_current_password_label()}</span>
-          <input
-            type="password"
-            bind:value={currentPassword}
-            class="input"
-            minlength="8"
-            autocomplete="current-password"
-            required
-          />
-        </label>
-        <label class="settings-field">
-          <span class="label-text">{m.settings_new_password_label()}</span>
-          <input
-            type="password"
-            bind:value={newPassword}
-            class="input"
-            minlength="8"
-            autocomplete="new-password"
-            required
-          />
-        </label>
-        <label class="settings-field">
-          <span class="label-text">{m.settings_confirm_new_password_label()}</span>
-          <input
-            type="password"
-            bind:value={confirmPassword}
-            class="input"
-            minlength="8"
-            autocomplete="new-password"
-            required
-          />
-        </label>
-        {#if passwordError}
-          <p class="settings-error">⚠ {passwordError}</p>
-        {/if}
-        {#if passwordDirty || passwordSaving || passwordSaved}
-          <div class="settings-action-row">
-            <button type="submit" class="btn-primary settings-btn-compact" disabled={passwordSaving}>
-              {passwordSaved
-                ? m.settings_saved()
-                : passwordSaving
+        <div class="settings-email-verification">
+          <p class={`settings-email-status ${emailVerified ? 'is-verified' : 'is-unverified'}`}>
+            {emailVerified
+              ? m.settings_email_verify_status_verified()
+              : m.settings_email_verify_status_unverified()}
+          </p>
+
+          {#if !emailVerified}
+            <div class="settings-input-action">
+              <button
+                type="button"
+                class="btn-primary settings-btn-compact"
+                onclick={requestEmailVerificationCode}
+                disabled={verificationSendLoading || emailDirty}
+              >
+                {verificationSendLoading
                   ? m.settings_saving()
-                  : m.settings_update()}
-            </button>
-          </div>
-        {/if}
-      </form>
-    </section>
+                  : verificationSent
+                    ? m.settings_email_verify_code_sent()
+                    : m.settings_email_verify_send_code()}
+              </button>
+            </div>
+
+            <form onsubmit={submitEmailVerification} class="settings-form settings-verification-form">
+              <label class="settings-field">
+                <span class="label-text">{m.settings_email_verify_code_label()}</span>
+                <div class="settings-input-action">
+                  <input
+                    type="text"
+                    bind:value={verificationCode}
+                    class="input"
+                    placeholder={m.settings_email_verify_code_placeholder()}
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                  />
+                  <button
+                    type="submit"
+                    class="btn-primary settings-btn-compact"
+                    disabled={verificationCheckLoading || emailDirty}
+                  >
+                    {verificationCheckLoading
+                      ? m.settings_saving()
+                      : verificationSuccess
+                        ? m.settings_email_verify_verified()
+                        : m.settings_email_verify_confirm()}
+                  </button>
+                </div>
+              </label>
+            </form>
+          {/if}
+
+          {#if verificationSendError}
+            <p class="settings-error">⚠ {verificationSendError}</p>
+          {/if}
+          {#if verificationCheckError}
+            <p class="settings-error">⚠ {verificationCheckError}</p>
+          {/if}
+        </div>
+
+        <hr class="settings-divider" />
+
+        <h3 class="settings-subtitle">{m.settings_password_section()}</h3>
+        <form onsubmit={savePassword} class="settings-form">
+          <label class="settings-field">
+            <span class="label-text">{m.settings_current_password_label()}</span>
+            <input
+              type="password"
+              bind:value={currentPassword}
+              class="input"
+              minlength="8"
+              autocomplete="current-password"
+              required
+            />
+          </label>
+          <label class="settings-field">
+            <span class="label-text">{m.settings_new_password_label()}</span>
+            <input
+              type="password"
+              bind:value={newPassword}
+              class="input"
+              minlength="8"
+              autocomplete="new-password"
+              required
+            />
+          </label>
+          <label class="settings-field">
+            <span class="label-text">{m.settings_confirm_new_password_label()}</span>
+            <input
+              type="password"
+              bind:value={confirmPassword}
+              class="input"
+              minlength="8"
+              autocomplete="new-password"
+              required
+            />
+          </label>
+          {#if passwordError}
+            <p class="settings-error">⚠ {passwordError}</p>
+          {/if}
+          {#if passwordDirty || passwordSaving || passwordSaved}
+            <div class="settings-action-row">
+              <button type="submit" class="btn-primary settings-btn-compact" disabled={passwordSaving}>
+                {passwordSaved
+                  ? m.settings_saved()
+                  : passwordSaving
+                    ? m.settings_saving()
+                    : m.settings_update()}
+              </button>
+            </div>
+          {/if}
+        </form>
+      </section>
+    {/if}
 
     <!-- Page Settings -->
     <section class="card settings-card">
