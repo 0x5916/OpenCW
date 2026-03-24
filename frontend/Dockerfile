@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 
 # Install dependencies first for better layer caching.
@@ -16,7 +16,7 @@ ENV PUBLIC_API_BASE=$PUBLIC_API_BASE
 # Generate .svelte-kit files in clean build environments, then build.
 RUN npm run prepare && npm run build
 
-FROM node:20-alpine AS runtime
+FROM node:24-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
