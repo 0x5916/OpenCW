@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"strconv"
 	"time"
 
 	"opencw/configs"
@@ -15,7 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func IssueTokenPair(DB *gorm.DB, userID uint, now time.Time) (rawToken, accessToken string, err error) {
+func IssueTokenPair(DB *gorm.DB, userID uuid.UUID, now time.Time) (rawToken, accessToken string, err error) {
 	rawToken, hashedToken, err := GenerateRefreshToken()
 	if err != nil {
 		return
@@ -67,9 +66,9 @@ func GenerateRandomSalt(n int) (result []byte, err error) {
 	return
 }
 
-func GenerateAccessToken(userID uint, now time.Time) (string, error) {
+func GenerateAccessToken(userID uuid.UUID, now time.Time) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		Subject:   strconv.FormatUint(uint64(userID), 10),
+		Subject:   userID.String(),
 		Issuer:    "opencw/.net",
 		ID:        uuid.NewString(),
 		IssuedAt:  jwt.NewNumericDate(now),

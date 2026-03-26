@@ -174,7 +174,7 @@ func (h *AuthHandler) SendVerificationEmail(c *gin.Context) {
 
 	expiresAt := now.Add(10 * time.Minute)
 	verification := models.EmailOTP{
-		UserID:    user.ID,
+		UserID:    &user.ID,
 		Email:     user.Email,
 		Code:      code,
 		ExpiredAt: expiresAt,

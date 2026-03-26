@@ -5,13 +5,13 @@ import (
 	"log/slog"
 	"net/http"
 	"opencw/common"
-	"strconv"
 	"strings"
 
 	"opencw/configs"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 func AuthRequired() gin.HandlerFunc {
@@ -48,7 +48,7 @@ func AuthRequired() gin.HandlerFunc {
 			return
 		}
 
-		userID, err := strconv.ParseUint(claims.Subject, 10, 32)
+		userID, err := uuid.Parse(claims.Subject)
 		if err != nil {
 			slog.Warn("Auth required: invalid token subject", "ip", c.ClientIP(), "subject", claims.Subject, "err", err)
 			c.JSON(http.StatusUnauthorized, common.NewErrorResponse(common.ErrorCodeInvalidToken, "Invalid token"))
@@ -56,7 +56,7 @@ func AuthRequired() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("userID", uint(userID))
+		c.Set("userID", userID)
 		c.Next()
 	}
 }

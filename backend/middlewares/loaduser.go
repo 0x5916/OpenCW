@@ -7,12 +7,13 @@ import (
 	"opencw/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 func LoadUser(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.MustGet("userID")
+		userID := c.MustGet("userID").(uuid.UUID)
 
 		var user models.User
 		if err := db.Take(&user, userID).Error; err != nil {
