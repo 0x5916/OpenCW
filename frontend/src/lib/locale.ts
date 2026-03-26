@@ -10,8 +10,8 @@ export const LOCALE_DISPLAY: Record<Locale, { short: string; native: string; eng
   en: { short: 'EN', native: 'English', english: 'English' },
   de: { short: 'DE', native: 'Deutsch', english: 'German' },
   ja: { short: 'JA', native: '日本語', english: 'Japanese' },
-  'zh-Hans': { short: 'ZH-S', native: '简体中文', english: 'Chinese (Simplified)' },
-  'zh-Hant': { short: 'ZH-T', native: '繁體中文', english: 'Chinese (Traditional)' }
+  'zh-Hans': { short: '简', native: '简体中文', english: 'Chinese (Simplified)' },
+  'zh-Hant': { short: '繁', native: '繁體中文', english: 'Chinese (Traditional)' }
 };
 
 type WeightedLanguage = { value: string; q: number };

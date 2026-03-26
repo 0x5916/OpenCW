@@ -1,10 +1,8 @@
 package models
 
-import "gorm.io/gorm"
-
 type User struct {
-	gorm.Model
-	CallSign      *string       `gorm:"uniqueIndex;"`
+	Base
+	CallSign      *string       `gorm:"uniqueIndex"`
 	Username      string        `gorm:"uniqueIndex;not null"`
 	Email         string        `gorm:"index:idx_users_email;uniqueIndex:idx_users_verified_email,where:email_verified = true AND deleted_at IS NULL;not null"`
 	EmailVerified bool          `gorm:"default:false;not null"`

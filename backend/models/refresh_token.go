@@ -3,12 +3,12 @@ package models
 import (
 	"time"
 
-	"gorm.io/gorm"
+	"github.com/google/uuid"
 )
 
 type RefreshToken struct {
-	gorm.Model
-	UserID    uint      `gorm:"index;not null"`
+	Base
+	UserID    uuid.UUID `gorm:"type:uuid;index;not null"`
 	User      *User     `gorm:"constraint:OnDelete:CASCADE;"`
 	Token     string    `gorm:"uniqueIndex;not null"`
 	ExpiresAt time.Time `gorm:"not null"`
