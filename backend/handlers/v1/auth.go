@@ -128,7 +128,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 }
 
 func (h *AuthHandler) SendVerificationEmail(c *gin.Context) {
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 	now := time.Now()
 
 	if user.EmailVerified {
@@ -208,7 +208,7 @@ func (h *AuthHandler) SendVerificationEmail(c *gin.Context) {
 }
 
 func (h *AuthHandler) VerifyEmail(c *gin.Context) {
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 
 	if user.EmailVerified {
 		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeEmailAlreadyVerified, "Email is already verified"))

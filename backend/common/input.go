@@ -74,3 +74,7 @@ type ProgressInput struct {
 	Accuracy        *float64   `json:"accuracy"          binding:"required,min=0.0,max=1.0"`
 	ClientCreatedAt *time.Time `json:"client_created_at"`
 }
+
+type ForumPostInput struct {
+	
+}

@@ -38,6 +38,9 @@ func Connect() {
 		&models.CWSettings{},
 		&models.PageSettings{},
 		&models.Progress{},
+		&models.ForumCategory{},
+		&models.ForumPost{},
+		&models.ForumThread{},
 	); err != nil {
 		slog.Error("Failed to migrate database", "err", err)
 	}

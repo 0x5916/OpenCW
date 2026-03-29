@@ -17,7 +17,7 @@ type UserHandler struct {
 }
 
 func (h UserHandler) GetUserInfo(c *gin.Context) {
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 
 	c.JSON(http.StatusOK, common.UserInfoResponse{
 		CallSign:      user.CallSign,
@@ -51,7 +51,7 @@ func (h UserHandler) GetOtherUserInfo(c *gin.Context) {
 }
 
 func (h UserHandler) UpdateCallSign(c *gin.Context) {
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 
 	var input common.UpdateCallSignInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -73,7 +73,7 @@ func (h UserHandler) UpdateCallSign(c *gin.Context) {
 }
 
 func (h UserHandler) UpdateEmail(c *gin.Context) {
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 
 	var input common.UpdateEmailInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -114,7 +114,7 @@ func (h UserHandler) UpdateEmail(c *gin.Context) {
 }
 
 func (h UserHandler) UpdatePassword(c *gin.Context) {
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 
 	var input common.UpdatePasswordInput
 	if err := c.ShouldBindJSON(&input); err != nil {

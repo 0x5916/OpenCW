@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"opencw/common"
 	"opencw/models"
+	"opencw/utils"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -16,7 +17,7 @@ type SettingsHandler struct {
 }
 
 func (h SettingsHandler) GetAllSettings(c *gin.Context) {
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 
 	response := struct {
 		CWSettings   common.CWSettingsResponse   `json:"cw_settings"`
@@ -59,7 +60,7 @@ func (h SettingsHandler) GetAllSettings(c *gin.Context) {
 }
 
 func (h SettingsHandler) GetCWSettings(c *gin.Context) {
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 
 	var settings common.CWSettingsResponse
 	if err := h.DB.Model(&models.CWSettings{}).Take(&settings, "user_id = ?", user.ID).Error; err != nil {
@@ -77,7 +78,7 @@ func (h SettingsHandler) GetCWSettings(c *gin.Context) {
 }
 
 func (h SettingsHandler) GetPageSettings(c *gin.Context) {
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 
 	var settings common.PageSettingsResponse
 	if err := h.DB.Model(&models.PageSettings{}).Take(&settings, "user_id = ?", user.ID).Error; err != nil {
@@ -102,7 +103,7 @@ func (h SettingsHandler) UpdateCWSettings(c *gin.Context) {
 		return
 	}
 
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 	settings := models.CWSettings{UserID: user.ID}
 
 	if err := h.DB.Where(&settings).Assign(&input).FirstOrCreate(&settings).Error; err != nil {
@@ -121,7 +122,7 @@ func (h SettingsHandler) UpdatePageSettings(c *gin.Context) {
 		return
 	}
 
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 	settings := models.PageSettings{UserID: user.ID}
 
 	if err := h.DB.Where(&settings).Assign(&input).FirstOrCreate(&settings).Error; err != nil {

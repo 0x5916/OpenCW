@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"opencw/common"
 	"opencw/models"
+	"opencw/utils"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -15,7 +16,7 @@ type ProgressHandler struct {
 }
 
 func (h ProgressHandler) GetAllProgress(c *gin.Context) {
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 
 	var progresses []common.ProgressResponse
 	if err := h.DB.Model(&models.Progress{}).Find(&progresses, "user_id = ?", user.ID).Error; err != nil {
@@ -28,7 +29,7 @@ func (h ProgressHandler) GetAllProgress(c *gin.Context) {
 }
 
 func (h ProgressHandler) AddProgress(c *gin.Context) {
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 
 	var input common.ProgressInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -54,7 +55,7 @@ func (h ProgressHandler) AddProgress(c *gin.Context) {
 }
 
 func (h ProgressHandler) AddProgresses(c *gin.Context) {
-	user := c.MustGet("user").(*models.User)
+	user := utils.MustGetUser(c)
 
 	var inputs []common.ProgressInput
 	if err := c.ShouldBindJSON(&inputs); err != nil || len(inputs) == 0 {

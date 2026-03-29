@@ -9,6 +9,10 @@ type ForumCategory struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+func (ForumCategory) TableName() string {
+	return "forum_category"
+}
+
 type ForumThread struct {
 	ID         uint      `json:"id"`
 	CategoryID uint      `json:"category_id"`
@@ -19,6 +23,10 @@ type ForumThread struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
+func (ForumThread) TableName() string {
+	return "forum_category"
+}
+
 type ForumPost struct {
 	ID        uint      `json:"id"`
 	ThreadID  uint      `json:"thread_id"`
@@ -27,4 +35,8 @@ type ForumPost struct {
 	ParentID  *uint     `json:"parent_id"` // for reply threading
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (ForumPost) TableName() string {
+	return "forum_category"
 }
