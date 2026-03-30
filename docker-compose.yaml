@@ -79,6 +79,7 @@ services:
     command: tunnel --no-autoupdate --protocol ${CLOUDFLARED_PROTOCOL:-quic} run --token ${CLOUDFLARED_TUNNEL_TOKEN}
     depends_on:
       - backend
+      - frontend
 
   frontend:
     build:
