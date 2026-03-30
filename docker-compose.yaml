@@ -13,16 +13,16 @@ services:
       - pgdata:/var/lib/postgresql
     command: >
       postgres
-      -c max_connections=30
-      -c shared_buffers=2GB
-      -c effective_cache_size=6GB
-      -c maintenance_work_mem=512MB
+      -c max_connections=100
+      -c shared_buffers=1536MB
+      -c effective_cache_size=4608MB
+      -c maintenance_work_mem=384MB
       -c checkpoint_completion_target=0.9
       -c wal_buffers=16MB
       -c default_statistics_target=100
       -c random_page_cost=1.1
       -c effective_io_concurrency=200
-      -c work_mem=61680kB
+      -c work_mem=15123kB
       -c huge_pages=off
       -c min_wal_size=1GB
       -c max_wal_size=4GB
@@ -54,11 +54,29 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY}
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      READ_TIMEOUT: ${READ_TIMEOUT:-15s}
+      READ_HEADER_TIMEOUT: ${READ_HEADER_TIMEOUT:-5s}
+      WRITE_TIMEOUT: ${WRITE_TIMEOUT:-30s}
+      IDLE_TIMEOUT: ${IDLE_TIMEOUT:-120s}
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-20s}
+      DB_MAX_OPEN_CONNS: ${DB_MAX_OPEN_CONNS:-25}
+      DB_MAX_IDLE_CONNS: ${DB_MAX_IDLE_CONNS:-5}
+      DB_CONN_MAX_LIFETIME: ${DB_CONN_MAX_LIFETIME:-30m}
+      DB_CONN_MAX_IDLE_TIME: ${DB_CONN_MAX_IDLE_TIME:-5m}
     ports:
       - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    profiles:
+      - tunnel
+    command: tunnel --no-autoupdate --protocol ${CLOUDFLARED_PROTOCOL:-quic} run --token ${CLOUDFLARED_TUNNEL_TOKEN}
+    depends_on:
+      - backend
 
   frontend:
     build:

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"time"
 
 	"opencw/configs"
 	"opencw/models"
@@ -56,10 +55,10 @@ func Connect() {
 		slog.Error("Failed to get underlying sql.DB", "err", err)
 		os.Exit(1)
 	}
-	sqlDB.SetMaxOpenConns(25)
-	sqlDB.SetMaxIdleConns(5)
-	sqlDB.SetConnMaxLifetime(time.Minute * 30)
-	sqlDB.SetConnMaxIdleTime(time.Minute * 5)
+	sqlDB.SetMaxOpenConns(configs.App.DBMaxOpenConns)
+	sqlDB.SetMaxIdleConns(configs.App.DBMaxIdleConns)
+	sqlDB.SetConnMaxLifetime(configs.App.DBConnMaxLifetime)
+	sqlDB.SetConnMaxIdleTime(configs.App.DBConnMaxIdleTime)
 
 	slog.Info("Database connected and migrated successfully")
 }

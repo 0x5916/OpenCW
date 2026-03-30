@@ -8,6 +8,12 @@ OpenCW is deployed as three Docker containers orchestrated by Docker Compose:
 | `backend`  | built from `./backend`           | 8080 |
 | `frontend` | built from `./frontend`          | 3000 |
 
+Optional profile:
+
+| Service       | Image                         | Port |
+|---------------|-------------------------------|------|
+| `cloudflared` | `cloudflare/cloudflared:latest` | —  |
+
 ## Requirements
 
 - Docker ≥ 26 with the Compose plugin (`docker compose version`)
@@ -69,6 +75,23 @@ Check everything is healthy:
 docker compose ps
 docker compose logs --tail=50
 ```
+
+## 2b. Start with Cloudflare Tunnel (optional)
+
+Set these values in root `.env`:
+
+```dotenv
+CLOUDFLARED_TUNNEL_TOKEN=<your-tunnel-token>
+CLOUDFLARED_PROTOCOL=quic
+```
+
+Then start with the tunnel profile:
+
+```bash
+docker compose --profile tunnel up -d --build
+```
+
+If you need to compare transport latency, switch `CLOUDFLARED_PROTOCOL` to `http2` and re-test p95/p99.
 
 ## 3. Reverse proxy
 
@@ -155,3 +178,14 @@ docker compose down -v
 | `JWT_SECRET`      | yes      | Base64-encoded secret (≥ 32 raw bytes). Backend exits on startup if missing. |
 | `CORS_ORIGINS`    | yes      | Comma-separated allowed browser origins, e.g. `https://opencw.example.com` |
 | `PUBLIC_API_BASE` | yes      | Browser-visible backend URL, baked into the frontend at build time, e.g. `https://api.opencw.example.com/api/v1` |
+| `READ_TIMEOUT` | no | Backend request read timeout (Go duration), default `15s` |
+| `READ_HEADER_TIMEOUT` | no | Backend header read timeout, default `5s` |
+| `WRITE_TIMEOUT` | no | Backend response write timeout, default `30s` |
+| `IDLE_TIMEOUT` | no | Backend keep-alive idle timeout, default `120s` |
+| `SHUTDOWN_TIMEOUT` | no | Graceful shutdown timeout, default `20s` |
+| `DB_MAX_OPEN_CONNS` | no | Backend DB max open connections, default `25` |
+| `DB_MAX_IDLE_CONNS` | no | Backend DB max idle connections, default `5` |
+| `DB_CONN_MAX_LIFETIME` | no | Backend DB connection max lifetime, default `30m` |
+| `DB_CONN_MAX_IDLE_TIME` | no | Backend DB connection max idle time, default `5m` |
+| `CLOUDFLARED_TUNNEL_TOKEN` | no | Cloudflare Tunnel token used when running `--profile tunnel` |
+| `CLOUDFLARED_PROTOCOL` | no | Connector transport protocol (`quic` or `http2`), default `quic` |

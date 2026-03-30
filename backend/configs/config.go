@@ -6,7 +6,9 @@ import (
 	"log/slog"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
@@ -21,11 +23,33 @@ type Config struct {
 	ResendFromEmail string   `required:"true"`
 	GinMode         string   `required:"true"`
 	CORSOrigins     []string // optional — no tag
+
+	ReadTimeout       time.Duration
+	ReadHeaderTimeout time.Duration
+	WriteTimeout      time.Duration
+	IdleTimeout       time.Duration
+	ShutdownTimeout   time.Duration
+
+	DBMaxOpenConns    int
+	DBMaxIdleConns    int
+	DBConnMaxLifetime time.Duration
+	DBConnMaxIdleTime time.Duration
 }
 
 var App Config
 
 func Load() {
+	readTimeout := getDurationEnv("READ_TIMEOUT", 15*time.Second)
+	readHeaderTimeout := getDurationEnv("READ_HEADER_TIMEOUT", 5*time.Second)
+	writeTimeout := getDurationEnv("WRITE_TIMEOUT", 30*time.Second)
+	idleTimeout := getDurationEnv("IDLE_TIMEOUT", 120*time.Second)
+	shutdownTimeout := getDurationEnv("SHUTDOWN_TIMEOUT", 20*time.Second)
+
+	dbMaxOpenConns := getIntEnv("DB_MAX_OPEN_CONNS", 25)
+	dbMaxIdleConns := getIntEnv("DB_MAX_IDLE_CONNS", 5)
+	dbConnMaxLifetime := getDurationEnv("DB_CONN_MAX_LIFETIME", 30*time.Minute)
+	dbConnMaxIdleTime := getDurationEnv("DB_CONN_MAX_IDLE_TIME", 5*time.Minute)
+
 	var corsOrigins []string
 	if raw := os.Getenv("CORS_ORIGINS"); raw != "" {
 		for _, o := range strings.Split(raw, ",") {
@@ -46,6 +70,15 @@ func Load() {
 		ResendFromEmail: os.Getenv("RESEND_FROM_EMAIL"),
 		GinMode:         os.Getenv("GIN_MODE"),
 		CORSOrigins:     corsOrigins,
+		ReadTimeout:       readTimeout,
+		ReadHeaderTimeout: readHeaderTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
+		ShutdownTimeout:   shutdownTimeout,
+		DBMaxOpenConns:    dbMaxOpenConns,
+		DBMaxIdleConns:    dbMaxIdleConns,
+		DBConnMaxLifetime: dbConnMaxLifetime,
+		DBConnMaxIdleTime: dbConnMaxIdleTime,
 	}
 
 	secret := os.Getenv("JWT_SECRET")
@@ -66,6 +99,40 @@ func Load() {
 		slog.Error("Error validating config", "err", err)
 		os.Exit(1)
 	}
+}
+
+func getDurationEnv(name string, fallback time.Duration) time.Duration {
+	raw := strings.TrimSpace(os.Getenv(name))
+	if raw == "" {
+		return fallback
+	}
+	v, err := time.ParseDuration(raw)
+	if err != nil {
+		slog.Error("Invalid duration config", "name", name, "value", raw, "err", err)
+		os.Exit(1)
+	}
+	if v <= 0 {
+		slog.Error("Duration config must be greater than zero", "name", name, "value", raw)
+		os.Exit(1)
+	}
+	return v
+}
+
+func getIntEnv(name string, fallback int) int {
+	raw := strings.TrimSpace(os.Getenv(name))
+	if raw == "" {
+		return fallback
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil {
+		slog.Error("Invalid integer config", "name", name, "value", raw, "err", err)
+		os.Exit(1)
+	}
+	if v <= 0 {
+		slog.Error("Integer config must be greater than zero", "name", name, "value", raw)
+		os.Exit(1)
+	}
+	return v
 }
 
 func (c Config) Validate() error {

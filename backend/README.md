@@ -1,5 +1,7 @@
 # OpenCW Backend
 
+This folder's `docker-compose.yaml` and `example.env` are for backend development workflows. For production deployment, use the repository root files.
+
 ## Build production image
 
 1. Create a runtime env file from the template:
@@ -46,6 +48,6 @@ docker compose up --build -d
 Health check endpoint:
 
 ```bash
-curl http://localhost:8080/api/v1/health
+curl http://localhost:8080/v1/health
 ```
 

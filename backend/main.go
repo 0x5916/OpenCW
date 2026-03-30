@@ -21,7 +21,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func RouterSetup(engine *gin.Engine) {
+func RouterV1Setup(engine *gin.Engine) {
 	v1 := engine.Group("/v1")
 
 	// Health check endpoint
@@ -73,6 +73,25 @@ func RouterSetup(engine *gin.Engine) {
 	})
 }
 
+func GracefulShutdown(srv *http.Server) {
+	// Context that cancels on SIGINT/SIGTERM
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	startRefreshTokenCleanup(ctx)
+	runServer(srv)
+
+	// Block until signal received
+	<-ctx.Done()
+	slog.Info("Shutdown signal received")
+
+	// Give in-flight requests a short window to complete.
+	shutdownServer(context.Background(), srv)
+	closeDatabase()
+
+	slog.Info("Server exited gracefully")
+}
+
 func main() {
 	if configs.GetGinMode() != "release" {
 		if err := godotenv.Load(".env"); err != nil {
@@ -95,29 +114,16 @@ func main() {
 	}
 
 	CORSSetup(r)
-	RouterSetup(r)
-
-	// --- Graceful shutdown setup ---
+	RouterV1Setup(r)
 
 	srv := &http.Server{
-		Addr:    ":" + configs.App.Port,
-		Handler: r,
+		Addr:              ":" + configs.App.Port,
+		Handler:           r,
+		ReadTimeout:       configs.App.ReadTimeout,
+		ReadHeaderTimeout: configs.App.ReadHeaderTimeout,
+		WriteTimeout:      configs.App.WriteTimeout,
+		IdleTimeout:       configs.App.IdleTimeout,
 	}
-
-	// Context that cancels on SIGINT/SIGTERM
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	startRefreshTokenCleanup(ctx)
-	runServer(srv)
-
-	// Block until signal received
-	<-ctx.Done()
-	slog.Info("Shutdown signal received")
-
-	// Give in-flight requests a short window to complete.
-	shutdownServer(context.Background(), srv)
-	closeDatabase()
-
-	slog.Info("Server exited gracefully")
+	
+	GracefulShutdown(srv)
 }

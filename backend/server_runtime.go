@@ -16,7 +16,6 @@ import (
 
 const (
 	refreshTokenCleanupInterval = 3 * time.Hour
-	gracefulShutdownTimeout     = 10 * time.Second
 	defaultProductionOrigin     = "https://opencw.net"
 )
 
@@ -78,7 +77,7 @@ func runServer(srv *http.Server) {
 }
 
 func shutdownServer(ctx context.Context, srv *http.Server) {
-	shutdownCtx, cancel := context.WithTimeout(ctx, gracefulShutdownTimeout)
+	shutdownCtx, cancel := context.WithTimeout(ctx, configs.App.ShutdownTimeout)
 	defer cancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
