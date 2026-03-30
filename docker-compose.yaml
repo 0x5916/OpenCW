@@ -76,8 +76,6 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
-    profiles:
-      - tunnel
     command: tunnel --no-autoupdate --protocol ${CLOUDFLARED_PROTOCOL:-quic} run --token ${CLOUDFLARED_TUNNEL_TOKEN}
     depends_on:
       - backend
