@@ -101,8 +101,8 @@ func closeDatabase() {
 
 // isCORSAllowed reports whether origin should receive CORS headers.
 // Priority order:
-//  1. CORS_ORIGINS env var (explicit allowlist, comma-separated)
-//  2. Non-release mode -> allow everything
+//  1. Non-release mode -> allow everything
+//  2. CORS_ORIGINS env var (explicit allowlist, comma-separated)
 //  3. Production -> only https://opencw.net
 func isCORSAllowed(origin string) bool {
 	if !configs.App.IsRelease() {
