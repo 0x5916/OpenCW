@@ -10,7 +10,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       PGDATA: /var/lib/postgresql/18/docker
     volumes:
-      - pgdata:/var/lib/postgresql
+      - type: bind
+        source: ${POSTGRES_DATA_PATH:-./data/postgres}
+        target: /var/lib/postgresql
+        bind:
+          create_host_path: true
     command: >
       postgres
       -c max_connections=100
@@ -87,6 +91,3 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-
-volumes:
-  pgdata:
