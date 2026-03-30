@@ -69,3 +69,18 @@ Recommended cache policy for the paths above:
 - `Cache-Control: no-cache, no-store, must-revalidate`
 
 All other fingerprinted static assets can remain long-lived and immutable.
+
+## SEO Validation Gate
+
+Run the SEO validation script before release:
+
+```sh
+npm run seo:validate
+```
+
+This checks:
+
+- Sitemap URL coverage for all locales and indexable public routes
+- Exclusion of noindex routes from sitemap output
+- Title and description presence/length sanity per locale
+- Duplicate title detection per locale

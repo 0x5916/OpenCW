@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
 import { locales } from '$lib/paraglide/runtime';
-import { buildAbsoluteUrl, normalizePathname, PUBLIC_ROUTE_PATHS } from '$lib/seo';
+import { buildSitemapUrlSet } from '$lib/seo';
 
 function escapeXml(value: string): string {
   return value
@@ -9,22 +9,6 @@ function escapeXml(value: string): string {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&apos;');
-}
-
-function buildSitemapUrls(origin: string): string[] {
-  const urls = new Set<string>();
-
-  urls.add(buildAbsoluteUrl(origin, '/'));
-
-  for (const locale of locales) {
-    for (const routePath of PUBLIC_ROUTE_PATHS) {
-      const localizedPath =
-        routePath === '/' ? normalizePathname(`/${locale}`) : normalizePathname(`/${locale}${routePath}`);
-      urls.add(buildAbsoluteUrl(origin, localizedPath));
-    }
-  }
-
-  return [...urls].sort();
 }
 
 function buildXml(urls: string[]): string {
@@ -47,7 +31,7 @@ function buildXml(urls: string[]): string {
 
 export const GET: RequestHandler = ({ url }) => {
   const origin = `${url.protocol}//${url.host}`;
-  const xml = buildXml(buildSitemapUrls(origin));
+  const xml = buildXml(buildSitemapUrlSet(origin, locales));
 
   return new Response(xml, {
     headers: {

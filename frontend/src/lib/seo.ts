@@ -199,6 +199,38 @@ const OG_LOCALE_BY_LOCALE: Record<Locale, string> = {
   'zh-Hant': 'zh_TW'
 };
 
+export function getRouteRobots(routeId: string): string {
+  const routeSeo = ROUTE_SEO[routeId];
+  return routeSeo?.robots ?? DEFAULT_ROBOTS;
+}
+
+export function isRouteIndexable(routeId: string): boolean {
+  return !getRouteRobots(routeId).toLowerCase().includes('noindex');
+}
+
+export function getIndexablePublicRoutePaths(): string[] {
+  return PUBLIC_ROUTE_PATHS.filter((routePath) => isRouteIndexable(routePath));
+}
+
+export function buildLocalizedPath(routePath: string, locale: string): string {
+  return normalizePathname(routePath === '/' ? `/${locale}` : `/${locale}${routePath}`);
+}
+
+export function buildSitemapUrlSet(origin: string, localeCodes: readonly string[]): string[] {
+  const urls = new Set<string>();
+  const indexablePublicRoutes = getIndexablePublicRoutePaths();
+
+  urls.add(buildAbsoluteUrl(origin, '/'));
+
+  for (const locale of localeCodes) {
+    for (const routePath of indexablePublicRoutes) {
+      urls.add(buildAbsoluteUrl(origin, buildLocalizedPath(routePath, locale)));
+    }
+  }
+
+  return [...urls].sort();
+}
+
 export function normalizePathname(pathname: string): string {
   if (!pathname) return '/';
   if (pathname === '/') return '/';
