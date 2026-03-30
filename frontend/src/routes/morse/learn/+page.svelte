@@ -281,82 +281,79 @@
 {/if}
 
 <main class="learn-page">
-  <!-- Left column: lesson + settings + player -->
-  <div class="learn-col-left">
-    <div class="card-sm">
-      <h2 class="card-label">{m.trainer_label_lesson()}</h2>
-      <div class="lesson-row">
-        <p class="lesson-current-label">{m.trainer_current_lesson()}</p>
-        <select bind:value={chosenLesson} onchange={onLessonSelectChange} class="lesson-select">
-          {#each LESSONS as lesson, index (index)}
-            <option value={index + 1}>{index + 1} — {lesson.split('').join(', ')}</option>
-          {/each}
-        </select>
-      </div>
-    </div>
-
-    <div class="card-sm" class:lesson-char-highlight={showQuickStart && chosenLesson === 1}>
-      <h2 class="card-label">{m.trainer_label_current_chars()}</h2>
-      <div class="lesson-char-row">
-        <p class="lesson-char-preview">{m.trainer_choose_letter()}</p>
-        <select
-          bind:value={selectedLessonChar}
-          onchange={onSelectedCharChange}
-          class="lesson-select lesson-char-select"
-        >
-          {#each currentLessonChars as char (char)}
-            <option value={char}>{char}</option>
-          {/each}
-        </select>
-      </div>
-      <MorsePlayer
-        text={Array(5).fill(selectedLessonChar).join('')}
-        {charWpm}
-        {effWpm}
-        {freq}
-        {volume}
-        compact
-        showSettings
-        mediaStyle
-        onSettingsInput={onCwSettingInput}
-        playLabel={currentLessonChars.length > 1
-          ? `Play "${selectedLessonChar}"`
-          : m.trainer_play_letter()}
-      />
+  <div class="card-sm learn-card-lesson">
+    <h2 class="card-label">{m.trainer_label_lesson()}</h2>
+    <div class="lesson-row">
+      <p class="lesson-current-label">{m.trainer_current_lesson()}</p>
+      <select bind:value={chosenLesson} onchange={onLessonSelectChange} class="lesson-select">
+        {#each LESSONS as lesson, index (index)}
+          <option value={index + 1}>{index + 1} — {lesson.split('').join(', ')}</option>
+        {/each}
+      </select>
     </div>
   </div>
 
-  <!-- Right column: answer + result -->
-  <div class="learn-col-right">
-    <div class="answer-card learn-answer-card">
-      <MorsePlayer
-        bind:this={fullLessonPlayer}
-        text={lessonText}
-        {charWpm}
-        {effWpm}
-        {freq}
-        {volume}
-        {startDelay}
-        showSettings
-        mediaStyle
-        onSettingsInput={onCwSettingInput}
-        label={m.player_label()}
-      />
-      <textarea
-        placeholder={`${m.trainer_answer_placeholder()}\n${m.trainer_answer_shortcut_tip()}`}
-        bind:value={inputText}
-        oninput={onAnswerInput}
-        onkeydown={onAnswerKeydown}
-        autocapitalize="characters"
-        autocomplete="off"
-        autocorrect="off"
-        spellcheck="false"
-        class="textarea learn-answer-textarea"
-      ></textarea>
-      <button onclick={checkResult} class="btn-primary"
-        ><ClipboardCheck size={16} />{m.trainer_check()}</button
+  <div
+    class="card-sm learn-card-single"
+    class:lesson-char-highlight={showQuickStart && chosenLesson === 1}
+  >
+    <h2 class="card-label">{m.trainer_label_current_chars()}</h2>
+    <div class="lesson-char-row">
+      <p class="lesson-char-preview">{m.trainer_choose_letter()}</p>
+      <select
+        bind:value={selectedLessonChar}
+        onchange={onSelectedCharChange}
+        class="lesson-select lesson-char-select"
       >
+        {#each currentLessonChars as char (char)}
+          <option value={char}>{char}</option>
+        {/each}
+      </select>
     </div>
+    <MorsePlayer
+      text={Array(5).fill(selectedLessonChar).join('')}
+      {charWpm}
+      {effWpm}
+      {freq}
+      {volume}
+      compact
+      showSettings
+      mediaStyle
+      onSettingsInput={onCwSettingInput}
+      playLabel={currentLessonChars.length > 1
+        ? `Play "${selectedLessonChar}"`
+        : m.trainer_play_letter()}
+    />
+  </div>
+
+  <div class="answer-card learn-answer-card learn-card-full">
+    <MorsePlayer
+      bind:this={fullLessonPlayer}
+      text={lessonText}
+      {charWpm}
+      {effWpm}
+      {freq}
+      {volume}
+      {startDelay}
+      showSettings
+      mediaStyle
+      onSettingsInput={onCwSettingInput}
+      label={m.player_label()}
+    />
+    <textarea
+      placeholder={`${m.trainer_answer_placeholder()}\n${m.trainer_answer_shortcut_tip()}`}
+      bind:value={inputText}
+      oninput={onAnswerInput}
+      onkeydown={onAnswerKeydown}
+      autocapitalize="characters"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+      class="textarea learn-answer-textarea"
+    ></textarea>
+    <button onclick={checkResult} class="btn-primary"
+      ><ClipboardCheck size={16} />{m.trainer_check()}</button
+    >
   </div>
 </main>
 
@@ -384,11 +381,9 @@
     min-width: 0;
   }
 
-  .learn-col-left,
-  .learn-col-right {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  .learn-card-lesson,
+  .learn-card-single,
+  .learn-card-full {
     min-width: 0;
   }
 
@@ -584,7 +579,7 @@
       justify-content: center;
     }
 
-    .learn-col-right .learn-answer-textarea {
+    .learn-answer-card .learn-answer-textarea {
       min-height: 11rem;
     }
   }
@@ -592,18 +587,19 @@
   @media (min-width: 768px) {
     .learn-page {
       display: grid;
-      grid-template-columns: 5fr 7fr;
+      grid-template-columns: 1fr 1fr;
       column-gap: 1rem;
       row-gap: 1rem;
     }
 
-    .learn-col-right > .learn-answer-card {
+    .learn-card-full {
+      grid-column: 1 / -1;
       flex: 1;
       display: flex;
       flex-direction: column;
     }
 
-    .learn-col-right .learn-answer-textarea {
+    .learn-answer-card .learn-answer-textarea {
       flex: 1 1 0;
       min-height: 6rem;
       field-sizing: fixed;
