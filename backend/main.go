@@ -124,6 +124,6 @@ func main() {
 		WriteTimeout:      configs.App.WriteTimeout,
 		IdleTimeout:       configs.App.IdleTimeout,
 	}
-	
+
 	GracefulShutdown(srv)
 }

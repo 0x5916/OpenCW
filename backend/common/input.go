@@ -76,5 +76,4 @@ type ProgressInput struct {
 }
 
 type ForumPostInput struct {
-	
 }
