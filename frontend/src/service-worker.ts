@@ -39,6 +39,11 @@ function shouldBypassRuntimeCache(pathname: string): boolean {
   return API_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
+function isHtmlResponse(response: Response): boolean {
+  const contentType = response.headers.get('content-type') ?? '';
+  return contentType.includes('text/html');
+}
+
 async function findCachedNavigationFallback(cache: Cache): Promise<Response | undefined> {
   for (const path of NAVIGATION_FALLBACKS) {
     const candidate = await cache.match(path);
@@ -68,7 +73,7 @@ self.addEventListener('fetch', (event) => {
       if (event.request.mode === 'navigate') {
         try {
           const response = await fetch(event.request);
-          if (response.ok) {
+          if (response.ok && isHtmlResponse(response)) {
             await cache.put(event.request, response.clone());
           }
           return response;
@@ -76,11 +81,13 @@ self.addEventListener('fetch', (event) => {
           const cachedPage = await cache.match(event.request);
           if (cachedPage) return cachedPage;
 
-          const cachedFallbackPage = await findCachedNavigationFallback(cache);
-          if (cachedFallbackPage) return cachedFallbackPage;
-
+          // Prefer the explicit offline page before generic fallbacks.
+          // This avoids serving unrelated cached routes for deep links.
           const offline = await cache.match(OFFLINE_URL);
           if (offline) return offline;
+
+          const cachedFallbackPage = await findCachedNavigationFallback(cache);
+          if (cachedFallbackPage) return cachedFallbackPage;
 
           return new Response('Offline', { status: 503, statusText: 'Offline' });
         }
@@ -92,7 +99,7 @@ self.addEventListener('fetch', (event) => {
 
       try {
         const response = await fetch(event.request);
-        if (response.ok && response.type === 'basic') {
+        if (response.ok && response.type === 'basic' && !isHtmlResponse(response)) {
           await cache.put(event.request, response.clone());
         }
         return response;

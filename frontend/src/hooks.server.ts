@@ -4,6 +4,24 @@ import { getStrategyForUrl, shouldRedirect } from '$lib/paraglide/runtime';
 
 const NO_CACHE_HEADER = 'no-cache, no-store, must-revalidate';
 
+function isCrawlerUserAgent(userAgent: string | null): boolean {
+  if (!userAgent) return false;
+  return /bot|crawler|spider|slurp|bingpreview|facebookexternalhit|linkedinbot|duckduckbot/i.test(
+    userAgent
+  );
+}
+
+function appendVary(headerValue: string | null, token: string): string {
+  if (!headerValue) return token;
+  const values = headerValue
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (!values.includes(token)) values.push(token);
+  return values.join(', ');
+}
+
 function shouldDisableCachingForPwaAsset(pathname: string): boolean {
   return (
     pathname === '/service-worker.js' ||
@@ -36,6 +54,8 @@ function isLikelyPageRequest(request: Request): boolean {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
+  const isCrawler = isCrawlerUserAgent(event.request.headers.get('user-agent'));
+
   if (isLikelyPageRequest(event.request)) {
     const decision = await shouldRedirect({ request: event.request });
     if (decision.shouldRedirect && decision.redirectUrl) {
@@ -55,6 +75,11 @@ export const handle: Handle = async ({ event, resolve }) => {
       response.headers.set('Cache-Control', NO_CACHE_HEADER);
       response.headers.set('Pragma', 'no-cache');
       response.headers.set('Expires', '0');
+    }
+
+    if (isCrawler && isLikelyPageRequest(event.request)) {
+      response.headers.set('Cache-Control', 'no-cache, max-age=0, must-revalidate');
+      response.headers.set('Vary', appendVary(response.headers.get('Vary'), 'User-Agent'));
     }
 
     return response;

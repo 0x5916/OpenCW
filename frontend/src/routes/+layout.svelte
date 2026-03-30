@@ -221,6 +221,28 @@
 </script>
 
 <svelte:head>
+  <title>{data.seo.title}</title>
+  <meta name="description" content={data.seo.description} />
+  <meta name="robots" content={data.seo.robots} />
+  <link rel="canonical" href={data.seo.canonicalUrl} />
+  {#each data.seo.alternates as alternate (alternate.locale)}
+    <link rel="alternate" hreflang={alternate.locale} href={alternate.href} />
+  {/each}
+  <link rel="alternate" hreflang="x-default" href={data.seo.xDefaultHref} />
+  <meta property="og:site_name" content={data.seo.siteName} />
+  <meta property="og:type" content={data.seo.ogType} />
+  <meta property="og:title" content={data.seo.title} />
+  <meta property="og:description" content={data.seo.description} />
+  <meta property="og:url" content={data.seo.canonicalUrl} />
+  <meta property="og:locale" content={data.seo.openGraphLocale} />
+  <meta property="og:image" content={data.seo.openGraphImage} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={data.seo.title} />
+  <meta name="twitter:description" content={data.seo.description} />
+  <meta name="twitter:image" content={data.seo.openGraphImage} />
+  {#each data.seo.structuredData as schema, index (index)}
+    <script type="application/ld+json">{JSON.stringify(schema)}</script>
+  {/each}
   <link rel="icon" href={favicon} />
 </svelte:head>
 
