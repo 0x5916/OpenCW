@@ -67,6 +67,16 @@ func RouterV1Setup(engine *gin.Engine) {
 	cwProgress.GET("/progress", progressHandler.GetAllProgress)
 	cwProgress.PUT("/progress", progressHandler.AddProgress)
 
+	forumHandler := handlers.ForumHandler{DB: databases.DB}
+	forum := v1.Group("/forum")
+	forum.GET("/categories", forumHandler.GetCategories)
+	forum.GET("/categories/:categoryID/threads", forumHandler.GetThreadsByCategory)
+	forum.GET("/threads/:threadID/posts", forumHandler.GetPostsByThread)
+
+	forumProtected := protected.Group("/forum")
+	forumProtected.POST("/threads", forumHandler.CreateThread)
+	forumProtected.POST("/threads/:threadID/posts", forumHandler.CreatePost)
+
 	protected.GET("/hello", func(c *gin.Context) {
 		user := c.MustGet("user").(models.User)
 		c.JSON(http.StatusOK, common.MessageResponse{Message: "Hello, authenticated user {" + user.Username + "}!"})
