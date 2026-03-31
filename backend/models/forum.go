@@ -1,5 +1,7 @@
 package models
 
+import "github.com/google/uuid"
+
 type ForumCategory struct {
 	Base
 	Name        string `json:"name"`
@@ -12,11 +14,11 @@ func (ForumCategory) TableName() string {
 
 type ForumThread struct {
 	Base
-	CategoryID uint   `json:"category_id"`
-	AuthorID   uint   `json:"author_id"`
-	Title      string `json:"title"`
-	IsPinned   bool   `json:"is_pinned"`
-	IsLocked   bool   `json:"is_locked"`
+	CategoryID uuid.UUID `json:"category_id"`
+	AuthorID   uuid.UUID `json:"author_id"`
+	Title      string    `json:"title"`
+	IsPinned   bool      `json:"is_pinned"`
+	IsLocked   bool      `json:"is_locked"`
 }
 
 func (ForumThread) TableName() string {
@@ -25,10 +27,10 @@ func (ForumThread) TableName() string {
 
 type ForumPost struct {
 	Base
-	ThreadID uint   `json:"thread_id"`
-	AuthorID uint   `json:"author_id"`
-	Body     string `json:"body"`
-	ParentID *uint  `json:"parent_id"` // for reply threading
+	ThreadID uuid.UUID  `json:"thread_id"`
+	AuthorID uuid.UUID  `json:"author_id"`
+	Body     string     `json:"body"`
+	ParentID *uuid.UUID `json:"parent_id"` // for reply threading
 }
 
 func (ForumPost) TableName() string {
