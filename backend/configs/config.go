@@ -24,16 +24,16 @@ type Config struct {
 	GinMode         string   `required:"true"`
 	CORSOrigins     []string // optional — no tag
 
-	ReadTimeout       time.Duration
-	ReadHeaderTimeout time.Duration
-	WriteTimeout      time.Duration
-	IdleTimeout       time.Duration
-	ShutdownTimeout   time.Duration
+	ReadTimeout       time.Duration `required:"true"`
+	ReadHeaderTimeout time.Duration `required:"true"`
+	WriteTimeout      time.Duration `required:"true"`
+	IdleTimeout       time.Duration `required:"true"`
+	ShutdownTimeout   time.Duration `required:"true"`
 
-	DBMaxOpenConns    int
-	DBMaxIdleConns    int
-	DBConnMaxLifetime time.Duration
-	DBConnMaxIdleTime time.Duration
+	DBMaxOpenConns    int           `required:"true"`
+	DBMaxIdleConns    int           `required:"true"`
+	DBConnMaxLifetime time.Duration `required:"true"`
+	DBConnMaxIdleTime time.Duration `required:"true"`
 }
 
 var App Config
