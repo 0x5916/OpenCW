@@ -103,37 +103,6 @@
 
   onMount(() => {
     initializeProgressSync();
-
-    if ('serviceWorker' in navigator) {
-      const localePrefixes = ['/en', '/zh-Hant', '/zh-Hans', '/ja', '/de'];
-
-      void (async () => {
-        try {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-
-          for (const registration of registrations) {
-            const scriptUrl =
-              registration.active?.scriptURL ??
-              registration.installing?.scriptURL ??
-              registration.waiting?.scriptURL;
-            const scriptPath = scriptUrl ? new URL(scriptUrl).pathname : '';
-            const scopePath = new URL(registration.scope).pathname.replace(/\/$/, '') || '/';
-            const scopeIsLocale = localePrefixes.some(
-              (prefix) => scopePath === prefix || scopePath.startsWith(`${prefix}/`)
-            );
-            const scriptIsLegacy = scriptPath.endsWith('/sw.js');
-
-            if (scopeIsLocale || scriptIsLegacy) {
-              await registration.unregister();
-            }
-          }
-        } catch {
-          // Ignore cleanup failures.
-        }
-      })().catch(() => {
-        // Avoid breaking page initialization if cleanup fails.
-      });
-    }
   });
 
   function langLabel(locale: Locale): string {

@@ -190,16 +190,6 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
           'Manage your OpenCW preferences for language, practice behavior, and account options.'
       }
     }
-  },
-  '/offline': {
-    robots: 'noindex,nofollow',
-    localized: {
-      en: {
-        title: 'Offline - OpenCW',
-        description:
-          'You are currently offline. Reconnect to continue synchronized Morse code training.'
-      }
-    }
   }
 };
 

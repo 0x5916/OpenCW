@@ -10,7 +10,7 @@ import {
 type CheckResult = { ok: true; message: string } | { ok: false; message: string };
 
 const INDEXABLE_ROUTES = getIndexablePublicRoutePaths();
-const NOINDEX_ROUTES = ['/login', '/register', '/profile', '/settings', '/offline'];
+const NOINDEX_ROUTES = ['/login', '/register', '/profile', '/settings'];
 
 function absolute(origin: string, path: string): string {
   return new URL(path, origin).toString();

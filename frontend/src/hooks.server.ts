@@ -2,8 +2,6 @@ import type { Handle } from '@sveltejs/kit';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 import { getStrategyForUrl, shouldRedirect } from '$lib/paraglide/runtime';
 
-const NO_CACHE_HEADER = 'no-cache, no-store, must-revalidate';
-
 function isCrawlerUserAgent(userAgent: string | null): boolean {
   if (!userAgent) return false;
   return /bot|crawler|spider|slurp|bingpreview|facebookexternalhit|linkedinbot|duckduckbot/i.test(
@@ -20,16 +18,6 @@ function appendVary(headerValue: string | null, token: string): string {
 
   if (!values.includes(token)) values.push(token);
   return values.join(', ');
-}
-
-function shouldDisableCachingForPwaAsset(pathname: string): boolean {
-  return (
-    pathname === '/service-worker.js' ||
-    pathname === '/sw.js' ||
-    pathname === '/site.webmanifest' ||
-    pathname.startsWith('/workbox-') ||
-    pathname.endsWith('/_app/version.json')
-  );
 }
 
 function isLikelyPageRequest(request: Request): boolean {
@@ -70,12 +58,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   return paraglideMiddleware(event.request, async () => {
     const response = await resolve(event);
-
-    if (shouldDisableCachingForPwaAsset(event.url.pathname)) {
-      response.headers.set('Cache-Control', NO_CACHE_HEADER);
-      response.headers.set('Pragma', 'no-cache');
-      response.headers.set('Expires', '0');
-    }
 
     if (isCrawler && isLikelyPageRequest(event.request)) {
       response.headers.set('Cache-Control', 'no-cache, max-age=0, must-revalidate');
