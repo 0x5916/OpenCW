@@ -83,11 +83,13 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
       },
       'zh-Hans': {
         title: 'Guanyu OpenCW - Koch Fangfa Mosi Xunlian',
-        description: 'Liaojie OpenCW ruhe tongguo Koch fangfa gaoxiao xunlian Mosi ma, mianxiang yuhuo aihaozhe.'
+        description:
+          'Liaojie OpenCW ruhe tongguo Koch fangfa gaoxiao xunlian Mosi ma, mianxiang yuhuo aihaozhe.'
       },
       'zh-Hant': {
         title: 'Guanyu OpenCW - Koch Fangfa Mosi Xunlian',
-        description: 'Liaojie OpenCW ruhe tongguo Koch fangfa gao xiao xunlian Mosi ma, mianxiang yuyu dian aihaozhe.'
+        description:
+          'Liaojie OpenCW ruhe tongguo Koch fangfa gao xiao xunlian Mosi ma, mianxiang yuyu dian aihaozhe.'
       }
     }
   },
@@ -111,11 +113,13 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
       },
       'zh-Hans': {
         title: 'Xuexi Mosi Ma - OpenCW Koch Xunlianqi',
-        description: 'Tongguo zishiying Koch kecheng, tingli lianxi he jindu zhuizong, wending tisheng CW shizhan nengli.'
+        description:
+          'Tongguo zishiying Koch kecheng, tingli lianxi he jindu zhuizong, wending tisheng CW shizhan nengli.'
       },
       'zh-Hant': {
         title: 'Xuexi Mosi Ma - OpenCW Koch Xunlianqi',
-        description: 'Tongguo zishiying Koch kecheng, tingli lianxi he jindu zhuizong, wending tisheng CW shizhan nengli.'
+        description:
+          'Tongguo zishiying Koch kecheng, tingli lianxi he jindu zhuizong, wending tisheng CW shizhan nengli.'
       }
     }
   },
@@ -128,19 +132,23 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
       },
       de: {
         title: 'OpenCW Forum - Morsecode Community',
-        description: 'Tausche dich im OpenCW Forum ueber Morse-Lernen, Amateurfunk-Tipps und CW-Training aus.'
+        description:
+          'Tausche dich im OpenCW Forum ueber Morse-Lernen, Amateurfunk-Tipps und CW-Training aus.'
       },
       ja: {
         title: 'OpenCW Forum - Morse Community',
-        description: 'Morse gakushu, amateur radio no chie, CW no kunren ni tsuite komyuniti de jiyuu ni hanashimashou.'
+        description:
+          'Morse gakushu, amateur radio no chie, CW no kunren ni tsuite komyuniti de jiyuu ni hanashimashou.'
       },
       'zh-Hans': {
         title: 'OpenCW Luntan - Mosi Ma Shequ',
-        description: 'Canyu OpenCW shequ taolun, jiaoliu Mosi xuexi, yuhuo jiqiao he CW xunlian jingyan.'
+        description:
+          'Canyu OpenCW shequ taolun, jiaoliu Mosi xuexi, yuhuo jiqiao he CW xunlian jingyan.'
       },
       'zh-Hant': {
         title: 'OpenCW Luntan - Mosi Ma Shequ',
-        description: 'Canyu OpenCW shequ taolun, jiaoliu Mosi xuexi, yuyu jiqiao he CW xunlian jingyan.'
+        description:
+          'Canyu OpenCW shequ taolun, jiaoliu Mosi xuexi, yuyu jiqiao he CW xunlian jingyan.'
       }
     }
   },
@@ -149,7 +157,8 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
     localized: {
       en: {
         title: 'Login - OpenCW',
-        description: 'Sign in to OpenCW to continue your Morse code training and sync your learning progress.'
+        description:
+          'Sign in to OpenCW to continue your Morse code training and sync your learning progress.'
       }
     }
   },
@@ -158,7 +167,8 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
     localized: {
       en: {
         title: 'Register - OpenCW',
-        description: 'Create an OpenCW account to save your Morse code training progress and settings.'
+        description:
+          'Create an OpenCW account to save your Morse code training progress and settings.'
       }
     }
   },
@@ -176,7 +186,8 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
     localized: {
       en: {
         title: 'Settings - OpenCW',
-        description: 'Manage your OpenCW preferences for language, practice behavior, and account options.'
+        description:
+          'Manage your OpenCW preferences for language, practice behavior, and account options.'
       }
     }
   },
@@ -185,7 +196,8 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
     localized: {
       en: {
         title: 'Offline - OpenCW',
-        description: 'You are currently offline. Reconnect to continue synchronized Morse code training.'
+        description:
+          'You are currently offline. Reconnect to continue synchronized Morse code training.'
       }
     }
   }
@@ -242,7 +254,10 @@ export function buildAbsoluteUrl(origin: string, pathname: string): string {
   return new URL(normalizedPath, origin).toString();
 }
 
-export function resolveSeoMetadata(routeId: string | null | undefined, locale: Locale): SeoMetadata {
+export function resolveSeoMetadata(
+  routeId: string | null | undefined,
+  locale: Locale
+): SeoMetadata {
   const routeSeo = routeId ? ROUTE_SEO[routeId] : undefined;
   const localizedDefaults = DEFAULT_LOCALIZED_TEXT[locale] ?? DEFAULT_LOCALIZED_TEXT.en;
   const localizedRouteContent = routeSeo?.localized[locale] ?? routeSeo?.localized.en;

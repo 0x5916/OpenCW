@@ -15,12 +15,22 @@ function buildXml(urls: string[]): string {
   const now = new Date().toISOString().slice(0, 10);
   const body = urls
     .map((url) => {
-      const priority = url.endsWith('/en') || url.endsWith('/de') || url.endsWith('/ja') || url.endsWith('/zh-Hans') || url.endsWith('/zh-Hant') || url.endsWith('/')
-        ? '1.0'
+      const priority =
+        url.endsWith('/en') ||
+        url.endsWith('/de') ||
+        url.endsWith('/ja') ||
+        url.endsWith('/zh-Hans') ||
+        url.endsWith('/zh-Hant') ||
+        url.endsWith('/')
+          ? '1.0'
+          : url.includes('/morse/learn')
+            ? '0.9'
+            : '0.8';
+      const changefreq = url.includes('/forum')
+        ? 'daily'
         : url.includes('/morse/learn')
-          ? '0.9'
-          : '0.8';
-      const changefreq = url.includes('/forum') ? 'daily' : url.includes('/morse/learn') ? 'monthly' : 'weekly';
+          ? 'monthly'
+          : 'weekly';
 
       return `  <url>\n    <loc>${escapeXml(url)}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
     })

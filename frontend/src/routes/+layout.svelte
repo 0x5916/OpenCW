@@ -63,6 +63,13 @@
   let ThemeIcon = $derived(themeIconFor(theme));
   let reconciledSettingsForUser = $state<string | null>(null);
 
+  const structuredDataScripts = $derived(
+    data.seo.structuredData.map((schema) => {
+      // eslint-disable-next-line no-useless-escape -- Svelte ends script blocks at a literal closing script tag
+      return `<script type="application/ld+json">${JSON.stringify(schema)}<\/script>`;
+    })
+  );
+
   // initLang receives the locale the server read from the cookie —
   // so SSR renders the correct language from the very first request.
   // svelte-ignore state_referenced_locally
@@ -240,8 +247,9 @@
   <meta name="twitter:title" content={data.seo.title} />
   <meta name="twitter:description" content={data.seo.description} />
   <meta name="twitter:image" content={data.seo.openGraphImage} />
-  {#each data.seo.structuredData as schema, index (index)}
-    <script type="application/ld+json">{JSON.stringify(schema)}</script>
+  {#each structuredDataScripts as scriptTag (scriptTag)}
+    <!-- eslint-disable-next-line svelte/no-at-html-tags -- server-built JSON-LD, no user input -->
+    {@html scriptTag}
   {/each}
   <link rel="icon" href={favicon} />
 </svelte:head>

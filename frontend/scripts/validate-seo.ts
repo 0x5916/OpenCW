@@ -93,7 +93,10 @@ async function validateSitemap(): Promise<CheckResult[]> {
 
   for (const routePath of NOINDEX_ROUTES) {
     if (isRouteIndexable(routePath)) {
-      checks.push({ ok: false, message: `route marked noindex expected but currently indexable: ${routePath}` });
+      checks.push({
+        ok: false,
+        message: `route marked noindex expected but currently indexable: ${routePath}`
+      });
     }
 
     for (const locale of locales) {

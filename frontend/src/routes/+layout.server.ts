@@ -28,7 +28,8 @@ export const load: LayoutServerLoad = ({ cookies, url, route }) => {
     };
   });
 
-  const xDefaultHref = alternates.find((alternate) => alternate.locale === 'en')?.href ?? canonicalUrl;
+  const xDefaultHref =
+    alternates.find((alternate) => alternate.locale === 'en')?.href ?? canonicalUrl;
   const isIndexable = !metadata.robots.toLowerCase().includes('noindex');
   const structuredData = isIndexable
     ? [
