@@ -25,7 +25,7 @@
     User,
     Settings,
     LayoutDashboard
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
   import { lang, setLang, setLangPreference, initLang } from '$lib/i18n.svelte';
   import { locales, localizeHref } from '$lib/paraglide/runtime';
   import { getLocaleLongLabel, getLocaleShortLabel } from '$lib/locale';

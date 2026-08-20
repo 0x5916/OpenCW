@@ -4,7 +4,7 @@
   import MorsePlayer from '$lib/components/MorsePlayer.svelte';
   import ResultOverlay from '$lib/components/ResultOverlay.svelte';
   import { untrack, onDestroy } from 'svelte';
-  import { ClipboardCheck } from 'lucide-svelte';
+  import { ClipboardCheck } from '@lucide/svelte';
   import { CW_STORAGE_KEYS } from '$lib/storageKeys';
   import { langPreference } from '$lib/i18n.svelte';
   import { score, diffWords } from '$lib/score';
@@ -351,8 +351,7 @@
         autocomplete="off"
         autocorrect="off"
         spellcheck="false"
-        class="textarea learn-answer-textarea"
-      ></textarea>
+        class="textarea learn-answer-textarea"></textarea>
       <button onclick={checkResult} class="btn-primary"
         ><ClipboardCheck size={16} />{m.trainer_check()}</button
       >

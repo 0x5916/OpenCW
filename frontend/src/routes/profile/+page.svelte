@@ -6,7 +6,7 @@
   import { LESSONS } from '$lib/morse';
   import { readClientCwSettings } from '$lib/cwSync';
   import { getLocalProgressRecords } from '$lib/progressSync';
-  import { User, Radio, Calendar, Activity, Zap, Check, X } from 'lucide-svelte';
+  import { User, Radio, Calendar, Activity, Zap, Check, X } from '@lucide/svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
   import { localizeApiError } from '$lib/errorLocalization';

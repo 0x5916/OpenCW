@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Trophy, TrendingUp, X, RefreshCw } from 'lucide-svelte';
+  import { Trophy, TrendingUp, X, RefreshCw } from '@lucide/svelte';
   import type { DiffToken } from '$lib/score';
   import * as m from '$lib/paraglide/messages';
   import { onMount } from 'svelte';

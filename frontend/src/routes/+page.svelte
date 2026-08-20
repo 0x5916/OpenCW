@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Radio, Smartphone, MessagesSquare } from 'lucide-svelte';
+  import { Radio, Smartphone, MessagesSquare } from '@lucide/svelte';
   import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
 

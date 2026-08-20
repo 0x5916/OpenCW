@@ -30,7 +30,7 @@
   } from '$lib/cwSync';
   import { localizeApiError } from '$lib/errorLocalization';
   import { CW_STORAGE_KEYS } from '$lib/storageKeys';
-  import { Settings } from 'lucide-svelte';
+  import { Settings } from '@lucide/svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
   import * as m from '$lib/paraglide/messages';

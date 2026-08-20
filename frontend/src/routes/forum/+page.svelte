@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MessageSquare } from 'lucide-svelte';
+  import { MessageSquare } from '@lucide/svelte';
   import * as m from '$lib/paraglide/messages';
 </script>
 

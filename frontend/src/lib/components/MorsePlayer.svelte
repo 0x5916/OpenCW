@@ -1,7 +1,7 @@
 <script lang="ts">
   import { calculateDuration, getFarnsworthWpmSet, MORSE } from '$lib/morse';
   import { onDestroy } from 'svelte';
-  import { Play, Square, Pause, SlidersHorizontal, SkipForward } from 'lucide-svelte';
+  import { Play, Square, Pause, SlidersHorizontal, SkipForward } from '@lucide/svelte';
   import { user } from '$lib/auth';
   import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
