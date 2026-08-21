@@ -1,6 +1,6 @@
 module opencw
 
-go 1.26.0
+go 1.27.0
 
 require (
 	github.com/alexedwards/argon2id v1.0.0
