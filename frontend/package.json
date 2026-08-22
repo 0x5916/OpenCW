@@ -12,6 +12,7 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "seo:validate": "node --experimental-strip-types scripts/validate-seo.ts",
+    "pwa:icons": "node scripts/generate-pwa-icons.mjs",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write ."
   },
@@ -29,6 +30,7 @@
     "globals": "^17.11.0",
     "prettier": "^3.9.6",
     "prettier-plugin-svelte": "^4.1.1",
+    "sharp": "^0.35.3",
     "svelte": "^5.56.9",
     "svelte-check": "^4.7.6",
     "tailwindcss": "^4.3.3",

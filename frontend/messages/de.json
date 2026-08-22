@@ -9,6 +9,7 @@
   "nav_register": "Registrieren",
   "nav_logout": "Abmelden",
   "nav_logout_user": "Abmelden ({username})",
+  "nav_primary": "Primär",
 
   "theme_auto": "Auto",
   "theme_light": "Hell",

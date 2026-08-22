@@ -7,6 +7,7 @@
   import { LESSONS } from '$lib/morse';
   import { reconcileSettingsWithServer, touchLocalPageSettingsUpdatedAt } from '$lib/cwSync';
   import { goto, afterNavigate } from '$app/navigation';
+  import { page } from '$app/state';
   import {
     ChevronDown,
     Menu,
@@ -139,6 +140,11 @@
     return localizeHref(path, { locale: lang.value });
   }
 
+  function isActive(path: string): boolean {
+    const strip = (p: string) => p.replace(/\/+$/, '') || '/';
+    return strip(page.url.pathname) === strip(href(path));
+  }
+
   function themeIconFor(currentTheme: Theme) {
     if (currentTheme === 'light') return Sun;
     if (currentTheme === 'dark') return Moon;
@@ -179,8 +185,36 @@
     }
   }
 
+  // Toggle a body class when an input/textarea/select gains or loses focus so
+  // the mobile bottom nav can hide while the soft keyboard is open.
+  function onDocumentFocusIn(event: FocusEvent) {
+    const target = event.target;
+    if (target instanceof HTMLElement && target.matches('input, textarea, select')) {
+      document.body.classList.add('keyboard-open');
+    }
+  }
+
+  function onDocumentFocusOut(event: FocusEvent) {
+    const target = event.target;
+    if (target instanceof HTMLElement && target.matches('input, textarea, select')) {
+      document.body.classList.remove('keyboard-open');
+    }
+  }
+
   afterNavigate(() => {
     closeMenus();
+
+    // Eagerly check for an updated service worker on client-side navigations,
+    // since SvelteKit only checks on full-page loads. The new worker installs in
+    // the background and activates once all tabs using the old one are closed.
+    if ('serviceWorker' in navigator) {
+      void navigator.serviceWorker
+        .getRegistration()
+        ?.then((registration) => registration?.update())
+        .catch(() => {
+          // Expected when offline: update() can't reach /service-worker.js.
+        });
+    }
   });
 
   $effect(() => {
@@ -188,10 +222,14 @@
 
     document.addEventListener('click', onDocumentClick);
     document.addEventListener('keydown', onDocumentKeydown);
+    document.addEventListener('focusin', onDocumentFocusIn);
+    document.addEventListener('focusout', onDocumentFocusOut);
 
     return () => {
       document.removeEventListener('click', onDocumentClick);
       document.removeEventListener('keydown', onDocumentKeydown);
+      document.removeEventListener('focusin', onDocumentFocusIn);
+      document.removeEventListener('focusout', onDocumentFocusOut);
     };
   });
 </script>
@@ -510,4 +548,48 @@
   </main>
 
   <footer class="footer">{m.footer_text()}</footer>
+
+  <!-- Mobile: bottom navigation bar (hidden on desktop) -->
+  <nav class="bottom-nav" aria-label={m.nav_primary()}>
+    <a
+      href={href('/')}
+      class="bottom-nav-item"
+      class:active={isActive('/')}
+      aria-current={isActive('/') ? 'page' : undefined}
+      ><Home size={20} class="bottom-nav-icon" aria-hidden="true" /><span
+        class="bottom-nav-label"
+        >{m.nav_home()}</span
+      ></a
+    >
+    <a
+      href={href('/morse/learn')}
+      class="bottom-nav-item"
+      class:active={isActive('/morse/learn')}
+      aria-current={isActive('/morse/learn') ? 'page' : undefined}
+      ><Radio size={20} class="bottom-nav-icon" aria-hidden="true" /><span
+        class="bottom-nav-label"
+        >{m.nav_learn()}</span
+      ></a
+    >
+    <a
+      href={href('/forum')}
+      class="bottom-nav-item"
+      class:active={isActive('/forum')}
+      aria-current={isActive('/forum') ? 'page' : undefined}
+      ><MessageSquare size={20} class="bottom-nav-icon" aria-hidden="true" /><span
+        class="bottom-nav-label"
+        >{m.nav_forum()}</span
+      ></a
+    >
+    <a
+      href={href('/about')}
+      class="bottom-nav-item"
+      class:active={isActive('/about')}
+      aria-current={isActive('/about') ? 'page' : undefined}
+      ><Info size={20} class="bottom-nav-icon" aria-hidden="true" /><span
+        class="bottom-nav-label"
+        >{m.nav_about()}</span
+      ></a
+    >
+  </nav>
 </div>

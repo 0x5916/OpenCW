@@ -9,6 +9,7 @@
   "nav_register": "登録",
   "nav_logout": "ログアウト",
   "nav_logout_user": "ログアウト ({username})",
+  "nav_primary": "メイン",
 
   "theme_auto": "自動",
   "theme_light": "ライト",

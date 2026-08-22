@@ -44,6 +44,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
+  padding-top: env(safe-area-inset-top);
   backdrop-filter: saturate(130%) blur(10px);
   background-color: color-mix(in srgb, var(--bg-surface) 88%, transparent);
   transition:
@@ -361,6 +362,95 @@
   margin: 0.25rem 0;
 }
 
+/* Mobile bottom navigation bar (primary destinations) */
+.bottom-nav {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 45;
+  display: none;
+  align-items: stretch;
+  background-color: color-mix(in srgb, var(--bg-surface) 92%, transparent);
+  backdrop-filter: saturate(130%) blur(12px);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+  transition:
+    background-color var(--transition-base),
+    border-color var(--transition-base),
+    transform var(--transition-base) var(--ease-smooth);
+}
+
+@media (max-width: 639px) {
+  .bottom-nav {
+    display: flex;
+  }
+
+  /* Give main content room to scroll clear of the fixed bar */
+  .page-content {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 4.25rem);
+  }
+
+  /* Hide the bar while the soft keyboard is open (input/textarea focus) */
+  body.keyboard-open .bottom-nav {
+    transform: translateY(100%);
+  }
+}
+
+.bottom-nav-item {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  height: 3.25rem;
+  padding: 0.3rem 0.25rem;
+  font-size: 0.6875rem;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s;
+}
+
+.bottom-nav-item:hover {
+  color: var(--text-secondary);
+}
+
+.bottom-nav-item.active {
+  color: var(--accent);
+}
+
+.bottom-nav-item.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2.5rem;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--accent);
+}
+
+.bottom-nav-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.bottom-nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
 /* Footer */
 .footer {
   background-color: var(--bg-surface);
@@ -373,6 +463,13 @@
   transition:
     background-color var(--transition-base),
     border-color var(--transition-base);
+}
+
+@media (max-width: 639px) {
+  /* Keep footer text clear of the fixed bottom nav */
+  .footer {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 3.5rem);
+  }
 }
 
 /* Background gradient effect */

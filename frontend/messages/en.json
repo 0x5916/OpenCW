@@ -9,6 +9,7 @@
   "nav_register": "Register",
   "nav_logout": "Logout",
   "nav_logout_user": "Logout ({username})",
+  "nav_primary": "Primary",
 
   "theme_auto": "Auto",
   "theme_light": "Light",
