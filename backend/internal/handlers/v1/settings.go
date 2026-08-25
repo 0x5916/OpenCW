@@ -54,7 +54,7 @@ func (h SettingsHandler) GetAllSettings(c *gin.Context) {
 		Theme:     pageSettings.Theme,
 		Lang:      pageSettings.Lang,
 		CurLesson: pageSettings.CurLesson,
-		UpdatedAt: cwSettings.UpdatedAt,
+		UpdatedAt: pageSettings.UpdatedAt,
 	}
 	c.JSON(http.StatusOK, response)
 }
@@ -85,7 +85,6 @@ func (h SettingsHandler) GetPageSettings(c *gin.Context) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			pageSettings := models.GetDefaultPageSettings()
 			c.JSON(http.StatusOK, common.FromPageSettingsModel(pageSettings))
-			c.JSON(http.StatusOK, common.FromPageSettingsModel(models.GetDefaultPageSettings()))
 			return
 		}
 		slog.Error("Failed to get settings", "user_id", user.ID, "err", err)

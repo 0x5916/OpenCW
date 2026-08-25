@@ -8,9 +8,9 @@ import (
 	"opencw/internal/models"
 	"opencw/internal/utils"
 	"strconv"
+	"uuid"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 

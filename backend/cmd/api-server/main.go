@@ -37,14 +37,16 @@ func main() {
 
 	server.CORSSetup(r)
 	server.RouterV1Setup(r)
+	server.PprofSetup(r)
 
 	srv := &http.Server{
-		Addr:              ":" + configs.App.Port,
-		Handler:           r,
-		ReadTimeout:       configs.App.ReadTimeout,
-		ReadHeaderTimeout: configs.App.ReadHeaderTimeout,
-		WriteTimeout:      configs.App.WriteTimeout,
-		IdleTimeout:       configs.App.IdleTimeout,
+		Addr:                ":" + configs.App.Port,
+		Handler:             r,
+		ReadTimeout:         configs.App.ReadTimeout,
+		ReadHeaderTimeout:   configs.App.ReadHeaderTimeout,
+		WriteTimeout:        configs.App.WriteTimeout,
+		IdleTimeout:         configs.App.IdleTimeout,
+		MaxHeaderValueCount: http.DefaultMaxHeaderValueCount,
 	}
 
 	server.GracefulShutdown(srv)
