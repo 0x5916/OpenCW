@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"opencw/models"
+	"opencw/internal/models"
 
 	"github.com/gin-gonic/gin"
 )

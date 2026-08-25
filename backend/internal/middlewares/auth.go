@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"opencw/common"
+	"opencw/internal/common"
 	"strings"
 
-	"opencw/configs"
+	"opencw/internal/configs"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"

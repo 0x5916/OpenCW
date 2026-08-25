@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
-	"opencw/configs"
+	"opencw/internal/configs"
 	"strings"
 
 	"github.com/resend/resend-go/v3"

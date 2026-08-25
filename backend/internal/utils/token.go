@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"time"
 
-	"opencw/configs"
-	"opencw/models"
+	"opencw/internal/configs"
+	"opencw/internal/models"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"

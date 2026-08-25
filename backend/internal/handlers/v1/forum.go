@@ -4,9 +4,9 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"opencw/common"
-	"opencw/models"
-	"opencw/utils"
+	"opencw/internal/common"
+	"opencw/internal/models"
+	"opencw/internal/utils"
 	"strconv"
 
 	"github.com/gin-gonic/gin"

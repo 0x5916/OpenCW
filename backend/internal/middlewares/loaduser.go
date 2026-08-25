@@ -3,8 +3,8 @@ package middlewares
 import (
 	"log/slog"
 	"net/http"
-	"opencw/common"
-	"opencw/models"
+	"opencw/internal/common"
+	"opencw/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

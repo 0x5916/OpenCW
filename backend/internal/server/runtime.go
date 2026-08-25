@@ -1,46 +1,39 @@
-package main
+package server
 
 import (
 	"context"
 	"errors"
 	"log/slog"
 	"net/http"
-	"opencw/configs"
-	"opencw/databases"
-	"opencw/models"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"opencw/internal/configs"
+	"opencw/internal/databases"
+	"opencw/internal/models"
 )
 
-const (
-	refreshTokenCleanupInterval = 3 * time.Hour
-	defaultProductionOrigin     = "https://opencw.net"
-)
+const refreshTokenCleanupInterval = 3 * time.Hour
 
-func CORSSetup(engine *gin.Engine) {
-	engine.Use(func(c *gin.Context) {
-		origin := c.Request.Header.Get("Origin")
-		if origin == "" || !isCORSAllowed(origin) {
-			c.Next()
-			return
-		}
+func GracefulShutdown(srv *http.Server) {
+	// Context that cancels on SIGINT/SIGTERM
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-		c.Header("Access-Control-Allow-Origin", origin)
-		c.Header("Access-Control-Allow-Credentials", "true")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
-		c.Header("Vary", "Origin")
+	startRefreshTokenCleanup(ctx)
+	runServer(srv)
 
-		if c.Request.Method == http.MethodOptions {
-			c.Header("Access-Control-Max-Age", "43200")
-			c.AbortWithStatus(http.StatusNoContent)
-			return
-		}
+	// Block until signal received
+	<-ctx.Done()
+	slog.Info("Shutdown signal received")
 
-		c.Next()
-	})
+	// Give in-flight requests a short window to complete.
+	shutdownServer(context.Background(), srv)
+	closeDatabase()
+
+	slog.Info("Server exited gracefully")
 }
 
 func startRefreshTokenCleanup(ctx context.Context) {
@@ -96,24 +89,4 @@ func closeDatabase() {
 	if err := sqlDB.Close(); err != nil {
 		slog.Error("Failed to close database connection", "err", err)
 	}
-}
-
-// isCORSAllowed reports whether origin should receive CORS headers.
-// Priority order:
-//  1. Non-release mode -> allow everything
-//  2. CORS_ORIGINS env var (explicit allowlist, comma-separated)
-//  3. Production -> only https://opencw.net
-func isCORSAllowed(origin string) bool {
-	if !configs.App.IsRelease() {
-		return true
-	}
-	if len(configs.App.CORSOrigins) > 0 {
-		for _, o := range configs.App.CORSOrigins {
-			if o == origin {
-				return true
-			}
-		}
-		return false
-	}
-	return origin == defaultProductionOrigin
 }

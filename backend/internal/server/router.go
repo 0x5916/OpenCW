@@ -1,25 +1,20 @@
-package main
+package server
 
 import (
-	"context"
-	"log/slog"
 	"net/http"
-	"opencw/common"
-	"opencw/handlers/v1"
-	"opencw/middlewares"
-	"opencw/utils"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
-	"opencw/configs"
-	"opencw/databases"
-	"opencw/models"
+	"opencw/internal/common"
+	"opencw/internal/configs"
+	"opencw/internal/databases"
+	handlers "opencw/internal/handlers/v1"
+	"opencw/internal/middlewares"
+	"opencw/internal/models"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
+
+const defaultProductionOrigin = "https://opencw.net"
 
 func RouterV1Setup(engine *gin.Engine) {
 	v1 := engine.Group("/v1")
@@ -83,57 +78,46 @@ func RouterV1Setup(engine *gin.Engine) {
 	})
 }
 
-func GracefulShutdown(srv *http.Server) {
-	// Context that cancels on SIGINT/SIGTERM
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+func CORSSetup(engine *gin.Engine) {
+	engine.Use(func(c *gin.Context) {
+		origin := c.Request.Header.Get("Origin")
+		if origin == "" || !isCORSAllowed(origin) {
+			c.Next()
+			return
+		}
 
-	startRefreshTokenCleanup(ctx)
-	runServer(srv)
+		c.Header("Access-Control-Allow-Origin", origin)
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+		c.Header("Vary", "Origin")
 
-	// Block until signal received
-	<-ctx.Done()
-	slog.Info("Shutdown signal received")
+		if c.Request.Method == http.MethodOptions {
+			c.Header("Access-Control-Max-Age", "43200")
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
 
-	// Give in-flight requests a short window to complete.
-	shutdownServer(context.Background(), srv)
-	closeDatabase()
-
-	slog.Info("Server exited gracefully")
+		c.Next()
+	})
 }
 
-func main() {
-	if configs.GetGinMode() != "release" {
-		if err := godotenv.Load(".env"); err != nil {
-			slog.Error("Failed to load environment variables", "err", err)
-			os.Exit(1)
-		}
-	}
-	configs.Load()
-	databases.Connect()
-
-	r := gin.Default()
-
-	if err := utils.RegisterCustomValidators(); err != nil {
-		slog.Error("Failed to register custom validators", "err", err)
-		os.Exit(1)
-	}
-
+// isCORSAllowed reports whether origin should receive CORS headers.
+// Priority order:
+//  1. Non-release mode -> allow everything
+//  2. CORS_ORIGINS env var (explicit allowlist, comma-separated)
+//  3. Production -> only https://opencw.net
+func isCORSAllowed(origin string) bool {
 	if !configs.App.IsRelease() {
-		slog.Warn("App is not in production mode. Set GIN_MODE=release for production")
+		return true
 	}
-
-	CORSSetup(r)
-	RouterV1Setup(r)
-
-	srv := &http.Server{
-		Addr:              ":" + configs.App.Port,
-		Handler:           r,
-		ReadTimeout:       configs.App.ReadTimeout,
-		ReadHeaderTimeout: configs.App.ReadHeaderTimeout,
-		WriteTimeout:      configs.App.WriteTimeout,
-		IdleTimeout:       configs.App.IdleTimeout,
+	if len(configs.App.CORSOrigins) > 0 {
+		for _, o := range configs.App.CORSOrigins {
+			if o == origin {
+				return true
+			}
+		}
+		return false
 	}
-
-	GracefulShutdown(srv)
+	return origin == defaultProductionOrigin
 }

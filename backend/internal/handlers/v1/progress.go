@@ -3,9 +3,9 @@ package handlers
 import (
 	"log/slog"
 	"net/http"
-	"opencw/common"
-	"opencw/models"
-	"opencw/utils"
+	"opencw/internal/common"
+	"opencw/internal/models"
+	"opencw/internal/utils"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

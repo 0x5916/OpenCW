@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"os"
 
-	"opencw/configs"
-	"opencw/models"
+	"opencw/internal/configs"
+	"opencw/internal/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

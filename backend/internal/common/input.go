@@ -1,7 +1,7 @@
 package common
 
 import (
-	"opencw/models"
+	"opencw/internal/models"
 	"time"
 
 	"github.com/google/uuid"
