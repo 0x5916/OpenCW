@@ -67,6 +67,7 @@ func RouterV1Setup(engine *gin.Engine) {
 	forum := v1.Group("/forum")
 	forum.GET("/categories", forumHandler.GetCategories)
 	forum.GET("/categories/:categoryID/threads", forumHandler.GetThreadsByCategory)
+	forum.GET("/threads/:threadID", forumHandler.GetThread)
 	forum.GET("/threads/:threadID/posts", forumHandler.GetPostsByThread)
 
 	forumProtected := protected.Group("/forum")

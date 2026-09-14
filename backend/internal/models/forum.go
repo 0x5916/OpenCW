@@ -14,11 +14,11 @@ func (ForumCategory) TableName() string {
 
 type ForumThread struct {
 	Base
-	CategoryID uuid.UUID `json:"category_id"`
-	AuthorID   uuid.UUID `json:"author_id"`
-	Title      string    `json:"title"`
-	IsPinned   bool      `json:"is_pinned"`
-	IsLocked   bool      `json:"is_locked"`
+	CategoryID uuid.UUID `json:"category_id" gorm:"not null;index:idx_forum_threads_category_sort,priority:1"`
+	AuthorID   uuid.UUID `json:"author_id" gorm:"not null;index"`
+	Title      string    `json:"title" gorm:"not null"`
+	IsPinned   bool      `json:"is_pinned" gorm:"not null;index:idx_forum_threads_category_sort,priority:2,sort:desc"`
+	IsLocked   bool      `json:"is_locked" gorm:"not null"`
 }
 
 func (ForumThread) TableName() string {
@@ -27,10 +27,10 @@ func (ForumThread) TableName() string {
 
 type ForumPost struct {
 	Base
-	ThreadID uuid.UUID  `json:"thread_id"`
-	AuthorID uuid.UUID  `json:"author_id"`
-	Body     string     `json:"body"`
-	ParentID *uuid.UUID `json:"parent_id"` // for reply threading
+	ThreadID uuid.UUID  `json:"thread_id" gorm:"not null;index:idx_forum_posts_thread_sort,priority:1"`
+	AuthorID uuid.UUID  `json:"author_id" gorm:"not null;index"`
+	Body     string     `json:"body" gorm:"not null"`
+	ParentID *uuid.UUID `json:"parent_id" gorm:"index"` // for reply threading
 }
 
 func (ForumPost) TableName() string {

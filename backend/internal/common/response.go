@@ -77,6 +77,11 @@ type ForumThreadResponse struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 
+type ForumThreadCreatedResponse struct {
+	Thread    ForumThreadResponse `json:"thread"`
+	FirstPost ForumPostResponse   `json:"first_post"`
+}
+
 type ForumPostResponse struct {
 	ID        uuid.UUID  `json:"id"`
 	ThreadID  uuid.UUID  `json:"thread_id"`
