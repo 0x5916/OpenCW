@@ -1,6 +1,5 @@
 @import 'tailwindcss';
 @import './lib/styles/layout.css';
-@import './lib/styles/animations.css';
 
 :root {
   --bg-base: #030712;
@@ -264,67 +263,9 @@ body {
   line-height: 1rem;
 }
 
-.tooltip-icon {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  color: var(--text-muted);
-  cursor: help;
-  vertical-align: middle;
-  margin-left: 0.15rem;
-}
-
-.tooltip-icon::before {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg-inset);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  font-size: 0.7rem;
-  line-height: 1.4;
-  padding: 0.4rem 0.6rem;
-  border-radius: var(--radius-sm);
-  width: max-content;
-  max-width: 180px;
-  white-space: normal;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-  z-index: 50;
-  box-shadow: var(--shadow-sm);
-}
-
-.tooltip-icon::after {
-  content: '';
-  position: absolute;
-  bottom: calc(100% + 2px);
-  left: 50%;
-  transform: translateX(-50%);
-  border: 5px solid transparent;
-  border-top-color: var(--border-subtle);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-  z-index: 50;
-}
-
-.tooltip-icon:hover::before,
-.tooltip-icon:hover::after {
-  opacity: 1;
-}
-
 .accent-text {
   color: var(--accent);
   font-weight: 600;
-}
-
-.muted {
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  line-height: 1rem;
 }
 
 .link {
@@ -446,29 +387,6 @@ body {
   background-color: color-mix(in srgb, var(--accent) 5%, transparent);
 }
 
-.btn-outline {
-  width: 100%;
-  padding: var(--space-sm) var(--space-md);
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  font-weight: 500;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition:
-    border-color var(--transition-fast),
-    color var(--transition-fast),
-    background-color var(--transition-fast);
-}
-
-.btn-outline:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background-color: color-mix(in srgb, var(--accent) 5%, transparent);
-}
-
 .btn-regen {
   width: 100%;
   display: flex;
@@ -494,13 +412,6 @@ body {
 .btn-regen:hover {
   border-color: var(--accent);
   color: var(--accent);
-}
-
-.btn-regen.btn-regen-success,
-.btn-regen.btn-regen-success:hover {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-subtle));
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .btn-cta {
@@ -633,30 +544,6 @@ select.lesson-select {
   gap: 0.25rem;
 }
 
-.result-box {
-  padding: 1.25rem;
-  border-width: 1px;
-  border-style: solid;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
-  text-align: center;
-}
-
-.result-good {
-  background-color: var(--result-good-bg);
-  border-color: var(--result-good-bd);
-}
-
-.result-ok {
-  background-color: var(--result-ok-bg);
-  border-color: var(--result-ok-bd);
-}
-
-.result-bad {
-  background-color: var(--result-bad-bg);
-  border-color: var(--result-bad-bd);
-}
-
 .diff-legend {
   display: flex;
   gap: 0.5rem;
@@ -707,10 +594,6 @@ select.lesson-select {
   font-weight: 400;
 }
 
-.error-text {
-  margin: 0;
-}
-
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -720,37 +603,12 @@ textarea:focus-visible {
   box-shadow: var(--focus-ring);
 }
 
-@media (max-width: 768px) {
-  .mobile {
-    display: block !important;
-  }
-
-  .mobile-stack {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-  }
-
-  .mobile-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
-@container (min-width: 640px) {
-  .container-sm\:grid-cols-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media print {
-  .no-print,
   .navbar,
   .footer,
   button,
   .btn-primary,
-  .btn-ghost,
-  .btn-outline {
+  .btn-ghost {
     display: none !important;
   }
 
@@ -775,23 +633,6 @@ textarea:focus-visible {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
-}
-
-.skip-to-content {
-  position: absolute;
-  top: -100px;
-  left: 0;
-  background: var(--accent);
-  color: #000;
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-md);
-  font-weight: 600;
-  z-index: 100;
-  transition: top var(--transition-fast);
-}
-
-.skip-to-content:focus {
-  top: var(--space-sm);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -13,7 +13,7 @@
     type PageSettings
   } from '$lib/api';
   import { langPreference, setLangPreference, type Locale } from '$lib/i18n.svelte';
-  import { locales, localizeHref } from '$lib/paraglide/runtime';
+  import { locales } from '$lib/paraglide/runtime';
   import {
     getLocaleLongLabel,
     normalizeLocalePreference,
@@ -33,6 +33,8 @@
   import { Settings } from '@lucide/svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+  import GuestNotice from '$lib/components/GuestNotice.svelte';
+  import SaveButton from '$lib/components/SaveButton.svelte';
   import * as m from '$lib/paraglide/messages';
 
   type Theme = 'auto' | 'dark' | 'light';
@@ -163,12 +165,6 @@
   function showSavedFlag(setter: (value: boolean) => void, durationMs: number = 3000) {
     setter(true);
     setTimeout(() => setter(false), durationMs);
-  }
-
-  function saveButtonLabel(saved: boolean, saving: boolean): string {
-    if (saved) return m.settings_saved();
-    if (saving) return m.settings_saving();
-    return m.settings_update();
   }
 
   async function loadAll() {
@@ -430,12 +426,7 @@
   {:else}
     {#if !$user}
       <section class="card settings-card">
-        <p class="body-text">
-          {m.trainer_guest_notice()}
-          <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
-          /
-          <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
-        </p>
+        <GuestNotice class="body-text" />
       </section>
     {/if}
 
@@ -459,13 +450,7 @@
                 maxlength="32"
               />
               {#if callSignDirty || callSignSaving || callSignSaved}
-                <button
-                  type="submit"
-                  class="btn-primary settings-btn-compact"
-                  disabled={callSignSaving}
-                >
-                  {saveButtonLabel(callSignSaved, callSignSaving)}
-                </button>
+                <SaveButton saving={callSignSaving} saved={callSignSaved} />
               {/if}
             </div>
           </label>
@@ -482,13 +467,7 @@
             <div class="settings-input-action">
               <input type="email" bind:value={email} class="input" required />
               {#if emailDirty || emailSaving || emailSaved}
-                <button
-                  type="submit"
-                  class="btn-primary settings-btn-compact"
-                  disabled={emailSaving}
-                >
-                  {saveButtonLabel(emailSaved, emailSaving)}
-                </button>
+                <SaveButton saving={emailSaving} saved={emailSaved} />
               {/if}
             </div>
           </label>
@@ -601,13 +580,7 @@
           {/if}
           {#if passwordDirty || passwordSaving || passwordSaved}
             <div class="settings-action-row">
-              <button
-                type="submit"
-                class="btn-primary settings-btn-compact"
-                disabled={passwordSaving}
-              >
-                {saveButtonLabel(passwordSaved, passwordSaving)}
-              </button>
+              <SaveButton saving={passwordSaving} saved={passwordSaved} />
             </div>
           {/if}
         </form>
@@ -644,9 +617,7 @@
         {/if}
         {#if pageDirty || pageSaving || pageSaved}
           <div class="settings-action-row">
-            <button type="submit" class="btn-primary settings-btn-compact" disabled={pageSaving}>
-              {saveButtonLabel(pageSaved, pageSaving)}
-            </button>
+            <SaveButton saving={pageSaving} saved={pageSaved} />
           </div>
         {/if}
       </form>
@@ -677,9 +648,7 @@
         {/if}
         {#if cwDirty || cwSaving || cwSaved}
           <div class="settings-action-row">
-            <button type="submit" class="btn-primary settings-btn-compact" disabled={cwSaving}>
-              {saveButtonLabel(cwSaved, cwSaving)}
-            </button>
+            <SaveButton saving={cwSaving} saved={cwSaved} />
           </div>
         {/if}
       </form>
@@ -761,22 +730,11 @@
     display: flex;
     justify-content: flex-end;
   }
-  .settings-btn-compact {
-    padding: var(--space-sm) 0.9rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    min-height: calc(1.25rem + (var(--space-sm) * 2) + 2px);
-    width: auto;
-    white-space: nowrap;
-  }
 
   @media (max-width: 720px) {
     .settings-input-action {
       flex-direction: column;
       align-items: stretch;
-    }
-    .settings-btn-compact {
-      width: 100%;
     }
   }
 </style>

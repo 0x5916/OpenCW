@@ -3,9 +3,10 @@
   import { generateTimedLesson, LESSONS } from '$lib/morse';
   import MorsePlayer from '$lib/components/MorsePlayer.svelte';
   import ResultOverlay from '$lib/components/ResultOverlay.svelte';
+  import GuestNotice from '$lib/components/GuestNotice.svelte';
   import { untrack, onDestroy } from 'svelte';
   import { ClipboardCheck } from '@lucide/svelte';
-  import { CW_STORAGE_KEYS } from '$lib/storageKeys';
+  import { CW_STORAGE_KEYS, UI_STORAGE_KEYS } from '$lib/storageKeys';
   import { langPreference } from '$lib/i18n.svelte';
   import { score, diffWords } from '$lib/score';
   import type { DiffToken } from '$lib/score';
@@ -19,10 +20,7 @@
     saveClientCwSettings,
     syncSettingsToServer
   } from '$lib/cwSync';
-  import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
-
-  const QUICKSTART_DISMISSED_KEY = 'learn.quickstart.dismissed';
 
   let { data } = $props();
 
@@ -45,7 +43,7 @@
 
   $effect(() => {
     if (!browser) return;
-    showQuickStart = localStorage.getItem(QUICKSTART_DISMISSED_KEY) !== '1';
+    showQuickStart = localStorage.getItem(UI_STORAGE_KEYS.quickstartDismissed) !== '1';
   });
 
   $effect(() => {
@@ -61,7 +59,7 @@
     showQuickStart = false;
     showQuickTips = false;
     if (!browser) return;
-    localStorage.setItem(QUICKSTART_DISMISSED_KEY, '1');
+    localStorage.setItem(UI_STORAGE_KEYS.quickstartDismissed, '1');
   }
 
   function openQuickTips() {
@@ -261,12 +259,7 @@
             <li>Use the single-letter player to isolate difficult characters.</li>
             <li>Check result often and focus on repeated mistakes.</li>
             {#if !$user}
-              <li>
-                {m.trainer_guest_notice()}
-                <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
-                /
-                <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
-              </li>
+              <li><GuestNotice /></li>
             {/if}
           </ul>
           <div class="quickstart-actions">

@@ -16,6 +16,14 @@ export const langPreference = $state<{ value: LocalePreference }>({ value: 'auto
 
 export type { Locale, LocalePreference };
 
+/**
+ * Locale-aware href builder for in-app links. Reads `lang.value` so links
+ * re-render when the active language changes.
+ */
+export function localizedHref(path: string): string {
+  return localizeHref(path, { locale: lang.value });
+}
+
 function applyDocumentLocale(locale: Locale): void {
   if (typeof document === 'undefined') return;
   document.documentElement.lang = locale;

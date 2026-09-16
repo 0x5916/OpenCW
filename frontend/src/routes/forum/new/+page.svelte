@@ -7,8 +7,7 @@
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
   import { localizeApiError } from '$lib/errorLocalization';
-  import { lang } from '$lib/i18n.svelte';
-  import { localizeHref } from '$lib/paraglide/runtime';
+  import { localizedHref as href } from '$lib/i18n.svelte';
   import * as m from '$lib/paraglide/messages';
 
   let categories = $state<ForumCategory[]>([]);
@@ -22,9 +21,6 @@
   $effect(() => {
     void loadCategories();
   });
-  function href(path: string): string {
-    return localizeHref(path, { locale: lang.value });
-  }
 
   async function loadCategories() {
     if (!$user) {
@@ -68,14 +64,14 @@
   {#if loading}<div class="state"><LoadingSpinner /></div>
   {:else if !$user}<div class="card state">
       <p>{m.forum_login_to_post()}</p>
-      <a class="btn-primary" href={href('/login')}>{m.nav_login}</a>
+      <a class="btn-primary" href={href('/login')}>{m.nav_login()}</a>
     </div>
   {:else if error && categories.length === 0}<ErrorAlert message={error} />
   {:else}
     <form class="composer card" onsubmit={submitThread}>
       {#if error}<ErrorAlert message={error} />{/if}
       <label for="category">{m.forum_category_label()}</label>
-      <select id="category" bind:value={categoryId} required>
+      <select id="category" class="select" bind:value={categoryId} required>
         <option value="" disabled>{m.forum_category_placeholder()}</option>
         {#each categories as category (category.id)}<option value={category.id}
             >{category.name}</option
@@ -132,7 +128,6 @@
     font-weight: 650;
   }
   input,
-  select,
   textarea {
     width: 100%;
     padding: 0.75rem;

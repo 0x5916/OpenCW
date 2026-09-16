@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowLeft, ChevronLeft, ChevronRight, Lock, MessageSquare, Send } from '@lucide/svelte';
+  import { ArrowLeft, Lock, MessageSquare, Send } from '@lucide/svelte';
   import { page } from '$app/state';
   import { user } from '$lib/auth';
   import {
@@ -11,9 +11,10 @@
   } from '$lib/api';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+  import Pagination from '$lib/components/Pagination.svelte';
   import { localizeApiError } from '$lib/errorLocalization';
-  import { lang } from '$lib/i18n.svelte';
-  import { localizeHref } from '$lib/paraglide/runtime';
+  import { authorLabel, formatDateTime } from '$lib/format';
+  import { localizedHref as href } from '$lib/i18n.svelte';
   import * as m from '$lib/paraglide/messages';
 
   let thread = $state<ForumThread | null>(null);
@@ -37,10 +38,6 @@
     currentPage = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
     void loadThread(threadId, currentPage);
   });
-
-  function href(path: string): string {
-    return localizeHref(path, { locale: lang.value });
-  }
 
   async function loadThread(threadId: string, requestedPage: number) {
     loading = true;
@@ -81,13 +78,6 @@
     }
   }
 
-  function authorLabel(post: ForumPost): string {
-    return post.username ?? post.author ?? m.forum_community_member();
-  }
-  function formatDate(value: string): string {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '' : date.toLocaleString();
-  }
   function pageHref(nextPage: number): string {
     return href(`/forum/thread/${page.params.threadId}?page=${Math.max(1, nextPage)}`);
   }
@@ -104,9 +94,7 @@
       <div class="eyebrow"><MessageSquare size={16} /> {m.forum_thread()}</div>
       <h1 class="page-title">{thread.title}</h1>
       <p class="thread-meta">
-        {thread.username ?? thread.author ?? m.forum_community_member()} · {formatDate(
-          thread.created_at
-        )}
+        {authorLabel(thread)} · {formatDateTime(thread.created_at)}
       </p>
       {#if thread.is_locked}<div class="locked-note">
           <Lock size={16} />
@@ -119,7 +107,7 @@
         <article class="post card">
           <header class="post-header">
             <strong>{authorLabel(post)}</strong><time datetime={post.created_at}
-              >{formatDate(post.created_at)}</time
+              >{formatDateTime(post.created_at)}</time
             >
           </header>
           {#if post.parent_id}<div class="parent-note">{m.forum_reply_to()}</div>{/if}
@@ -129,21 +117,12 @@
       {/each}
     </section>
 
-    {#if totalPages > 1}<nav class="pagination" aria-label={m.forum_pagination()}>
-        {#if currentPage > 1}<a
-            class="icon-link"
-            href={pageHref(currentPage - 1)}
-            aria-label={m.forum_previous_page()}
-            title={m.forum_previous_page()}><ChevronLeft size={18} /></a
-          >{/if}
-        <span>{m.forum_page_of({ page: currentPage, total: totalPages })}</span>
-        {#if currentPage < totalPages}<a
-            class="icon-link"
-            href={pageHref(currentPage + 1)}
-            aria-label={m.forum_next_page()}
-            title={m.forum_next_page()}><ChevronRight size={18} /></a
-          >{/if}
-      </nav>{/if}
+    <Pagination
+      {currentPage}
+      {totalPages}
+      prevHref={pageHref(currentPage - 1)}
+      nextHref={pageHref(currentPage + 1)}
+    />
 
     {#if $user && !thread.is_locked}
       <form class="reply-form card" onsubmit={submitReply}>
@@ -252,29 +231,6 @@
     display: grid;
     place-items: center;
     min-height: 12rem;
-  }
-  .pagination {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    margin: 1.25rem 0;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-  }
-  .icon-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    color: var(--accent);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    text-decoration: none;
-  }
-  .icon-link:hover {
-    background: var(--bg-inset);
   }
   .reply-form {
     display: grid;

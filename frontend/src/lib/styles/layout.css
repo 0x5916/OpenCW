@@ -466,9 +466,9 @@
 }
 
 @media (max-width: 639px) {
-  /* Keep footer text clear of the fixed bottom nav */
+  /* Hide the footer on phones; the fixed bottom nav already labels the app */
   .footer {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 3.5rem);
+    display: none;
   }
 }
 

@@ -3,14 +3,15 @@
   import { user } from '$lib/auth';
   import { getUserInfo, getCWSettings, getProgress } from '$lib/api';
   import type { ProgressRecord } from '$lib/api';
-  import { LESSONS } from '$lib/morse';
   import { readClientCwSettings } from '$lib/cwSync';
   import { getLocalProgressRecords } from '$lib/progressSync';
   import { User, Radio, Calendar, Activity, Zap, Check, X } from '@lucide/svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+  import GuestNotice from '$lib/components/GuestNotice.svelte';
   import { localizeApiError } from '$lib/errorLocalization';
-  import { localizeHref } from '$lib/paraglide/runtime';
+  import { accuracyClass, formatDate, formatLesson, percentage } from '$lib/format';
+  import { localizedHref } from '$lib/i18n.svelte';
   import * as m from '$lib/paraglide/messages';
 
   let loading = $state(true);
@@ -199,27 +200,6 @@
     }
   }
 
-  function formatLesson(lessonStr: string): string {
-    const numericLesson = Number.parseInt(lessonStr, 10);
-    if (Number.isInteger(numericLesson) && numericLesson >= 1 && numericLesson <= LESSONS.length) {
-      return `${numericLesson} - ${LESSONS[numericLesson - 1].split('').join(', ')}`;
-    }
-
-    let cumulative = '';
-    for (let i = 0; i < LESSONS.length; i++) {
-      cumulative += LESSONS[i];
-      if (cumulative === lessonStr.toUpperCase()) {
-        return `${i + 1} - ${LESSONS[i].split('').join(', ')}`;
-      }
-    }
-    // Fallback: truncate raw string
-    return lessonStr.length > 12 ? lessonStr.slice(0, 12) + '…' : lessonStr;
-  }
-
-  function pct(v: number) {
-    return Math.round(v * 100) + '%';
-  }
-
   function utcDayStart(ms: number): number {
     return Math.floor(ms / DAY_MS) * DAY_MS;
   }
@@ -358,18 +338,6 @@
 
     return weeks;
   }
-
-  function accuracyClass(v: number) {
-    return v >= 0.9 ? 'acc-good' : v >= 0.7 ? 'acc-ok' : 'acc-bad';
-  }
-
-  function formatDate(iso: string) {
-    return new Date(iso).toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  }
 </script>
 
 <main class="profile-page">
@@ -380,12 +348,7 @@
   {:else}
     {#if isGuest}
       <section class="card">
-        <p class="body-text">
-          {m.trainer_guest_notice()}
-          <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
-          /
-          <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
-        </p>
+        <GuestNotice class="body-text" />
       </section>
     {/if}
 
@@ -558,7 +521,7 @@
       {#if recentRecords.length === 0}
         <p class="body-text profile-empty">
           {m.profile_history_empty()}
-          <a href={localizeHref('/morse/learn')} class="link">{m.nav_learn()}</a>
+          <a href={localizedHref('/morse/learn')} class="link">{m.nav_learn()}</a>
         </p>
       {:else}
         <div class="profile-table-wrap">
@@ -577,7 +540,7 @@
                   <td class="profile-lesson-cell">{formatLesson(rec.lesson)}</td>
                   <td
                     ><span class="profile-acc {accuracyClass(rec.accuracy)}"
-                      >{pct(rec.accuracy)}</span
+                      >{percentage(rec.accuracy)}</span
                     ></td
                   >
                   <td class="profile-wpm-cell">{rec.char_wpm} / {rec.eff_wpm}</td>

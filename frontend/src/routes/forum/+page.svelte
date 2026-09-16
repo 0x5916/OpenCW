@@ -5,8 +5,8 @@
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
   import { localizeApiError } from '$lib/errorLocalization';
-  import { lang } from '$lib/i18n.svelte';
-  import { localizeHref } from '$lib/paraglide/runtime';
+  import { authorLabel, formatDate } from '$lib/format';
+  import { localizedHref as href } from '$lib/i18n.svelte';
   import * as m from '$lib/paraglide/messages';
   type ThreadPreview = ForumThread & {
     categoryName: string;
@@ -24,9 +24,7 @@
   $effect(() => {
     void loadForum();
   });
-  function href(path: string): string {
-    return localizeHref(path, { locale: lang.value });
-  }
+
   async function loadForum() {
     loading = true;
     loadError = '';
@@ -65,20 +63,6 @@
       );
       return (Number.isNaN(rightTime) ? 0 : rightTime) - (Number.isNaN(leftTime) ? 0 : leftTime);
     });
-  }
-  function authorLabel(thread: ForumThread): string {
-    return thread.username ?? thread.author ?? m.forum_community_member();
-  }
-  function formatDate(value?: string): string {
-    if (!value) return '';
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-      ? ''
-      : date.toLocaleDateString(undefined, {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        });
   }
 </script>
 
@@ -119,7 +103,7 @@
       <div class="feed-label"><ListFilter size={16} /> {m.forum_sort_label()}</div>
       <label class="sort-control" for="forum-sort">
         <span class="sr-only">{m.forum_sort_label()}</span>
-        <select id="forum-sort" bind:value={sortMode}>
+        <select id="forum-sort" class="select" bind:value={sortMode}>
           <option value="activity">{m.forum_sort_activity()}</option>
           <option value="created">{m.forum_sort_created()}</option>
           <option value="category">{m.forum_sort_category()}</option>
@@ -216,19 +200,6 @@
 
   .sort-control select {
     min-width: 11rem;
-    padding: 0.5rem 0.7rem;
-    color: var(--text-secondary);
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font: inherit;
-    font-size: 0.8rem;
-  }
-
-  .sort-control select:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: var(--focus-ring);
   }
 
   .thread-feed {
@@ -320,18 +291,6 @@
     margin: 0;
   }
 
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
   @media (max-width: 700px) {
     .forum-hero {
       align-items: stretch;
@@ -345,10 +304,6 @@
     .feed-toolbar {
       align-items: stretch;
       flex-direction: column;
-    }
-
-    .sort-control select {
-      width: 100%;
     }
 
     .thread-card {

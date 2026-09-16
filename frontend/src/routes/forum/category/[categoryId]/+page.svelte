@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowLeft, ChevronLeft, ChevronRight, Lock, MessageSquare, Pin } from '@lucide/svelte';
+  import { ArrowLeft, Lock, MessageSquare, Pin } from '@lucide/svelte';
   import { page } from '$app/state';
   import {
     getForumCategories,
@@ -9,9 +9,10 @@
   } from '$lib/api';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+  import Pagination from '$lib/components/Pagination.svelte';
   import { localizeApiError } from '$lib/errorLocalization';
-  import { lang } from '$lib/i18n.svelte';
-  import { localizeHref } from '$lib/paraglide/runtime';
+  import { authorLabel, formatDate } from '$lib/format';
+  import { localizedHref as href } from '$lib/i18n.svelte';
   import * as m from '$lib/paraglide/messages';
 
   const DEFAULT_LIMIT = 20;
@@ -35,10 +36,6 @@
     void loadCategory(categoryId, currentPage);
   });
 
-  function href(path: string): string {
-    return localizeHref(path, { locale: lang.value });
-  }
-
   async function loadCategory(categoryId: string, requestedPage: number) {
     loading = true;
     error = '';
@@ -61,22 +58,6 @@
     return href(
       `/forum/category/${page.params.categoryId}?page=${Math.min(MAX_LIMIT, Math.max(1, nextPage))}`
     );
-  }
-
-  function authorLabel(thread: ForumThread): string {
-    return thread.username ?? thread.author ?? m.forum_community_member();
-  }
-
-  function formatDate(value?: string): string {
-    if (!value) return '';
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-      ? ''
-      : date.toLocaleDateString(undefined, {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        });
   }
 </script>
 
@@ -127,23 +108,12 @@
         </a>
       {/each}
     </section>
-    {#if totalPages > 1}
-      <nav class="pagination" aria-label={m.forum_pagination()}>
-        {#if currentPage > 1}<a
-            class="icon-link"
-            href={pageHref(currentPage - 1)}
-            aria-label={m.forum_previous_page()}
-            title={m.forum_previous_page()}><ChevronLeft size={18} /></a
-          >{/if}
-        <span>{m.forum_page_of({ page: currentPage, total: totalPages })}</span>
-        {#if currentPage < totalPages}<a
-            class="icon-link"
-            href={pageHref(currentPage + 1)}
-            aria-label={m.forum_next_page()}
-            title={m.forum_next_page()}><ChevronRight size={18} /></a
-          >{/if}
-      </nav>
-    {/if}
+    <Pagination
+      {currentPage}
+      {totalPages}
+      prevHref={pageHref(currentPage - 1)}
+      nextHref={pageHref(currentPage + 1)}
+    />
   {/if}
 </main>
 
@@ -244,29 +214,6 @@
   }
   .forum-state p {
     margin: 0;
-  }
-  .pagination {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 1.25rem;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-  }
-  .icon-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    color: var(--accent);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    text-decoration: none;
-  }
-  .icon-link:hover {
-    background: var(--bg-inset);
   }
   @media (max-width: 600px) {
     .route-header {

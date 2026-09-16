@@ -1,11 +1,7 @@
 <script lang="ts">
   import { Radio, Smartphone, MessagesSquare } from '@lucide/svelte';
-  import { localizeHref } from '$lib/paraglide/runtime';
+  import { localizedHref as href } from '$lib/i18n.svelte';
   import * as m from '$lib/paraglide/messages';
-
-  function href(path: string) {
-    return localizeHref(path);
-  }
 </script>
 
 <!-- Hero -->

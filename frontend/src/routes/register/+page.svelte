@@ -2,7 +2,9 @@
   import { register } from '$lib/auth';
   import { localizeApiError } from '$lib/errorLocalization';
   import { goto } from '$app/navigation';
-  import { localizeHref } from '$lib/paraglide/runtime';
+  import AuthCard from '$lib/components/AuthCard.svelte';
+  import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+  import { localizedHref } from '$lib/i18n.svelte';
   import * as m from '$lib/paraglide/messages';
 
   let username = $state('');
@@ -24,7 +26,7 @@
     loading = true;
     try {
       await register(username, email, password);
-      await goto(localizeHref('/'));
+      await goto(localizedHref('/'));
     } catch (error) {
       err = localizeApiError(error, () => m.register_error_unknown());
     } finally {
@@ -33,129 +35,79 @@
   }
 </script>
 
-<main class="page-narrow auth-page">
-  <div class="card auth-card">
-    <h1 class="page-title auth-title">{m.register_title()}</h1>
-    <p class="body-text auth-subtitle">{m.register_subtitle()}</p>
+<AuthCard title={m.register_title()} subtitle={m.register_subtitle()}>
+  <form onsubmit={handleRegister} class="auth-form">
+    <label class="settings-field">
+      <span class="label-text">{m.register_username_label()}</span>
+      <input
+        type="text"
+        bind:value={username}
+        class="input"
+        placeholder={m.register_username_placeholder()}
+        autocomplete="username"
+        minlength="3"
+        maxlength="16"
+        required
+      />
+    </label>
 
-    <form onsubmit={handleRegister} class="auth-form">
-      <label class="settings-field">
-        <span class="label-text">{m.register_username_label()}</span>
-        <input
-          type="text"
-          bind:value={username}
-          class="input"
-          placeholder={m.register_username_placeholder()}
-          autocomplete="username"
-          minlength="3"
-          maxlength="16"
-          required
-        />
-      </label>
+    <label class="settings-field">
+      <span class="label-text">{m.register_email_label()}</span>
+      <input
+        type="email"
+        bind:value={email}
+        class="input"
+        placeholder={m.register_email_placeholder()}
+        autocomplete="email"
+        required
+      />
+    </label>
 
-      <label class="settings-field">
-        <span class="label-text">{m.register_email_label()}</span>
-        <input
-          type="email"
-          bind:value={email}
-          class="input"
-          placeholder={m.register_email_placeholder()}
-          autocomplete="email"
-          required
-        />
-      </label>
+    <label class="settings-field">
+      <span class="label-text">{m.register_password_label()}</span>
+      <input
+        type="password"
+        bind:value={password}
+        class="input"
+        placeholder={m.register_password_placeholder()}
+        autocomplete="new-password"
+        minlength="8"
+        required
+      />
+    </label>
 
-      <label class="settings-field">
-        <span class="label-text">{m.register_password_label()}</span>
-        <input
-          type="password"
-          bind:value={password}
-          class="input"
-          placeholder={m.register_password_placeholder()}
-          autocomplete="new-password"
-          minlength="8"
-          required
-        />
-      </label>
+    <label class="settings-field">
+      <span class="label-text">{m.register_confirm_label()}</span>
+      <input
+        type="password"
+        bind:value={confirmPassword}
+        class="input"
+        placeholder={m.register_confirm_placeholder()}
+        autocomplete="new-password"
+        minlength="8"
+        required
+      />
+    </label>
 
-      <label class="settings-field">
-        <span class="label-text">{m.register_confirm_label()}</span>
-        <input
-          type="password"
-          bind:value={confirmPassword}
-          class="input"
-          placeholder={m.register_confirm_placeholder()}
-          autocomplete="new-password"
-          minlength="8"
-          required
-        />
-      </label>
+    {#if err}
+      <ErrorAlert message={err} />
+    {/if}
 
-      {#if err}
-        <div class="result-box result-bad">
-          <p class="body-text error-text">⚠ {err}</p>
-        </div>
-      {/if}
+    <button type="submit" class="btn-primary" disabled={loading}>
+      {loading ? m.register_submitting() : m.register_submit()}
+    </button>
+  </form>
 
-      <button type="submit" class="btn-primary" disabled={loading}>
-        {loading ? m.register_submitting() : m.register_submit()}
-      </button>
-    </form>
-
-    <hr class="divider" />
-    <p class="body-text auth-footer-text">
-      {m.register_has_account()}
-      <a href={localizeHref('/login')} class="link">{m.register_login_link()}</a>
-    </p>
-  </div>
-</main>
+  {#snippet footer()}
+    {m.register_has_account()}
+    <a href={localizedHref('/login')} class="link">{m.register_login_link()}</a>
+  {/snippet}
+</AuthCard>
 
 <style>
-  .auth-page {
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
-  }
-
-  .auth-card {
-    max-width: 38rem;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 1.75rem;
-  }
-
-  .auth-title {
-    font-size: 2rem;
-    line-height: 2.25rem;
-    margin-bottom: 0.35rem;
-  }
-
-  .auth-subtitle {
-    margin-bottom: 1.25rem;
-  }
-
   .auth-form {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-  }
-
-  .auth-footer-text {
-    margin: 0;
-    text-align: center;
-  }
-
-  .error-text {
-    margin: 0;
-  }
-
-  @media (max-width: 639px) {
-    .auth-card {
-      padding: 1.25rem;
-    }
-
-    .auth-title {
-      font-size: 1.75rem;
-      line-height: 2rem;
-    }
   }
 </style>

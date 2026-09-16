@@ -11,11 +11,8 @@ declare global {
 }
 
 declare module 'svelte/elements' {
+  // Svelte types autocorrect for <input> but not for <textarea>.
   interface HTMLTextareaAttributes {
-    autocorrect?: 'on' | 'off';
-  }
-  // Optionally extend input too, for consistency
-  interface HTMLInputAttributes {
     autocorrect?: 'on' | 'off';
   }
 }

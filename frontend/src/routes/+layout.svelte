@@ -9,7 +9,6 @@
   import { goto, afterNavigate } from '$app/navigation';
   import { page } from '$app/state';
   import {
-    ChevronDown,
     Menu,
     X,
     Monitor,
@@ -27,9 +26,17 @@
     Settings,
     LayoutDashboard
   } from '@lucide/svelte';
-  import { lang, setLang, setLangPreference, initLang } from '$lib/i18n.svelte';
-  import { locales, localizeHref } from '$lib/paraglide/runtime';
+  import {
+    lang,
+    setLang,
+    setLangPreference,
+    initLang,
+    localizedHref as href
+  } from '$lib/i18n.svelte';
+  import { locales } from '$lib/paraglide/runtime';
+  import Dropdown from '$lib/components/Dropdown.svelte';
   import { getLocaleLongLabel, getLocaleShortLabel } from '$lib/locale';
+  import { UI_STORAGE_KEYS } from '$lib/storageKeys';
   import * as m from '$lib/paraglide/messages';
   import type { Locale } from '$lib/i18n.svelte';
 
@@ -41,7 +48,7 @@
 
   function load(): Theme {
     if (typeof localStorage === 'undefined') return 'auto';
-    return (localStorage.getItem('theme') as Theme) ?? 'auto';
+    return (localStorage.getItem(UI_STORAGE_KEYS.theme) as Theme) ?? 'auto';
   }
 
   function apply(t: Theme) {
@@ -51,16 +58,7 @@
 
   let theme = $state<Theme>('auto');
   let menuOpen = $state(false);
-  let userMenuOpen = $state(false);
-  let guestMenuOpen = $state(false);
-  let userMenuLeaveTimer = 0;
-  let guestMenuLeaveTimer = 0;
-  let langMenuLeaveTimer = 0;
   let navEl = $state<HTMLElement | null>(null);
-  let userMenuEl = $state<HTMLElement | null>(null);
-  let guestMenuEl = $state<HTMLElement | null>(null);
-  let langMenuEl = $state<HTMLElement | null>(null);
-  let langMenuOpen = $state(false);
   let ThemeIcon = $derived(themeIconFor(theme));
   let reconciledSettingsForUser = $state<string | null>(null);
 
@@ -117,12 +115,11 @@
   function setLanguage(locale: Locale): void {
     setLang(locale);
     touchLocalPageSettingsUpdatedAt();
-    langMenuOpen = false;
   }
 
   function setTheme(nextTheme: Theme) {
     theme = nextTheme;
-    localStorage.setItem('theme', theme);
+    localStorage.setItem(UI_STORAGE_KEYS.theme, theme);
     apply(theme);
     touchLocalPageSettingsUpdatedAt();
   }
@@ -133,11 +130,7 @@
 
   async function handleLogout() {
     await logout();
-    await goto(localizeHref('/', { locale: lang.value }));
-  }
-
-  function href(path: string) {
-    return localizeHref(path, { locale: lang.value });
+    await goto(href('/'));
   }
 
   function isActive(path: string): boolean {
@@ -151,11 +144,8 @@
     return Monitor;
   }
 
-  function closeMenus() {
+  function closeMobileMenu() {
     menuOpen = false;
-    userMenuOpen = false;
-    guestMenuOpen = false;
-    langMenuOpen = false;
   }
 
   function onDocumentClick(event: MouseEvent) {
@@ -165,23 +155,11 @@
     if (menuOpen && navEl && !navEl.contains(target)) {
       menuOpen = false;
     }
-
-    if (userMenuOpen && userMenuEl && !userMenuEl.contains(target)) {
-      userMenuOpen = false;
-    }
-
-    if (guestMenuOpen && guestMenuEl && !guestMenuEl.contains(target)) {
-      guestMenuOpen = false;
-    }
-
-    if (langMenuOpen && langMenuEl && !langMenuEl.contains(target)) {
-      langMenuOpen = false;
-    }
   }
 
   function onDocumentKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
-      closeMenus();
+      closeMobileMenu();
     }
   }
 
@@ -202,7 +180,7 @@
   }
 
   afterNavigate(() => {
-    closeMenus();
+    closeMobileMenu();
   });
 
   $effect(() => {
@@ -266,121 +244,48 @@
         <a href={href('/about')} class="navbar-link">{m.nav_about()}</a>
         <div class="navbar-divider"></div>
         {#if $user}
-          <div
-            class="user-menu-wrapper"
-            role="group"
-            bind:this={userMenuEl}
-            onmouseenter={() => {
-              clearTimeout(userMenuLeaveTimer);
-              userMenuOpen = true;
-            }}
-            onmouseleave={() => {
-              userMenuLeaveTimer = window.setTimeout(() => (userMenuOpen = false), 150);
-            }}
-          >
-            <button
-              type="button"
-              onclick={() => (userMenuOpen = !userMenuOpen)}
-              class="navbar-user-btn"
-              aria-expanded={userMenuOpen}
-              aria-haspopup="menu"
-              aria-controls="user-menu"
-            >
-              <span class="nav-label-icon">
-                <User class="nav-icon" aria-hidden="true" />
-                {$user.username}
-                <ChevronDown class="nav-icon" aria-hidden="true" />
-              </span>
-            </button>
-            {#if userMenuOpen}
-              <div class="user-dropdown" id="user-menu" role="menu">
-                <a
-                  href={href('/profile')}
-                  onclick={() => (userMenuOpen = false)}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  ><LayoutDashboard size={14} style="pointer-events:none" /> {m.nav_profile()}</a
-                >
-                <a
-                  href={href('/settings')}
-                  onclick={() => (userMenuOpen = false)}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  ><Settings size={14} style="pointer-events:none" /> {m.nav_settings()}</a
-                >
-                <button
-                  type="button"
-                  onclick={() => {
-                    void handleLogout();
-                    userMenuOpen = false;
-                  }}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  ><LogOut size={14} style="pointer-events:none" /> {m.nav_logout()}</button
-                >
-              </div>
-            {/if}
-          </div>
+          <Dropdown id="user-menu">
+            {#snippet trigger()}
+              <User class="nav-icon" aria-hidden="true" />
+              {$user.username}
+            {/snippet}
+            {#snippet menu()}
+              <a href={href('/profile')} class="user-dropdown-item" role="menuitem"
+                ><LayoutDashboard size={14} style="pointer-events:none" /> {m.nav_profile()}</a
+              >
+              <a href={href('/settings')} class="user-dropdown-item" role="menuitem"
+                ><Settings size={14} style="pointer-events:none" /> {m.nav_settings()}</a
+              >
+              <button
+                type="button"
+                onclick={() => void handleLogout()}
+                class="user-dropdown-item"
+                role="menuitem"
+                ><LogOut size={14} style="pointer-events:none" /> {m.nav_logout()}</button
+              >
+            {/snippet}
+          </Dropdown>
         {:else}
-          <div
-            class="user-menu-wrapper"
-            role="group"
-            bind:this={guestMenuEl}
-            onmouseenter={() => {
-              clearTimeout(guestMenuLeaveTimer);
-              guestMenuOpen = true;
-            }}
-            onmouseleave={() => {
-              guestMenuLeaveTimer = window.setTimeout(() => (guestMenuOpen = false), 150);
-            }}
-          >
-            <button
-              type="button"
-              onclick={() => (guestMenuOpen = !guestMenuOpen)}
-              class="navbar-user-btn"
-              aria-expanded={guestMenuOpen}
-              aria-haspopup="menu"
-              aria-controls="guest-menu"
-            >
-              <span class="nav-label-icon">
-                <User class="nav-icon" aria-hidden="true" />
-                Guest
-                <ChevronDown class="nav-icon" aria-hidden="true" />
-              </span>
-            </button>
-            {#if guestMenuOpen}
-              <div class="user-dropdown" id="guest-menu" role="menu">
-                <a
-                  href={href('/profile')}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  onclick={() => (guestMenuOpen = false)}
-                  ><LayoutDashboard size={14} style="pointer-events:none" /> {m.nav_profile()}</a
-                >
-                <a
-                  href={href('/settings')}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  onclick={() => (guestMenuOpen = false)}
-                  ><Settings size={14} style="pointer-events:none" /> {m.nav_settings()}</a
-                >
-                <a
-                  href={href('/login')}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  onclick={() => (guestMenuOpen = false)}
-                  ><LogIn size={14} style="pointer-events:none" /> {m.nav_login()}</a
-                >
-                <a
-                  href={href('/register')}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  onclick={() => (guestMenuOpen = false)}
-                  ><UserPlus size={14} style="pointer-events:none" /> {m.nav_register()}</a
-                >
-              </div>
-            {/if}
-          </div>
+          <Dropdown id="guest-menu">
+            {#snippet trigger()}
+              <User class="nav-icon" aria-hidden="true" />
+              Guest
+            {/snippet}
+            {#snippet menu()}
+              <a href={href('/profile')} class="user-dropdown-item" role="menuitem"
+                ><LayoutDashboard size={14} style="pointer-events:none" /> {m.nav_profile()}</a
+              >
+              <a href={href('/settings')} class="user-dropdown-item" role="menuitem"
+                ><Settings size={14} style="pointer-events:none" /> {m.nav_settings()}</a
+              >
+              <a href={href('/login')} class="user-dropdown-item" role="menuitem"
+                ><LogIn size={14} style="pointer-events:none" /> {m.nav_login()}</a
+              >
+              <a href={href('/register')} class="user-dropdown-item" role="menuitem"
+                ><UserPlus size={14} style="pointer-events:none" /> {m.nav_register()}</a
+              >
+            {/snippet}
+          </Dropdown>
         {/if}
         <button
           type="button"
@@ -398,49 +303,24 @@
                 : m.theme_dark()}
           </span>
         </button>
-        <div
-          class="user-menu-wrapper"
-          role="group"
-          bind:this={langMenuEl}
-          onmouseenter={() => {
-            clearTimeout(langMenuLeaveTimer);
-            langMenuOpen = true;
-          }}
-          onmouseleave={() => {
-            langMenuLeaveTimer = window.setTimeout(() => (langMenuOpen = false), 150);
-          }}
-        >
-          <button
-            type="button"
-            onclick={() => (langMenuOpen = !langMenuOpen)}
-            class="navbar-user-btn"
-            aria-expanded={langMenuOpen}
-            aria-haspopup="menu"
-            aria-controls="lang-menu"
-            title={m.settings_language_label()}
-            aria-label={m.settings_language_label()}
-          >
-            <span class="nav-label-icon">
-              <Languages class="nav-icon" aria-hidden="true" />
-              {langLabel(lang.value)}
-              <ChevronDown class="nav-icon" aria-hidden="true" />
-            </span>
-          </button>
-          {#if langMenuOpen}
-            <div class="user-dropdown" id="lang-menu" role="menu">
-              {#each locales as locale (locale)}
-                <button
-                  type="button"
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  onclick={() => setLanguage(locale as Locale)}
-                >
-                  {languageLabel(locale as Locale)}
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </div>
+        <Dropdown id="lang-menu" label={m.settings_language_label()}>
+          {#snippet trigger()}
+            <Languages class="nav-icon" aria-hidden="true" />
+            {langLabel(lang.value)}
+          {/snippet}
+          {#snippet menu()}
+            {#each locales as locale (locale)}
+              <button
+                type="button"
+                class="user-dropdown-item"
+                role="menuitem"
+                onclick={() => setLanguage(locale as Locale)}
+              >
+                {languageLabel(locale as Locale)}
+              </button>
+            {/each}
+          {/snippet}
+        </Dropdown>
       </div>
 
       <!-- Mobile: hamburger only -->

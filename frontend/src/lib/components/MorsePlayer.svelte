@@ -3,7 +3,7 @@
   import { onDestroy } from 'svelte';
   import { Play, Square, Pause, SlidersHorizontal, SkipForward } from '@lucide/svelte';
   import { user } from '$lib/auth';
-  import { localizeHref } from '$lib/paraglide/runtime';
+  import GuestNotice from '$lib/components/GuestNotice.svelte';
   import * as m from '$lib/paraglide/messages';
 
   let {
@@ -306,12 +306,9 @@
                 </label>
               {/if}
               {#if !$user}
-                <p class="player-settings-auth-hint">
-                  {m.trainer_guest_notice()}
-                  <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
-                  /
-                  <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
-                </p>
+                <div class="player-settings-auth-hint">
+                  <GuestNotice />
+                </div>
               {/if}
               <p class="player-settings-hint">Visit Settings to save permanently</p>
             </div>
