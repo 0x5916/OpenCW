@@ -9,7 +9,7 @@ export type SeoMetadata = {
 };
 
 export const SITE_NAME = 'OpenCW';
-export const DEFAULT_OG_IMAGE_PATH = '/pwa-512x512.png';
+export const DEFAULT_OG_IMAGE_PATH = '/og-image.png';
 export const PUBLIC_ROUTE_PATHS = ['/', '/about', '/forum', '/morse/learn'] as const;
 
 type LocalizedSeoText = {
@@ -94,7 +94,7 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
     }
   },
   '/morse/learn': {
-    ogImagePath: '/pwa-512x512.png',
+    ogImagePath: '/og-image.png',
     localized: {
       en: {
         title: 'Learn Morse Code - OpenCW Koch Trainer',

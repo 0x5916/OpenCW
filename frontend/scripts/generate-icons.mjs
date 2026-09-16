@@ -1,11 +1,10 @@
-// Generates the full favicon/PWA icon set from the original vector source.
+// Generates the favicon and social-image set from the original vector source.
 // Source: src/lib/assets/favicon.svg (1024x1024, transparent, green #10b981 dot/dash).
 // Outputs into static/:
-//   - pwa-{192,512}x{192,512}.png + pwa-maskable-*   (web app manifest icons)
-//   - apple-touch-icon.png (180x180)                  (iOS home screen)
-//   - favicon.ico (16/32/48 multi-size)               (legacy ICO favicon)
-//   - favicon.svg                                     (minified copy of the source)
-// NOTE: the default OG image reuses /pwa-512x512.png (see src/lib/seo.ts).
+//   - favicon.ico (16/32/48 multi-size)   (legacy ICO favicon)
+//   - favicon.svg                         (minified copy of the source)
+//   - apple-touch-icon.png (180x180)      (iOS home-screen / bookmark icon)
+//   - og-image.png (512x512)              (default social card, see src/lib/seo.ts).
 import { mkdir, writeFile } from 'node:fs/promises';
 import { readFile } from 'node:fs/promises';
 import { Buffer } from 'node:buffer';
@@ -17,23 +16,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'src/lib/assets/favicon.svg');
 const outDir = path.join(root, 'static');
 
-const MASKABLE_BACKGROUND = '#030712';
-const PWA_SIZES = [192, 512];
-
-/** Render the transparent "any" artwork at a given size. */
-function renderAny(size) {
+/** Render the artwork at a given size. */
+function render(size) {
   return sharp(source).resize(size, size).png().toBuffer();
-}
-
-/** Render the artwork centered on a solid background ("maskable" purpose). */
-async function renderMaskable(size) {
-  const art = await renderAny(size);
-  return sharp({
-    create: { width: size, height: size, channels: 4, background: MASKABLE_BACKGROUND }
-  })
-    .composite([{ input: art, gravity: 'centre' }])
-    .png()
-    .toBuffer();
 }
 
 /** Build a multi-size .ico from PNG buffers (PNG-in-ICO, supported on Vista+). */
@@ -75,26 +60,20 @@ function minifySvg(svg) {
 async function generate() {
   await mkdir(outDir, { recursive: true });
 
-  // PWA manifest icons ("any" + "maskable").
-  for (const size of PWA_SIZES) {
-    const anyFile = path.join(outDir, `pwa-${size}x${size}.png`);
-    await writeFile(anyFile, await renderAny(size));
-    console.log(`wrote ${path.relative(root, anyFile)}`);
+  // Default social card image (512x512).
+  const ogFile = path.join(outDir, 'og-image.png');
+  await writeFile(ogFile, await render(512));
+  console.log(`wrote ${path.relative(root, ogFile)}`);
 
-    const maskableFile = path.join(outDir, `pwa-maskable-${size}x${size}.png`);
-    await writeFile(maskableFile, await renderMaskable(size));
-    console.log(`wrote ${path.relative(root, maskableFile)}`);
-  }
-
-  // iOS home-screen icon (180x180).
+  // iOS home-screen / bookmark icon (180x180).
   const appleFile = path.join(outDir, 'apple-touch-icon.png');
-  await writeFile(appleFile, await renderAny(180));
+  await writeFile(appleFile, await render(180));
   console.log(`wrote ${path.relative(root, appleFile)}`);
 
   // Legacy multi-size ICO favicon (16/32/48).
   const icoEntries = [];
   for (const size of [16, 32, 48]) {
-    icoEntries.push({ size, data: await renderAny(size) });
+    icoEntries.push({ size, data: await render(size) });
   }
   const icoFile = path.join(outDir, 'favicon.ico');
   await writeFile(icoFile, buildIco(icoEntries));

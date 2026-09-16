@@ -203,18 +203,6 @@
 
   afterNavigate(() => {
     closeMenus();
-
-    // Eagerly check for an updated service worker on client-side navigations,
-    // since SvelteKit only checks on full-page loads. The new worker installs in
-    // the background and activates once all tabs using the old one are closed.
-    if ('serviceWorker' in navigator) {
-      void navigator.serviceWorker
-        .getRegistration()
-        ?.then((registration) => registration?.update())
-        .catch(() => {
-          // Expected when offline: update() can't reach /service-worker.js.
-        });
-    }
   });
 
   $effect(() => {
