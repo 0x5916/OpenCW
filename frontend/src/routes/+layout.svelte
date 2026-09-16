@@ -544,8 +544,7 @@
       class="bottom-nav-item"
       class:active={isActive('/')}
       aria-current={isActive('/') ? 'page' : undefined}
-      ><Home size={20} class="bottom-nav-icon" aria-hidden="true" /><span
-        class="bottom-nav-label"
+      ><Home size={20} class="bottom-nav-icon" aria-hidden="true" /><span class="bottom-nav-label"
         >{m.nav_home()}</span
       ></a
     >
@@ -554,8 +553,7 @@
       class="bottom-nav-item"
       class:active={isActive('/morse/learn')}
       aria-current={isActive('/morse/learn') ? 'page' : undefined}
-      ><Radio size={20} class="bottom-nav-icon" aria-hidden="true" /><span
-        class="bottom-nav-label"
+      ><Radio size={20} class="bottom-nav-icon" aria-hidden="true" /><span class="bottom-nav-label"
         >{m.nav_learn()}</span
       ></a
     >
@@ -565,8 +563,7 @@
       class:active={isActive('/forum')}
       aria-current={isActive('/forum') ? 'page' : undefined}
       ><MessageSquare size={20} class="bottom-nav-icon" aria-hidden="true" /><span
-        class="bottom-nav-label"
-        >{m.nav_forum()}</span
+        class="bottom-nav-label">{m.nav_forum()}</span
       ></a
     >
     <a
@@ -574,8 +571,7 @@
       class="bottom-nav-item"
       class:active={isActive('/about')}
       aria-current={isActive('/about') ? 'page' : undefined}
-      ><Info size={20} class="bottom-nav-icon" aria-hidden="true" /><span
-        class="bottom-nav-label"
+      ><Info size={20} class="bottom-nav-icon" aria-hidden="true" /><span class="bottom-nav-label"
         >{m.nav_about()}</span
       ></a
     >
