@@ -73,6 +73,7 @@ function enqueue(item: ProgressPayload): void {
 }
 
 function shouldAttemptUpload(): boolean {
+  if (!canUseStorage()) return false;
   if (typeof navigator !== 'undefined' && !navigator.onLine) return false;
   return Boolean(localStorage.getItem(AUTH_STORAGE_KEYS.accessToken));
 }

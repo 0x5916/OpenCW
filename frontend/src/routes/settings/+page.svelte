@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { browser } from '$app/environment';
   import { user } from '$lib/auth';
   import {
     saveCWSettings,
@@ -25,19 +24,18 @@
     normalizeLesson,
     readClientCwSettings,
     readClientPageSettings,
+    readStoredLesson,
     restoreSettingsFromServer,
     saveClientCwSettings
   } from '$lib/cwSync';
   import { localizeApiError } from '$lib/errorLocalization';
-  import { CW_STORAGE_KEYS } from '$lib/storageKeys';
   import { Settings } from '@lucide/svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
   import GuestNotice from '$lib/components/GuestNotice.svelte';
   import SaveButton from '$lib/components/SaveButton.svelte';
+  import type { Theme } from '$lib/theme';
   import * as m from '$lib/paraglide/messages';
-
-  type Theme = 'auto' | 'dark' | 'light';
 
   // Account section
   let username = $state('');
@@ -121,14 +119,6 @@
     loadAll();
   });
 
-  function getStoredLesson(): number {
-    if (!browser) return 1;
-
-    const rawLesson = localStorage.getItem(CW_STORAGE_KEYS.lesson);
-    const parsedLesson = Number.parseInt(rawLesson ?? '1', 10);
-    return normalizeLesson(parsedLesson, LESSONS.length);
-  }
-
   function applyCwState(cw: {
     char_wpm: number;
     eff_wpm: number;
@@ -174,7 +164,7 @@
     if (!$user) {
       const localCw = readClientCwSettings();
       const localPage = readClientPageSettings(
-        getStoredLesson(),
+        readStoredLesson(LESSONS.length),
         LESSONS.length,
         langPreference.value
       );
@@ -455,7 +445,7 @@
             </div>
           </label>
           {#if callSignError}
-            <p class="settings-error">⚠ {callSignError}</p>
+            <ErrorAlert message={callSignError} />
           {/if}
         </form>
 
@@ -472,7 +462,7 @@
             </div>
           </label>
           {#if emailError}
-            <p class="settings-error">⚠ {emailError}</p>
+            <ErrorAlert message={emailError} />
           {/if}
         </form>
 
@@ -531,10 +521,10 @@
           {/if}
 
           {#if verificationSendError}
-            <p class="settings-error">⚠ {verificationSendError}</p>
+            <ErrorAlert message={verificationSendError} />
           {/if}
           {#if verificationCheckError}
-            <p class="settings-error">⚠ {verificationCheckError}</p>
+            <ErrorAlert message={verificationCheckError} />
           {/if}
         </div>
 
@@ -576,7 +566,7 @@
             />
           </label>
           {#if passwordError}
-            <p class="settings-error">⚠ {passwordError}</p>
+            <ErrorAlert message={passwordError} />
           {/if}
           {#if passwordDirty || passwordSaving || passwordSaved}
             <div class="settings-action-row">
@@ -613,7 +603,7 @@
           <input type="number" bind:value={pageLesson} min="1" max={LESSONS.length} class="input" />
         </label>
         {#if pageError}
-          <p class="settings-error">⚠ {pageError}</p>
+          <ErrorAlert message={pageError} />
         {/if}
         {#if pageDirty || pageSaving || pageSaved}
           <div class="settings-action-row">
@@ -644,7 +634,7 @@
           <input type="number" bind:value={startDelay} min="0" max="10" step="0.5" class="input" />
         </label>
         {#if cwError}
-          <p class="settings-error">⚠ {cwError}</p>
+          <ErrorAlert message={cwError} />
         {/if}
         {#if cwDirty || cwSaving || cwSaved}
           <div class="settings-action-row">
@@ -682,10 +672,6 @@
     gap: 0.75rem;
     margin-top: 0.5rem;
   }
-  .settings-error {
-    color: var(--error, #ef4444);
-    font-size: 0.875rem;
-  }
   .settings-divider {
     border: none;
     border-top: 1px solid var(--border);
@@ -703,10 +689,10 @@
     font-weight: 600;
   }
   .settings-email-status.is-verified {
-    color: var(--success, #10b981);
+    color: var(--diff-good);
   }
   .settings-email-status.is-unverified {
-    color: var(--warning, #d97706);
+    color: var(--diff-ok);
   }
   .settings-verification-form {
     margin-top: 0;

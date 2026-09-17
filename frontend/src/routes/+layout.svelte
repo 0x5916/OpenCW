@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import favicon from '$lib/assets/favicon.svg';
   import '../app.css';
   import { user, initAuth, logout } from '$lib/auth';
   import { flushQueuedProgress, initializeProgressSync } from '$lib/progressSync';
@@ -36,25 +35,20 @@
   import { locales } from '$lib/paraglide/runtime';
   import Dropdown from '$lib/components/Dropdown.svelte';
   import { getLocaleLongLabel, getLocaleShortLabel } from '$lib/locale';
-  import { UI_STORAGE_KEYS } from '$lib/storageKeys';
+  import { THEME_CYCLE, applyTheme, readStoredTheme, setTheme } from '$lib/theme';
   import * as m from '$lib/paraglide/messages';
   import type { Locale } from '$lib/i18n.svelte';
+  import type { Theme } from '$lib/theme';
 
   let { children, data } = $props();
 
-  type Theme = 'auto' | 'light' | 'dark';
-
-  const CYCLE: Record<Theme, Theme> = { auto: 'light', light: 'dark', dark: 'auto' };
-
-  function load(): Theme {
-    if (typeof localStorage === 'undefined') return 'auto';
-    return (localStorage.getItem(UI_STORAGE_KEYS.theme) as Theme) ?? 'auto';
-  }
-
-  function apply(t: Theme) {
-    if (t === 'auto') document.documentElement.removeAttribute('data-theme');
-    else document.documentElement.setAttribute('data-theme', t);
-  }
+  /** Primary destinations, shared by the desktop links, mobile sheet and tab bar. */
+  const PRIMARY_NAV = [
+    { path: '/', label: m.nav_home, icon: Home },
+    { path: '/morse/learn', label: m.nav_learn, icon: Radio },
+    { path: '/forum', label: m.nav_forum, icon: MessageSquare },
+    { path: '/about', label: m.nav_about, icon: Info }
+  ];
 
   let theme = $state<Theme>('auto');
   let menuOpen = $state(false);
@@ -75,8 +69,8 @@
   initLang(data.locale, data.localePreference);
 
   $effect(() => {
-    theme = load();
-    apply(theme);
+    theme = readStoredTheme();
+    applyTheme(theme);
     initAuth();
   });
 
@@ -117,15 +111,13 @@
     touchLocalPageSettingsUpdatedAt();
   }
 
-  function setTheme(nextTheme: Theme) {
-    theme = nextTheme;
-    localStorage.setItem(UI_STORAGE_KEYS.theme, theme);
-    apply(theme);
+  function changeTheme(nextTheme: Theme) {
+    theme = setTheme(nextTheme);
     touchLocalPageSettingsUpdatedAt();
   }
 
   function cycleTheme() {
-    setTheme(CYCLE[theme]);
+    changeTheme(THEME_CYCLE[theme]);
   }
 
   async function handleLogout() {
@@ -133,9 +125,12 @@
     await goto(href('/'));
   }
 
+  function stripTrailingSlash(path: string): string {
+    return path.replace(/\/+$/, '') || '/';
+  }
+
   function isActive(path: string): boolean {
-    const strip = (p: string) => p.replace(/\/+$/, '') || '/';
-    return strip(page.url.pathname) === strip(href(path));
+    return stripTrailingSlash(page.url.pathname) === stripTrailingSlash(href(path));
   }
 
   function themeIconFor(currentTheme: Theme) {
@@ -224,7 +219,6 @@
     <!-- eslint-disable-next-line svelte/no-at-html-tags -- server-built JSON-LD, no user input -->
     {@html scriptTag}
   {/each}
-  <link rel="icon" href={favicon} />
 </svelte:head>
 
 <div class="page-wrapper">
@@ -232,16 +226,15 @@
     <div class="navbar-inner">
       <!-- Brand -->
       <a href={href('/')} class="navbar-brand">
-        <img src={favicon} alt="OpenCW" />
+        <img src="/favicon.svg" alt="OpenCW" />
         OpenCW
       </a>
 
       <!-- Desktop: all links + user menu on the right -->
       <div class="navbar-right navbar-desktop">
-        <a href={href('/')} class="navbar-link">{m.nav_home()}</a>
-        <a href={href('/morse/learn')} class="navbar-link">{m.nav_learn()}</a>
-        <a href={href('/forum')} class="navbar-link">{m.nav_forum()}</a>
-        <a href={href('/about')} class="navbar-link">{m.nav_about()}</a>
+        {#each PRIMARY_NAV as item (item.path)}
+          <a href={href(item.path)} class="navbar-link">{item.label()}</a>
+        {/each}
         <div class="navbar-divider"></div>
         {#if $user}
           <Dropdown id="user-menu">
@@ -345,18 +338,11 @@
     <!-- Mobile dropdown menu -->
     {#if menuOpen}
       <div class="mobile-menu" id="mobile-nav-menu">
-        <a href={href('/')} class="mobile-link" onclick={() => (menuOpen = false)}
-          ><Home size={16} />{m.nav_home()}</a
-        >
-        <a href={href('/morse/learn')} class="mobile-link" onclick={() => (menuOpen = false)}
-          ><Radio size={16} />{m.nav_learn()}</a
-        >
-        <a href={href('/forum')} class="mobile-link" onclick={() => (menuOpen = false)}
-          ><MessageSquare size={16} />{m.nav_forum()}</a
-        >
-        <a href={href('/about')} class="mobile-link" onclick={() => (menuOpen = false)}
-          ><Info size={16} />{m.nav_about()}</a
-        >
+        {#each PRIMARY_NAV as item (item.path)}
+          <a href={href(item.path)} class="mobile-link" onclick={() => (menuOpen = false)}
+            ><item.icon size={16} />{item.label()}</a
+          >
+        {/each}
         <div class="mobile-divider"></div>
         {#if $user}
           <a href={href('/profile')} class="mobile-link" onclick={() => (menuOpen = false)}
@@ -419,41 +405,16 @@
 
   <!-- Mobile: bottom navigation bar (hidden on desktop) -->
   <nav class="bottom-nav" aria-label={m.nav_primary()}>
-    <a
-      href={href('/')}
-      class="bottom-nav-item"
-      class:active={isActive('/')}
-      aria-current={isActive('/') ? 'page' : undefined}
-      ><Home size={20} class="bottom-nav-icon" aria-hidden="true" /><span class="bottom-nav-label"
-        >{m.nav_home()}</span
-      ></a
-    >
-    <a
-      href={href('/morse/learn')}
-      class="bottom-nav-item"
-      class:active={isActive('/morse/learn')}
-      aria-current={isActive('/morse/learn') ? 'page' : undefined}
-      ><Radio size={20} class="bottom-nav-icon" aria-hidden="true" /><span class="bottom-nav-label"
-        >{m.nav_learn()}</span
-      ></a
-    >
-    <a
-      href={href('/forum')}
-      class="bottom-nav-item"
-      class:active={isActive('/forum')}
-      aria-current={isActive('/forum') ? 'page' : undefined}
-      ><MessageSquare size={20} class="bottom-nav-icon" aria-hidden="true" /><span
-        class="bottom-nav-label">{m.nav_forum()}</span
-      ></a
-    >
-    <a
-      href={href('/about')}
-      class="bottom-nav-item"
-      class:active={isActive('/about')}
-      aria-current={isActive('/about') ? 'page' : undefined}
-      ><Info size={20} class="bottom-nav-icon" aria-hidden="true" /><span class="bottom-nav-label"
-        >{m.nav_about()}</span
-      ></a
-    >
+    {#each PRIMARY_NAV as item (item.path)}
+      <a
+        href={href(item.path)}
+        class="bottom-nav-item"
+        class:active={isActive(item.path)}
+        aria-current={isActive(item.path) ? 'page' : undefined}
+        ><item.icon size={20} class="bottom-nav-icon" aria-hidden="true" /><span
+          class="bottom-nav-label">{item.label()}</span
+        ></a
+      >
+    {/each}
   </nav>
 </div>

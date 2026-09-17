@@ -103,11 +103,3 @@
     <a href={localizedHref('/login')} class="link">{m.register_login_link()}</a>
   {/snippet}
 </AuthCard>
-
-<style>
-  .auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-</style>

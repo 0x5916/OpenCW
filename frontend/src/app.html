@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="%paraglide.lang%">
   <head>
     <meta charset="utf-8" />
     <meta
@@ -10,8 +10,12 @@
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <script>
-      const t = localStorage.getItem('theme');
-      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      // Applied before first paint to avoid a theme flash. The key must match
+      // UI_STORAGE_KEYS.theme in src/lib/storageKeys.ts.
+      const theme = localStorage.getItem('theme');
+      if (theme === 'light' || theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', theme);
+      }
     </script>
     %sveltekit.head%
   </head>

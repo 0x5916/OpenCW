@@ -1,6 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { paraglideMiddleware } from '$lib/paraglide/server';
-import { getStrategyForUrl, shouldRedirect } from '$lib/paraglide/runtime';
+import { getLocale, getStrategyForUrl, shouldRedirect } from '$lib/paraglide/runtime';
 
 function isCrawlerUserAgent(userAgent: string | null): boolean {
   if (!userAgent) return false;
@@ -57,7 +57,11 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   return paraglideMiddleware(event.request, async () => {
-    const response = await resolve(event);
+    const response = await resolve(event, {
+      // Resolve `%paraglide.lang%` in app.html so the served markup carries the
+      // request locale instead of a hard-coded `lang="en"`.
+      transformPageChunk: ({ html }) => html.replace('%paraglide.lang%', getLocale())
+    });
 
     if (isCrawler && isLikelyPageRequest(event.request)) {
       response.headers.set('Cache-Control', 'no-cache, max-age=0, must-revalidate');

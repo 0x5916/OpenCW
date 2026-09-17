@@ -28,11 +28,11 @@
     <h2 class="feature-title">{m.home_feature_mobile_title()}</h2>
     <p class="feature-body">{m.home_feature_mobile_body()}</p>
   </div>
-  <div class="card">
+  <a href={href('/forum')} class="card feature-link-card">
     <div class="feature-icon" aria-hidden="true"><MessagesSquare /></div>
     <h2 class="feature-title">{m.home_feature_forum_title()}</h2>
     <p class="feature-body">{m.home_feature_forum_body()}</p>
-  </div>
+  </a>
 </section>
 
 <hr class="divider" />

@@ -12,12 +12,12 @@ import {
   normalizeLocalePreference,
   type LocalePreference
 } from '$lib/locale';
-import { CW_STORAGE_KEYS, UI_STORAGE_KEYS } from '$lib/storageKeys';
+import { readCookie, writeCookie } from '$lib/cookies';
+import { normalizeTheme, readStoredTheme, setTheme } from '$lib/theme';
+import { CW_STORAGE_KEYS } from '$lib/storageKeys';
 
 export type { CWSettings, PageSettings };
 
-const LESSON_COOKIE = CW_STORAGE_KEYS.lesson;
-const ONE_YEAR_SECONDS = 31536000;
 const CW_SETTINGS_STORAGE_KEY = CW_STORAGE_KEYS.cwSettings;
 const CW_SETTINGS_UPDATED_AT_STORAGE_KEY = CW_STORAGE_KEYS.cwSettingsUpdatedAt;
 const PAGE_SETTINGS_UPDATED_AT_STORAGE_KEY = CW_STORAGE_KEYS.pageSettingsUpdatedAt;
@@ -67,18 +67,19 @@ export function touchLocalPageSettingsUpdatedAt(isoTimestamp: string = nowIso())
   writeLocalUpdatedAt(PAGE_SETTINGS_UPDATED_AT_STORAGE_KEY, isoTimestamp);
 }
 
-export function touchLocalCwSettingsUpdatedAt(isoTimestamp: string = nowIso()): void {
+function touchLocalCwSettingsUpdatedAt(isoTimestamp: string = nowIso()): void {
   writeLocalUpdatedAt(CW_SETTINGS_UPDATED_AT_STORAGE_KEY, isoTimestamp);
 }
 
-function readStoredLesson(maxLesson: number): number {
+/** Read the locally stored lesson number, clamped to the available lessons. */
+export function readStoredLesson(maxLesson: number): number {
   if (typeof localStorage === 'undefined') return 1;
   const storedLessonString = localStorage.getItem(CW_STORAGE_KEYS.lesson);
   const parsedLesson = Number.parseInt(storedLessonString ?? '1', 10);
   return normalizeLesson(parsedLesson, maxLesson);
 }
 
-export function normalizeClientCwSettings(raw: Partial<CWSettings> | null | undefined): CWSettings {
+function normalizeClientCwSettings(raw: Partial<CWSettings> | null | undefined): CWSettings {
   return {
     char_wpm: clampNumber(raw?.char_wpm ?? DEFAULT_CW_SETTINGS.char_wpm, 5, 50),
     eff_wpm: clampNumber(raw?.eff_wpm ?? DEFAULT_CW_SETTINGS.eff_wpm, 5, 50),
@@ -117,25 +118,12 @@ export function saveClientCwSettings(settings: CWSettings): CWSettings {
   return normalized;
 }
 
-function readCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
-  const target = `${name}=`;
-  const item = document.cookie
-    .split(';')
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(target));
-  return item ? decodeURIComponent(item.slice(target.length)) : null;
-}
-
 export function readClientPageSettings(
   currentLesson: number,
   maxLesson: number,
   fallbackLanguagePreference: LocalePreference
 ): PageSettings {
-  const themeRaw =
-    typeof localStorage === 'undefined' ? null : localStorage.getItem(UI_STORAGE_KEYS.theme);
-  const theme: PageSettings['theme'] =
-    themeRaw === 'dark' || themeRaw === 'light' || themeRaw === 'auto' ? themeRaw : 'auto';
+  const theme = readStoredTheme();
 
   const localLang =
     typeof localStorage === 'undefined'
@@ -159,30 +147,24 @@ export function applyClientPageSettings(
 ): number {
   const lesson = normalizeLesson(page.cur_lesson, maxLesson);
   const language = normalizeLocalePreference(page.language);
-  const applyTheme = options.applyTheme ?? true;
+  const shouldApplyTheme = options.applyTheme ?? true;
   const applyLanguage = options.applyLanguage ?? true;
 
+  if (shouldApplyTheme) {
+    setTheme(normalizeTheme(page.theme));
+  }
+
   if (typeof localStorage !== 'undefined') {
-    if (applyTheme) {
-      localStorage.setItem(UI_STORAGE_KEYS.theme, page.theme);
-    }
     localStorage.setItem(CW_STORAGE_KEYS.lesson, String(lesson));
     if (applyLanguage) {
       localStorage.setItem(LOCALE_PREFERENCE_STORAGE_KEY, language);
     }
   }
 
-  if (typeof document !== 'undefined') {
-    if (applyTheme) {
-      if (page.theme === 'auto') document.documentElement.removeAttribute('data-theme');
-      else document.documentElement.setAttribute('data-theme', page.theme);
-    }
+  writeCookie(CW_STORAGE_KEYS.lesson, String(lesson));
 
-    document.cookie = `${LESSON_COOKIE}=${lesson}; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
-
-    if (applyLanguage) {
-      document.cookie = `${LOCALE_COOKIE}=${language}; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
-    }
+  if (applyLanguage) {
+    writeCookie(LOCALE_COOKIE, language);
   }
 
   if (applyLanguage && (language === 'auto' || isLocale(language))) {

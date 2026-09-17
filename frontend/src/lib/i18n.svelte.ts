@@ -1,4 +1,5 @@
 import { baseLocale, localizeHref, overwriteGetLocale } from '$lib/paraglide/runtime';
+import { writeCookie } from '$lib/cookies';
 import {
   LOCALE_COOKIE,
   LOCALE_PREFERENCE_STORAGE_KEY,
@@ -8,8 +9,6 @@ import {
   type Locale,
   type LocalePreference
 } from '$lib/locale';
-
-const ONE_YEAR_SECONDS = 31536000;
 
 export const lang = $state<{ value: Locale }>({ value: baseLocale as Locale });
 export const langPreference = $state<{ value: LocalePreference }>({ value: 'auto' });
@@ -89,9 +88,7 @@ export function setLangPreference(
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(LOCALE_PREFERENCE_STORAGE_KEY, preference);
   }
-  if (typeof document !== 'undefined') {
-    document.cookie = `${LOCALE_COOKIE}=${preference}; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
-  }
+  writeCookie(LOCALE_COOKIE, preference);
 
   if (options.navigate !== false) {
     navigateToLocalizedPathIfNeeded();

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Trophy, TrendingUp, X, RefreshCw } from '@lucide/svelte';
-  import type { DiffToken } from '$lib/score';
+  import { scoreGrade, type DiffToken } from '$lib/score';
   import * as m from '$lib/paraglide/messages';
   import { onMount } from 'svelte';
 
@@ -32,17 +32,16 @@
     onRegenerate
   }: Props = $props();
 
-  let ScoreIcon = $derived(result >= 0.9 ? Trophy : TrendingUp);
+  let grade = $derived(scoreGrade(result));
+  let ScoreIcon = $derived(grade === 'good' ? Trophy : TrendingUp);
   let scoreText = $derived(
-    result >= 0.9
+    grade === 'good'
       ? m.trainer_score_great()
-      : result >= 0.7
+      : grade === 'ok'
         ? m.trainer_score_good()
         : m.trainer_score_bad()
   );
-  let colorClass = $derived(
-    result >= 0.9 ? 'overlay-good' : result >= 0.7 ? 'overlay-ok' : 'overlay-bad'
-  );
+  let colorClass = $derived(`overlay-${grade}`);
   let pct = $derived(Math.round(result * 100) + '%');
 
   let panelRef: HTMLDivElement;

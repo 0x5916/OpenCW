@@ -84,23 +84,15 @@
   height: 1.5rem;
 }
 
-.navbar-desktop {
+/* The desktop cluster carries both classes, so the hide rule is not order
+   dependent against `.navbar-right { display: flex }`. */
+.navbar-right.navbar-desktop {
   display: none;
-  visibility: hidden;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-  flex: 0 0 auto;
 }
 
 @media (min-width: 640px) {
-  .navbar-desktop {
+  .navbar-right.navbar-desktop {
     display: flex;
-    visibility: visible;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    flex: 1 1 0;
   }
 }
 

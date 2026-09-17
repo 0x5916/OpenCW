@@ -7,8 +7,9 @@
   import { untrack, onDestroy } from 'svelte';
   import { ClipboardCheck } from '@lucide/svelte';
   import { CW_STORAGE_KEYS, UI_STORAGE_KEYS } from '$lib/storageKeys';
+  import { writeCookie } from '$lib/cookies';
   import { langPreference } from '$lib/i18n.svelte';
-  import { score, diffWords } from '$lib/score';
+  import { SCORE_GOOD, SCORE_OK, score, diffWords } from '$lib/score';
   import type { DiffToken } from '$lib/score';
   import { user } from '$lib/auth';
   import { saveProgressOfflineFirst } from '$lib/progressSync';
@@ -88,7 +89,7 @@
   $effect(() => {
     const val = String(normalizeLesson(chosenLesson, LESSONS.length));
     localStorage.setItem(CW_STORAGE_KEYS.lesson, val);
-    document.cookie = `${CW_STORAGE_KEYS.lesson}=${val}; path=/; max-age=31536000; SameSite=Lax`;
+    writeCookie(CW_STORAGE_KEYS.lesson, val);
   });
 
   let lessonText = $derived(generateTimedLesson(chosenLesson, 60, charWpm, effWpm));
@@ -119,9 +120,9 @@
     }
   }
 
-  let hasNextLesson = $derived(result >= 0.9 && chosenLesson < LESSONS.length);
-  let hasPrevLesson = $derived(result < 0.7 && chosenLesson > 1);
-  let shouldRegenerate = $derived(result >= 0.7 && result < 0.9);
+  let hasNextLesson = $derived(result >= SCORE_GOOD && chosenLesson < LESSONS.length);
+  let hasPrevLesson = $derived(result < SCORE_OK && chosenLesson > 1);
+  let shouldRegenerate = $derived(result >= SCORE_OK && result < SCORE_GOOD);
 
   function prevLesson() {
     chosenLesson -= 1;

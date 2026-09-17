@@ -1,4 +1,5 @@
 import { LESSONS } from '$lib/morse';
+import { scoreGrade } from '$lib/score';
 import * as m from '$lib/paraglide/messages';
 
 /** Format an ISO timestamp as a short local date, e.g. "Sep 17, 2026". */
@@ -8,13 +9,6 @@ export function formatDate(value?: string): string {
   return Number.isNaN(date.getTime())
     ? ''
     : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-/** Format an ISO timestamp as a local date and time. */
-export function formatDateTime(value?: string): string {
-  if (!value) return '';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString();
 }
 
 /** Display name for a forum author, falling back to a localized community label. */
@@ -48,5 +42,5 @@ export function percentage(value: number): string {
 
 /** CSS modifier for an accuracy ratio (0..1). */
 export function accuracyClass(value: number): string {
-  return value >= 0.9 ? 'acc-good' : value >= 0.7 ? 'acc-ok' : 'acc-bad';
+  return `acc-${scoreGrade(value)}`;
 }

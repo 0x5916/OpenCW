@@ -126,29 +126,29 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
   '/forum': {
     localized: {
       en: {
-        title: 'OpenCW Forum - Morse Code Community',
+        title: 'OpenCW Forum - Community Space in Development',
         description:
-          'Join OpenCW community discussions for Morse code learning, amateur radio tips, and CW training support.'
+          'The OpenCW community forum for Morse code learners and amateur radio operators is currently in development. Check back soon.'
       },
       de: {
-        title: 'OpenCW Forum - Morsecode Community',
+        title: 'OpenCW Forum - Community in Entwicklung',
         description:
-          'Tausche dich im OpenCW Forum ueber Morse-Lernen, Amateurfunk-Tipps und CW-Training aus.'
+          'Das OpenCW Community-Forum fuer Morsecode-Lernende und Funkamateure befindet sich in Entwicklung. Schau bald wieder vorbei.'
       },
       ja: {
-        title: 'OpenCW Forum - Morse Community',
+        title: 'OpenCW Forum - Community Kaihatsu-chuu',
         description:
-          'Morse gakushu, amateur radio no chie, CW no kunren ni tsuite komyuniti de jiyuu ni hanashimashou.'
+          'OpenCW no community forum wa morse gakushu sha to amateur radio operator no tame ni junbi shite imasu. Mata kondo check shite kudasai.'
       },
       'zh-Hans': {
-        title: 'OpenCW Luntan - Mosi Ma Shequ',
+        title: 'OpenCW Luntan - Kaifa Zhong',
         description:
-          'Canyu OpenCW shequ taolun, jiaoliu Mosi xuexi, yuhuo jiqiao he CW xunlian jingyan.'
+          'OpenCW shequ luntan zheng zai kaifa zhong, zhuan wei Mosi ma xuexi zhe yu yuhuo wuxiandian aihaozhe. Qing shao hou zai lai kankan.'
       },
       'zh-Hant': {
-        title: 'OpenCW Luntan - Mosi Ma Shequ',
+        title: 'OpenCW Luntan - Zhengzai Kaifa',
         description:
-          'Canyu OpenCW shequ taolun, jiaoliu Mosi xuexi, yuyu jiqiao he CW xunlian jingyan.'
+          'OpenCW shequ luntan muqian zheng zai kaifa zhong, zhuan wei Mosi dianma xuexi zhe yu yeyu wuxiandian aihaozhe. Jingqing qidai.'
       }
     }
   },

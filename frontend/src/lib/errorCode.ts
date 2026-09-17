@@ -1,6 +1,6 @@
 const ERROR_CODE_PATTERN = /^[A-Z0-9_]+$/;
 
-export function isApiErrorCode(value: string): boolean {
+function isApiErrorCode(value: string): boolean {
   return ERROR_CODE_PATTERN.test(value);
 }
 

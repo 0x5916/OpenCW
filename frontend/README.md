@@ -44,13 +44,27 @@ src/
   lib/
     api.ts         Typed API client (settings, user, forum, progress)
     auth.ts        Token handling (login/register/refresh/logout) + apiFetch
+    cookies.ts     Cookie read/write helpers + preference lifetime
     cwSync.ts      Client/server CW + page settings reconciliation
-    progressSync.ts Offline-first progress queue
+    errorCode.ts   API error-code extraction
+    errorLocalization.ts  Error code → localized message
+    format.ts      Date / lesson / percentage formatting helpers
+    i18n.svelte.ts Locale state + locale-aware hrefs
+    locale.ts      Locale matching + display labels
     morse.ts       Koch lessons, Morse table, Farnsworth timing
-    score.ts       Accuracy scoring + word-level diff
+    progressSync.ts Offline-first progress queue
+    score.ts       Accuracy scoring, word-level diff, grade thresholds
     seo.ts         Route metadata, sitemap URL builder (used by scripts)
-  routes/          Pages (home, about, forum, morse/learn, login, register, …)
+    storageKeys.ts localStorage/cookie key registry
+    theme.ts       Theme normalization + apply helpers
+    components/    Shared UI (auth card, dropdown, Morse player, alerts, …)
+  routes/          Pages (home, about, morse/learn, login, register, profile,
+                   settings, and a placeholder /forum)
 ```
+
+`/forum` currently renders an "under development" card. The forum parts of
+`api.ts` and `components/Pagination.svelte` are intentionally kept (and still
+covered by localized `api_error_forum_*` messages) for when the forum returns.
 
 ## Internationalization
 
