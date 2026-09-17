@@ -11,7 +11,8 @@ type CheckResult = { ok: true; message: string } | { ok: false; message: string 
 
 const INDEXABLE_ROUTES = getIndexablePublicRoutePaths();
 // `/forum` is a placeholder: crawlable, but deliberately out of the index until it launches.
-const NOINDEX_ROUTES = ['/login', '/register', '/profile', '/settings', '/forum'];
+// `/more` is the phone-only "More" screen: a redirect target on desktop, never a landing page.
+const NOINDEX_ROUTES = ['/login', '/register', '/profile', '/settings', '/forum', '/more'];
 
 function absolute(origin: string, path: string): string {
   return new URL(path, origin).toString();

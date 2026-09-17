@@ -175,6 +175,31 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
       }
     }
   },
+  '/more': {
+    robots: 'noindex,nofollow',
+    localized: {
+      en: {
+        title: 'More - OpenCW',
+        description: 'App settings, your account, the display mode and the interface language.'
+      },
+      de: {
+        title: 'Mehr - OpenCW',
+        description: 'App-Einstellungen, dein Konto, das Design und die Sprache der Oberflaeche.'
+      },
+      ja: {
+        title: 'その他 - OpenCW',
+        description: 'アプリの設定、アカウント、表示テーマ、表示言語。'
+      },
+      'zh-Hans': {
+        title: '更多 - OpenCW',
+        description: '应用设置、账号、显示主题与界面语言。'
+      },
+      'zh-Hant': {
+        title: '更多 - OpenCW',
+        description: '應用程式設定、帳號、顯示主題與介面語言。'
+      }
+    }
+  },
   '/login': {
     robots: 'noindex,nofollow',
     localized: {

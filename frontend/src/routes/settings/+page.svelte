@@ -34,7 +34,6 @@
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
   import GuestNotice from '$lib/components/GuestNotice.svelte';
   import SaveButton from '$lib/components/SaveButton.svelte';
-  import type { Theme } from '$lib/theme';
   import * as m from '$lib/paraglide/messages';
 
   // Account section
@@ -67,8 +66,6 @@
   let passwordSaved = $state(false);
 
   // Page settings section
-  let pageTheme = $state<Theme>('auto');
-  let initialPageTheme = $state<Theme>('auto');
   let pageLanguage = $state<LocalePreference>(langPreference.value);
   let initialPageLanguage = $state<LocalePreference>(langPreference.value);
   let pageLesson = $state(1);
@@ -100,8 +97,7 @@
   const callSignDirty = $derived(callSign.trim().toUpperCase() !== initialCallSign);
   const emailDirty = $derived(email.trim() !== initialEmail.trim());
   const pageDirty = $derived(
-    pageTheme !== initialPageTheme ||
-      pageLanguage !== initialPageLanguage ||
+    pageLanguage !== initialPageLanguage ||
       normalizeLesson(pageLesson, LESSONS.length) !== initialPageLesson
   );
   const cwDirty = $derived(
@@ -136,8 +132,6 @@
   }
 
   function applyPageState(page: PageSettings) {
-    pageTheme = page.theme;
-    initialPageTheme = page.theme;
     pageLanguage = normalizeLocalePreference(page.language);
     initialPageLanguage = pageLanguage;
     pageLesson = normalizeLesson(page.cur_lesson, LESSONS.length);
@@ -379,7 +373,6 @@
 
     try {
       const pagePayload: PageSettings = {
-        theme: pageTheme,
         language: pageLanguage,
         cur_lesson: pageLesson
       };
@@ -389,7 +382,6 @@
       }
 
       applyClientPageSettings(pagePayload, LESSONS.length, setLangPreference);
-      initialPageTheme = pageTheme;
       initialPageLanguage = pageLanguage;
       initialPageLesson = pageLesson;
       showSavedFlag((value) => {
@@ -581,14 +573,6 @@
     <section class="card settings-card">
       <h2 class="card-label">{m.settings_page_section()}</h2>
       <form onsubmit={savePage} class="settings-form">
-        <label class="settings-field">
-          <span class="label-text">{m.settings_theme_label()}</span>
-          <select bind:value={pageTheme} class="input">
-            <option value="auto">{m.theme_auto()}</option>
-            <option value="light">{m.theme_light()}</option>
-            <option value="dark">{m.theme_dark()}</option>
-          </select>
-        </label>
         <label class="settings-field">
           <span class="label-text">{m.settings_language_label()}</span>
           <select bind:value={pageLanguage} class="input">

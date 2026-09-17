@@ -110,7 +110,6 @@ export interface CWSettings {
 }
 
 export interface PageSettings {
-  theme: 'auto' | 'dark' | 'light';
   language: string;
   cur_lesson: number;
   updated_at?: string;

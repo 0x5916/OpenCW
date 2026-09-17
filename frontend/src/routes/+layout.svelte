@@ -14,7 +14,6 @@
     LayoutDashboard,
     LogIn,
     LogOut,
-    Menu,
     MessageSquare,
     Monitor,
     Moon,
@@ -22,8 +21,7 @@
     Settings,
     Sun,
     User,
-    UserPlus,
-    X
+    UserPlus
   } from '@lucide/svelte';
   import {
     lang,
@@ -49,21 +47,17 @@
     { path: '/about', label: m.nav_about, icon: Info }
   ];
 
-  /** Pinned phone tab bar. The fourth slot opens the "More" sheet, not a page. */
+  /** Pinned phone tab bar. All four slots are real destinations. */
   const TAB_NAV = [
     { path: '/learn', label: m.nav_learn, icon: Radio },
     { path: '/profile', label: m.nav_profile, icon: LayoutDashboard },
-    { path: '/forum', label: m.nav_forum, icon: MessageSquare }
+    { path: '/forum', label: m.nav_forum, icon: MessageSquare },
+    { path: '/more', label: m.nav_more, icon: Ellipsis }
   ];
 
   const GITHUB_URL = 'https://github.com/0x5916';
-  const DESKTOP_NAV_QUERY = '(min-width: 640px)';
 
   let theme = $state<Theme>('auto');
-  let menuOpen = $state(false);
-  let navEl = $state<HTMLElement | null>(null);
-  let sheetEl = $state<HTMLElement | null>(null);
-  let bottomNavEl = $state<HTMLElement | null>(null);
   let ThemeIcon = $derived(themeIconFor(theme));
   let reconciledSettingsForUser = $state<string | null>(null);
 
@@ -122,9 +116,10 @@
     touchLocalPageSettingsUpdatedAt();
   }
 
+  // Theme is a device-local preference: changing it must not mark the synced page
+  // settings (language, lesson) as locally newer than the server's copy.
   function changeTheme(nextTheme: Theme) {
     theme = setTheme(nextTheme);
-    touchLocalPageSettingsUpdatedAt();
   }
 
   function cycleTheme() {
@@ -150,121 +145,40 @@
     return Monitor;
   }
 
-  function closeMobileMenu() {
-    menuOpen = false;
-  }
-
-  function focusableIn(container: HTMLElement): HTMLElement[] {
-    return Array.from(
-      container.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      )
-    );
-  }
-
-  function onDocumentClick(event: MouseEvent) {
-    if (!menuOpen) return;
-
-    const target = event.target;
-    if (!(target instanceof Node)) return;
-
-    // Both the hamburger (navbar) and the "More" tab (bottom bar) toggle the
-    // sheet, so a click in either one must not immediately dismiss it.
-    if (navEl?.contains(target) || bottomNavEl?.contains(target)) return;
-
-    menuOpen = false;
-  }
-
-  function onDocumentKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
-      closeMobileMenu();
-    }
-  }
-
-  // Toggle a body class when an input/textarea/select gains or loses focus so
-  // the mobile bottom nav can hide while the soft keyboard is open.
+  // Toggle a body class when an input/textarea gains or loses focus so the
+  // mobile bottom nav can hide while the soft keyboard is open. Selects are
+  // excluded on purpose: they open a picker, not a keyboard, and leaving one
+  // focused would keep the tab bar hidden.
   function onDocumentFocusIn(event: FocusEvent) {
     const target = event.target;
-    if (target instanceof HTMLElement && target.matches('input, textarea, select')) {
+    if (target instanceof HTMLElement && target.matches('input, textarea')) {
       document.body.classList.add('keyboard-open');
     }
   }
 
   function onDocumentFocusOut(event: FocusEvent) {
     const target = event.target;
-    if (target instanceof HTMLElement && target.matches('input, textarea, select')) {
+    if (target instanceof HTMLElement && target.matches('input, textarea')) {
       document.body.classList.remove('keyboard-open');
     }
   }
 
+  // The desktop theme button keeps a stored preference that other pages can
+  // change (Settings, the More page), so refresh it on every navigation.
   afterNavigate(() => {
-    closeMobileMenu();
+    theme = readStoredTheme();
   });
 
   $effect(() => {
     if (typeof document === 'undefined') return;
 
-    document.addEventListener('click', onDocumentClick);
-    document.addEventListener('keydown', onDocumentKeydown);
     document.addEventListener('focusin', onDocumentFocusIn);
     document.addEventListener('focusout', onDocumentFocusOut);
 
     return () => {
-      document.removeEventListener('click', onDocumentClick);
-      document.removeEventListener('keydown', onDocumentKeydown);
       document.removeEventListener('focusin', onDocumentFocusIn);
       document.removeEventListener('focusout', onDocumentFocusOut);
     };
-  });
-
-  // The "More" sheet behaves like a real overlay: focus moves into it on open,
-  // Tab cycles inside it, and focus returns to the trigger on close.
-  $effect(() => {
-    if (!menuOpen || typeof document === 'undefined') return;
-
-    const sheet = sheetEl;
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    sheet?.focus();
-
-    function onSheetKeydown(event: KeyboardEvent) {
-      if (event.key !== 'Tab' || !sheet) return;
-
-      const items = focusableIn(sheet);
-      if (items.length === 0) return;
-
-      const first = items[0];
-      const last = items[items.length - 1];
-      const active = document.activeElement;
-
-      if (event.shiftKey && (active === first || active === sheet)) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener('keydown', onSheetKeydown);
-
-    return () => {
-      document.removeEventListener('keydown', onSheetKeydown);
-      previous?.focus();
-    };
-  });
-
-  // Above the desktop breakpoint the sheet is not rendered at all, so drop the
-  // open state when the viewport grows past it.
-  $effect(() => {
-    if (typeof window === 'undefined') return;
-
-    const query = window.matchMedia(DESKTOP_NAV_QUERY);
-    function onChange(event: MediaQueryListEvent) {
-      if (event.matches) closeMobileMenu();
-    }
-
-    query.addEventListener('change', onChange);
-    return () => query.removeEventListener('change', onChange);
   });
 </script>
 
@@ -295,7 +209,7 @@
 </svelte:head>
 
 <div class="page-wrapper">
-  <nav class="navbar" bind:this={navEl}>
+  <nav class="navbar">
     <div class="navbar-inner">
       <!-- Brand -->
       <!-- Brand is the home affordance, so "Home" is not duplicated in the links -->
@@ -400,76 +314,7 @@
           {/snippet}
         </Dropdown>
       </div>
-
-      <!-- Mobile: hamburger only -->
-      <div class="navbar-mobile-controls">
-        <button
-          type="button"
-          onclick={() => (menuOpen = !menuOpen)}
-          class="hamburger"
-          aria-label={menuOpen ? m.nav_menu_close() : m.nav_menu_open()}
-          aria-expanded={menuOpen}
-          aria-controls="mobile-nav-menu"
-        >
-          {#if menuOpen}
-            <X class="nav-icon" aria-hidden="true" />
-          {:else}
-            <Menu class="nav-icon" aria-hidden="true" />
-          {/if}
-        </button>
-      </div>
     </div>
-
-    <!-- "More" sheet: the destinations that do not fit in the tab bar -->
-    {#if menuOpen}
-      <div class="mobile-menu" id="mobile-nav-menu" bind:this={sheetEl} tabindex="-1">
-        <a href={href('/about')} class="mobile-link" onclick={() => (menuOpen = false)}
-          ><Info size={16} />{m.nav_about()}</a
-        >
-        <a href={href('/settings')} class="mobile-link" onclick={() => (menuOpen = false)}
-          ><Settings size={16} />{m.nav_settings()}</a
-        >
-        <div class="mobile-divider"></div>
-        {#if $user}
-          <a href={href('/profile')} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><LayoutDashboard size={16} />{m.nav_profile()} ({$user.username})</a
-          >
-          <button
-            type="button"
-            onclick={() => {
-              void handleLogout();
-              menuOpen = false;
-            }}
-            class="mobile-link mobile-link-btn"><LogOut size={16} />{m.nav_logout()}</button
-          >
-        {:else}
-          <a href={href('/login')} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><LogIn size={16} />{m.nav_login()}</a
-          >
-          <a href={href('/register')} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><UserPlus size={16} />{m.nav_register()}</a
-          >
-        {/if}
-        <div class="mobile-divider"></div>
-        <button type="button" onclick={cycleTheme} class="mobile-link mobile-link-btn"
-          ><ThemeIcon size={16} />{theme === 'auto'
-            ? m.theme_auto()
-            : theme === 'light'
-              ? m.theme_light()
-              : m.theme_dark()}</button
-        >
-        <div class="mobile-divider"></div>
-        {#each locales as locale (locale)}
-          <button
-            type="button"
-            class="mobile-link mobile-link-btn"
-            aria-pressed={lang.value === locale}
-            onclick={() => setLanguage(locale)}
-            ><Languages size={16} />{languageLabel(locale)}</button
-          >
-        {/each}
-      </div>
-    {/if}
   </nav>
 
   <main class="page-content">
@@ -489,7 +334,7 @@
   </footer>
 
   <!-- Mobile: bottom navigation bar (hidden on desktop) -->
-  <nav class="bottom-nav" aria-label={m.nav_primary()} bind:this={bottomNavEl}>
+  <nav class="bottom-nav" aria-label={m.nav_primary()}>
     {#each TAB_NAV as item (item.path)}
       <a
         href={href(item.path)}
@@ -501,16 +346,5 @@
         ></a
       >
     {/each}
-    <button
-      type="button"
-      class="bottom-nav-item"
-      class:active={menuOpen}
-      aria-expanded={menuOpen}
-      aria-controls="mobile-nav-menu"
-      onclick={() => (menuOpen = !menuOpen)}
-      ><Ellipsis size={20} class="bottom-nav-icon" aria-hidden="true" /><span
-        class="bottom-nav-label">{m.nav_more()}</span
-      ></button
-    >
   </nav>
 </div>

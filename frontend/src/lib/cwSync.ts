@@ -13,7 +13,6 @@ import {
   type LocalePreference
 } from '$lib/locale';
 import { readCookie, writeCookie } from '$lib/cookies';
-import { normalizeTheme, readStoredTheme, setTheme } from '$lib/theme';
 import { CW_STORAGE_KEYS } from '$lib/storageKeys';
 
 export type { CWSettings, PageSettings };
@@ -118,13 +117,18 @@ export function saveClientCwSettings(settings: CWSettings): CWSettings {
   return normalized;
 }
 
+/**
+ * Build the page-settings payload from this device's state.
+ *
+ * Page settings cover what syncs across devices (interface language and the
+ * current lesson). The theme is deliberately absent: it is a device-local
+ * preference owned by `$lib/theme.ts`.
+ */
 export function readClientPageSettings(
   currentLesson: number,
   maxLesson: number,
   fallbackLanguagePreference: LocalePreference
 ): PageSettings {
-  const theme = readStoredTheme();
-
   const localLang =
     typeof localStorage === 'undefined'
       ? null
@@ -133,7 +137,6 @@ export function readClientPageSettings(
   const language = normalizeLocalePreference(localLang ?? cookieLang ?? fallbackLanguagePreference);
 
   return {
-    theme,
     language,
     cur_lesson: normalizeLesson(currentLesson, maxLesson)
   };
@@ -143,16 +146,11 @@ export function applyClientPageSettings(
   page: PageSettings,
   maxLesson: number,
   onLocale: (preference: LocalePreference, options?: { navigate?: boolean }) => void,
-  options: { applyTheme?: boolean; applyLanguage?: boolean; navigate?: boolean } = {}
+  options: { applyLanguage?: boolean; navigate?: boolean } = {}
 ): number {
   const lesson = normalizeLesson(page.cur_lesson, maxLesson);
   const language = normalizeLocalePreference(page.language);
-  const shouldApplyTheme = options.applyTheme ?? true;
   const applyLanguage = options.applyLanguage ?? true;
-
-  if (shouldApplyTheme) {
-    setTheme(normalizeTheme(page.theme));
-  }
 
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(CW_STORAGE_KEYS.lesson, String(lesson));
@@ -196,7 +194,6 @@ export async function reconcileSettingsWithServer(args: {
 
   const serverCw = normalizeClientCwSettings(settings.cw_settings);
   const serverPage: PageSettings = {
-    theme: settings.page_settings.theme,
     language: normalizeLocalePreference(settings.page_settings.language),
     cur_lesson: normalizeLesson(settings.page_settings.cur_lesson, args.maxLesson)
   };

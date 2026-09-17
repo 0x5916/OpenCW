@@ -11,8 +11,6 @@
   "nav_primary": "Primary",
   "nav_more": "More",
   "nav_guest": "Guest",
-  "nav_menu_open": "Open menu",
-  "nav_menu_close": "Close menu",
   "nav_theme_cycle": "Switch theme",
 
   "error_title": "That page doesn't exist",
@@ -20,6 +18,8 @@
   "error_generic_title": "Something went wrong",
   "error_generic_body": "The page couldn't be loaded. Try again, or head back to the home page.",
   "error_cta_home": "Back to the home page",
+
+  "more_app_section": "App",
 
   "theme_auto": "Auto",
   "theme_light": "Light",

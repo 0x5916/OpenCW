@@ -11,8 +11,6 @@
   "nav_primary": "メイン",
   "nav_more": "その他",
   "nav_guest": "ゲスト",
-  "nav_menu_open": "メニューを開く",
-  "nav_menu_close": "メニューを閉じる",
   "nav_theme_cycle": "テーマを切り替える",
 
   "error_title": "このページは存在しません",
@@ -20,6 +18,8 @@
   "error_generic_title": "問題が発生しました",
   "error_generic_body": "ページを読み込めませんでした。もう一度試すか、ホームに戻ってください。",
   "error_cta_home": "ホームに戻る",
+
+  "more_app_section": "アプリ",
 
   "theme_auto": "自動",
   "theme_light": "ライト",

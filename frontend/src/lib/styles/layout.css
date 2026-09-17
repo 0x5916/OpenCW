@@ -273,102 +273,6 @@
   transform: scaleX(1);
 }
 
-.navbar-mobile-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-@media (min-width: 640px) {
-  .navbar-mobile-controls {
-    display: none;
-  }
-}
-
-.hamburger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--nav-control-height);
-  box-sizing: border-box;
-  line-height: 1;
-  min-width: 3rem;
-  padding: 0 0.7rem;
-  font-size: 1.125rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--border-subtle);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition:
-    color 0.15s,
-    border-color 0.15s,
-    background 0.15s;
-}
-
-.hamburger:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: var(--bg-inset);
-}
-
-.mobile-menu {
-  background-color: var(--bg-surface);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  border-radius: 0 0 0.9rem 0.9rem;
-  display: flex;
-  flex-direction: column;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 49;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-}
-
-/* Above the breakpoint the tab bar is gone, so the sheet it opens must be too. */
-@media (min-width: 640px) {
-  .mobile-menu {
-    display: none;
-  }
-}
-
-.mobile-link {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border);
-  transition:
-    color 0.15s,
-    background-color 0.15s;
-}
-
-.mobile-link:hover {
-  color: var(--accent);
-  background-color: var(--bg-inset);
-}
-
-.mobile-link-btn {
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-
-.mobile-divider {
-  height: 1px;
-  background-color: var(--border);
-  margin: 0.25rem 0;
-}
-
 /* Mobile bottom navigation bar (primary destinations) */
 .bottom-nav {
   position: fixed;
@@ -401,8 +305,19 @@
   body.keyboard-open .bottom-nav {
     transform: translateY(100%);
   }
+
+  /* The top bar is desktop-only: phones navigate from the tab bar and the
+     "More" page. Content takes over the notch padding the navbar used to hold. */
+  .navbar {
+    display: none;
+  }
+
+  .page-content {
+    padding-top: max(var(--space-lg), env(safe-area-inset-top));
+  }
 }
 
+/* The "More" tab is a link like the rest, so no button reset is needed here. */
 .bottom-nav-item {
   position: relative;
   flex: 1 1 0;
@@ -422,14 +337,6 @@
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
   transition: color 0.15s;
-}
-
-/* The "More" tab is a button, everything else is a link. */
-button.bottom-nav-item {
-  border: none;
-  background: transparent;
-  font-family: inherit;
-  cursor: pointer;
 }
 
 .bottom-nav-item:hover {
@@ -542,7 +449,6 @@ button.bottom-nav-item {
 }
 
 /* Prevent SVG icons from capturing touch events */
-.mobile-link svg,
 .navbar-link svg,
 .navbar-user-btn svg,
 .theme-icon-btn svg,
@@ -550,7 +456,6 @@ button.bottom-nav-item {
 .btn-primary svg,
 .btn-success svg,
 .btn-danger svg,
-.btn-ghost svg,
-.hamburger svg {
+.btn-ghost svg {
   pointer-events: none;
 }

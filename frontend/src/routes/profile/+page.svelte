@@ -340,7 +340,7 @@
   }
 </script>
 
-<main class="profile-page">
+<div class="profile-page page-narrow">
   {#if loading}
     <LoadingSpinner variant="spinner" />
   {:else if loadError}
@@ -553,16 +553,14 @@
       {/if}
     </section>
   {/if}
-</main>
+</div>
 
 <style>
+  /* Same container and rhythm as about/settings/more: `.page-narrow` owns the
+     width and the spacing between children, so cards line up with those pages. */
   .profile-page {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
   }
 
   /* Header */

@@ -11,8 +11,6 @@
   "nav_primary": "Primär",
   "nav_more": "Mehr",
   "nav_guest": "Gast",
-  "nav_menu_open": "Menü öffnen",
-  "nav_menu_close": "Menü schließen",
   "nav_theme_cycle": "Design wechseln",
 
   "error_title": "Diese Seite gibt es nicht",
@@ -20,6 +18,8 @@
   "error_generic_title": "Da ist etwas schiefgelaufen",
   "error_generic_body": "Die Seite konnte nicht geladen werden. Versuch es erneut oder geh zurück zur Startseite.",
   "error_cta_home": "Zur Startseite",
+
+  "more_app_section": "App",
 
   "theme_auto": "Auto",
   "theme_light": "Hell",

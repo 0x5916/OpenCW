@@ -11,8 +11,6 @@
   "nav_primary": "主導覽",
   "nav_more": "更多",
   "nav_guest": "訪客",
-  "nav_menu_open": "開啟選單",
-  "nav_menu_close": "關閉選單",
   "nav_theme_cycle": "切換主題",
 
   "error_title": "此頁面不存在",
@@ -20,6 +18,8 @@
   "error_generic_title": "發生錯誤",
   "error_generic_body": "頁面無法載入。請重試，或返回首頁。",
   "error_cta_home": "返回首頁",
+
+  "more_app_section": "應用程式",
 
   "theme_auto": "自動",
   "theme_light": "淺色",
