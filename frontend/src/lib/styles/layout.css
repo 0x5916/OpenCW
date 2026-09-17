@@ -129,6 +129,14 @@
   transform: scaleX(1);
 }
 
+.navbar-link.active {
+  color: var(--accent);
+}
+
+.navbar-link.active::after {
+  transform: scaleX(1);
+}
+
 .navbar-right {
   display: flex;
   align-items: center;
@@ -320,6 +328,13 @@
   overflow: hidden;
 }
 
+/* Above the breakpoint the tab bar is gone, so the sheet it opens must be too. */
+@media (min-width: 640px) {
+  .mobile-menu {
+    display: none;
+  }
+}
+
 .mobile-link {
   display: flex;
   align-items: center;
@@ -409,6 +424,14 @@
   transition: color 0.15s;
 }
 
+/* The "More" tab is a button, everything else is a link. */
+button.bottom-nav-item {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 .bottom-nav-item:hover {
   color: var(--text-secondary);
 }
@@ -448,6 +471,11 @@
   background-color: var(--bg-surface);
   border-top: 1px solid var(--border);
   padding: 0.7rem var(--space-md);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem 1rem;
   text-align: center;
   font-size: 0.8125rem;
   line-height: 1.2rem;
@@ -455,6 +483,21 @@
   transition:
     background-color var(--transition-base),
     border-color var(--transition-base);
+}
+
+.footer-links {
+  display: inline-flex;
+  gap: 1rem;
+}
+
+.footer-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.footer-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
 }
 
 @media (max-width: 639px) {

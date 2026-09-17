@@ -17,7 +17,13 @@ export const load: LayoutServerLoad = ({ cookies, url, route }) => {
   const normalizedPath = normalizePathname(url.pathname);
   const basePath = normalizePathname(deLocalizeHref(normalizedPath));
   const metadata = resolveSeoMetadata(route.id, locale);
-  const canonicalUrl = buildAbsoluteUrl(url.origin, normalizedPath);
+  // Always canonicalise to the locale-explicit URL (e.g. `/en/about`) so the
+  // canonical is one of the `hreflang` alternates below instead of a
+  // locale-ambiguous bare path that depends on the visitor's cookie.
+  const canonicalUrl = buildAbsoluteUrl(url.origin, localizeHref(basePath, { locale }));
+  // An unmatched route (`route.id === null`) still renders the root layout, so
+  // make sure the 404 it renders can never be indexed.
+  const robots = route.id === null ? 'noindex,follow' : metadata.robots;
 
   const alternates = locales.map((alternateLocale) => {
     const localizedPath = localizeHref(basePath, { locale: alternateLocale });
@@ -30,7 +36,7 @@ export const load: LayoutServerLoad = ({ cookies, url, route }) => {
 
   const xDefaultHref =
     alternates.find((alternate) => alternate.locale === 'en')?.href ?? canonicalUrl;
-  const isIndexable = !metadata.robots.toLowerCase().includes('noindex');
+  const isIndexable = !robots.toLowerCase().includes('noindex');
   const structuredData = isIndexable
     ? [
         {
@@ -49,7 +55,7 @@ export const load: LayoutServerLoad = ({ cookies, url, route }) => {
           inLanguage: locale,
           description: metadata.description
         },
-        ...(route.id === '/morse/learn'
+        ...(route.id === '/learn'
           ? [
               {
                 '@context': 'https://schema.org',
@@ -75,6 +81,7 @@ export const load: LayoutServerLoad = ({ cookies, url, route }) => {
     localePreference: localePreference as LocalePreference,
     seo: {
       ...metadata,
+      robots,
       siteName: SITE_NAME,
       canonicalUrl,
       alternates,

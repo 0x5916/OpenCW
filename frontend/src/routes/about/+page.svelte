@@ -1,16 +1,51 @@
 <script lang="ts">
-  import { BookOpen, CheckCircle } from '@lucide/svelte';
+  import {
+    ArrowRight,
+    BookOpen,
+    CheckCircle,
+    ShieldCheck,
+    UserRound,
+    Wrench
+  } from '@lucide/svelte';
   import { localizedHref as href } from '$lib/i18n.svelte';
   import * as m from '$lib/paraglide/messages';
+
+  const GITHUB_URL = 'https://github.com/0x5916';
+
+  // Static lists are built once per component instance; the layout remounts the
+  // page when the language changes, so `m.*` never goes stale here.
+  const toc = [
+    { id: 'koch-method', label: m.about_koch_title() },
+    { id: 'the-project', label: m.about_project_title() },
+    { id: 'about-the-author', label: m.about_author_title() },
+    { id: 'your-data', label: m.about_privacy_title() }
+  ];
+
+  const kochSteps = [
+    { title: m.about_koch_step1_title(), body: m.about_koch_step1_body() },
+    { title: m.about_koch_step2_title(), body: m.about_koch_step2_body() },
+    { title: m.about_koch_step3_title(), body: m.about_koch_step3_body() },
+    { title: m.about_koch_step4_title(), body: m.about_koch_step4_body() }
+  ];
 </script>
 
-<main class="about-page">
+<div class="about-page page-narrow">
   <header class="about-header">
     <h1 class="page-title">{m.about_title()}</h1>
+    <p class="body-text about-intro">{m.about_intro()}</p>
   </header>
 
+  <nav class="about-toc" aria-label={m.about_toc_label()}>
+    <span class="card-label about-toc-label">{m.about_toc_label()}</span>
+    <ul class="about-toc-list">
+      {#each toc as item (item.id)}
+        <li><a class="link" href={`#${item.id}`}>{item.label}</a></li>
+      {/each}
+    </ul>
+  </nav>
+
   <!-- Koch Method Card -->
-  <section class="card about-card">
+  <section class="card about-card" id="koch-method">
     <div class="about-card-icon" aria-hidden="true">
       <BookOpen size={32} />
     </div>
@@ -21,35 +56,16 @@
 
     <!-- How it works -->
     <h3 class="sub-title">{m.about_koch_how_title()}</h3>
-    <ol class="koch-steps">
-      <li class="koch-step">
-        <span class="step-number">1</span>
-        <div>
-          <strong class="step-title">{m.about_koch_step1_title()}</strong>
-          <p class="body-text">{m.about_koch_step1_body()}</p>
-        </div>
-      </li>
-      <li class="koch-step">
-        <span class="step-number">2</span>
-        <div>
-          <strong class="step-title">{m.about_koch_step2_title()}</strong>
-          <p class="body-text">{m.about_koch_step2_body()}</p>
-        </div>
-      </li>
-      <li class="koch-step">
-        <span class="step-number">3</span>
-        <div>
-          <strong class="step-title">{m.about_koch_step3_title()}</strong>
-          <p class="body-text">{m.about_koch_step3_body()}</p>
-        </div>
-      </li>
-      <li class="koch-step">
-        <span class="step-number">4</span>
-        <div>
-          <strong class="step-title">{m.about_koch_step4_title()}</strong>
-          <p class="body-text">{m.about_koch_step4_body()}</p>
-        </div>
-      </li>
+    <ol class="step-list">
+      {#each kochSteps as item, index (item.title)}
+        <li class="step">
+          <span class="step-number">{index + 1}</span>
+          <div>
+            <strong class="step-title">{item.title}</strong>
+            <p class="body-text">{item.body}</p>
+          </div>
+        </li>
+      {/each}
     </ol>
 
     <hr class="divider" />
@@ -75,28 +91,87 @@
         <p class="body-text">{m.about_koch_vs_koch_body()}</p>
       </div>
     </div>
-
-    <div class="about-cta">
-      <a href={href('/morse/learn')} class="btn-cta">{m.home_cta()}</a>
-    </div>
   </section>
-</main>
+
+  <!-- The project -->
+  <section class="card about-card" id="the-project">
+    <div class="about-card-icon" aria-hidden="true"><Wrench size={32} /></div>
+    <h2 class="section-title">{m.about_project_title()}</h2>
+    <p class="body-text">{m.about_project_body()}</p>
+    <p class="body-text about-links">
+      <a href={GITHUB_URL} class="link" rel="noopener noreferrer" target="_blank"
+        >{m.about_project_github()}</a
+      >
+    </p>
+  </section>
+
+  <!-- About the author -->
+  <section class="card about-card" id="about-the-author">
+    <div class="about-card-icon" aria-hidden="true"><UserRound size={32} /></div>
+    <h2 class="section-title">{m.about_author_title()}</h2>
+    <p class="body-text">{m.about_author_p1()}</p>
+    <p class="body-text">
+      {m.about_author_p2_pre()}
+      <a href={GITHUB_URL} class="link" rel="noopener noreferrer" target="_blank"
+        >{m.about_author_github()}</a
+      >.
+    </p>
+  </section>
+
+  <!-- Your data -->
+  <section class="card about-card" id="your-data">
+    <div class="about-card-icon" aria-hidden="true"><ShieldCheck size={32} /></div>
+    <h2 class="section-title">{m.about_privacy_title()}</h2>
+    <p class="body-text">{m.about_privacy_body()}</p>
+  </section>
+
+  <div class="about-cta">
+    <a href={href('/learn')} class="btn-cta"
+      >{m.home_cta()}<ArrowRight size={18} aria-hidden="true" /></a
+    >
+  </div>
+</div>
 
 <style>
   .about-page {
-    max-width: var(--max-width-narrow);
-    margin: 0 auto;
-    padding: 2rem 1rem 3rem;
+    padding-top: 2rem;
+    padding-bottom: 3rem;
   }
 
   .about-header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .about-intro {
+    margin: 0.5rem 0 0;
+  }
+
+  .about-toc {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .about-toc-label {
+    margin-bottom: 0;
+  }
+
+  .about-toc-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.875rem;
   }
 
   .about-card {
     display: flex;
     flex-direction: column;
     gap: 0;
+    /* Keep anchored sections clear of the sticky navbar. */
+    scroll-margin-top: 4.5rem;
   }
 
   .about-card-icon {
@@ -104,45 +179,8 @@
     margin-bottom: 0.75rem;
   }
 
-  .about-intro {
-    margin-top: 0.5rem;
-  }
-
-  .koch-steps {
-    list-style: none;
-    padding: 0;
-    margin: 0.75rem 0 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .koch-step {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-
-  .step-number {
-    flex-shrink: 0;
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: 50%;
-    background-color: var(--accent);
-    color: var(--bg-base);
-    font-weight: 700;
-    font-size: 0.85rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 0.1rem;
-  }
-
-  .step-title {
-    display: block;
-    color: var(--text-primary);
-    font-weight: 600;
-    margin-bottom: 0.25rem;
+  .about-links {
+    margin-top: 0.75rem;
   }
 
   .koch-vs-grid {

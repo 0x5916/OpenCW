@@ -10,7 +10,8 @@ import {
 type CheckResult = { ok: true; message: string } | { ok: false; message: string };
 
 const INDEXABLE_ROUTES = getIndexablePublicRoutePaths();
-const NOINDEX_ROUTES = ['/login', '/register', '/profile', '/settings'];
+// `/forum` is a placeholder: crawlable, but deliberately out of the index until it launches.
+const NOINDEX_ROUTES = ['/login', '/register', '/profile', '/settings', '/forum'];
 
 function absolute(origin: string, path: string): string {
   return new URL(path, origin).toString();
@@ -78,7 +79,9 @@ async function validateSitemap(): Promise<CheckResult[]> {
     checks.push({ ok: false, message: 'generated sitemap URL set contains duplicates' });
   }
 
-  const expectedUrls = new Set<string>([absolute(origin, '/')]);
+  // Every indexable URL carries an explicit locale prefix, including the base
+  // locale — the sitemap never publishes a bare `/`.
+  const expectedUrls = new Set<string>();
   for (const locale of locales) {
     for (const routePath of INDEXABLE_ROUTES) {
       expectedUrls.add(absolute(origin, expectedLocalizedPath(locale, routePath)));

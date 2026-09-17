@@ -1,116 +1,333 @@
 <script lang="ts">
-  import { Radio, Smartphone, MessagesSquare } from '@lucide/svelte';
+  import {
+    Activity,
+    ArrowRight,
+    Check,
+    ClipboardCheck,
+    MessageSquare,
+    Smartphone
+  } from '@lucide/svelte';
   import { localizedHref as href } from '$lib/i18n.svelte';
+  import { LESSONS } from '$lib/morse';
   import * as m from '$lib/paraglide/messages';
+
+  // Static lists are built once per component instance; the layout remounts the
+  // page when the language changes, so `m.*` never goes stale here.
+  const heroChips = [
+    m.home_chip_nosignup(),
+    m.home_chip_free(),
+    m.home_chip_languages(),
+    m.home_chip_sync()
+  ];
+
+  const steps = [
+    { title: m.home_step1_title(), body: m.home_step1_body() },
+    { title: m.home_step2_title(), body: m.home_step2_body() },
+    { title: m.home_step3_title(), body: m.home_step3_body() }
+  ];
+
+  // Decorative trainer mock-up: show the character set a learner has unlocked.
+  const PREVIEW_LESSON = 7;
+  const previewChars = LESSONS.slice(0, PREVIEW_LESSON).join('').split('');
 </script>
 
 <!-- Hero -->
 <section class="hero">
-  <h1 class="hero-title">OpenCW</h1>
-  <p class="hero-sub">
-    {m.home_hero_subtitle_pre()}<a href={href('/about')} class="hero-link">{m.home_hero_koch()}</a
-    >{m.home_hero_subtitle_post()}
-  </p>
-  <a href={href('/morse/learn')} class="btn-cta">{m.home_cta()}</a>
+  <h1 class="hero-title">{m.home_hero_title()}</h1>
+  <p class="hero-sub">{m.home_hero_subtitle()}</p>
+  <div class="hero-actions">
+    <a href={href('/learn')} class="btn-cta"
+      >{m.home_cta()}<ArrowRight size={18} aria-hidden="true" /></a
+    >
+    <a href={href('/about')} class="hero-link">{m.home_hero_cta_secondary()}</a>
+  </div>
+  <ul class="hero-chips">
+    {#each heroChips as chip (chip)}
+      <li class="hero-chip"><Check size={14} aria-hidden="true" />{chip}</li>
+    {/each}
+  </ul>
+</section>
+
+<hr class="divider" />
+
+<!-- What a lesson looks like, next to how the method works -->
+<section class="preview-grid">
+  <div class="preview-col">
+    <!-- Decorative: the interactive trainer lives on /learn -->
+    <div class="card preview-card" aria-hidden="true">
+      <span class="card-label">{m.trainer_label_lesson()} {PREVIEW_LESSON}</span>
+      <p class="preview-chars">
+        {#each previewChars as char (char)}<span class="preview-char">{char}</span>{/each}
+      </p>
+      <div class="preview-answer">
+        <span class="preview-answer-text">{m.trainer_answer_placeholder()}</span>
+        <span class="preview-check"
+          ><ClipboardCheck size={15} aria-hidden="true" />{m.trainer_check()}</span
+        >
+      </div>
+    </div>
+    <p class="body-text preview-caption">{m.home_preview_caption()}</p>
+  </div>
+
+  <div>
+    <h2 class="section-title">{m.home_steps_title()}</h2>
+    <ol class="step-list">
+      {#each steps as step, index (step.title)}
+        <li class="step">
+          <span class="step-number">{index + 1}</span>
+          <div>
+            <strong class="step-title">{step.title}</strong>
+            <p class="body-text">{step.body}</p>
+          </div>
+        </li>
+      {/each}
+    </ol>
+  </div>
 </section>
 
 <hr class="divider" />
 
 <!-- Feature cards -->
 <section class="feature-grid">
-  <a href={href('/about')} class="card feature-link-card">
-    <div class="feature-icon" aria-hidden="true"><Radio /></div>
-    <h2 class="feature-title">{m.home_feature_koch_title()}</h2>
-    <p class="feature-body">{m.home_feature_koch_body()}</p>
-  </a>
+  <div class="card">
+    <div class="feature-icon" aria-hidden="true"><Activity /></div>
+    <h2 class="feature-title">{m.home_feature_progress_title()}</h2>
+    <p class="feature-body">{m.home_feature_progress_body()}</p>
+  </div>
   <div class="card">
     <div class="feature-icon" aria-hidden="true"><Smartphone /></div>
-    <h2 class="feature-title">{m.home_feature_mobile_title()}</h2>
-    <p class="feature-body">{m.home_feature_mobile_body()}</p>
+    <h2 class="feature-title">{m.home_feature_anywhere_title()}</h2>
+    <p class="feature-body">{m.home_feature_anywhere_body()}</p>
   </div>
   <a href={href('/forum')} class="card feature-link-card">
-    <div class="feature-icon" aria-hidden="true"><MessagesSquare /></div>
-    <h2 class="feature-title">{m.home_feature_forum_title()}</h2>
-    <p class="feature-body">{m.home_feature_forum_body()}</p>
+    <div class="feature-icon" aria-hidden="true"><MessageSquare /></div>
+    <h2 class="feature-title">{m.home_forum_link_label()}</h2>
+    <p class="feature-body">{m.home_forum_link_note()}</p>
   </a>
 </section>
 
 <hr class="divider" />
 
-<!-- About -->
-<section class="about-grid">
-  <div>
-    <h2 class="section-title">{m.home_about_site_title()}</h2>
-    <h3 class="sub-title">{m.home_about_site_q1()}</h3>
-    <p class="body-text about-answer">{m.home_about_site_a1()}</p>
-    <h3 class="sub-title">{m.home_about_site_q2()}</h3>
-    <p class="body-text about-answer">{m.home_about_site_a2()}</p>
+<!-- Who builds it -->
+<section class="author-band">
+  <p class="body-text author-line">{m.home_author_line()}</p>
+  <div class="author-links">
+    <a href={href('/about')} class="link">{m.home_author_link()}</a>
+    <a href="https://github.com/0x5916" class="link" rel="noopener noreferrer" target="_blank"
+      >{m.home_author_github()}</a
+    >
   </div>
-  <div>
-    <h2 class="section-title">{m.home_about_me_title()}</h2>
-    <p class="body-text about-bio">{m.home_about_me_p1()}</p>
-    <p class="body-text">
-      {m.home_about_me_p2_pre()}
-      <a href="https://github.com/0x5916" class="link">{m.home_about_me_github()}</a>.
-    </p>
-  </div>
+</section>
+
+<!-- Closing call to action -->
+<section class="final-cta">
+  <h2 class="section-title final-title">{m.home_final_title()}</h2>
+  <p class="body-text final-body">{m.home_final_body()}</p>
+  <a href={href('/learn')} class="btn-cta"
+    >{m.home_cta()}<ArrowRight size={18} aria-hidden="true" /></a
+  >
 </section>
 
 <style>
   .hero {
     text-align: center;
-    padding-top: 4rem;
-    padding-bottom: 4rem;
+    padding-top: 3.5rem;
+    padding-bottom: 3rem;
   }
 
   .hero-title {
     color: var(--accent);
-    font-size: 3rem;
-    line-height: 1;
+    font-size: 2.25rem;
+    line-height: 1.15;
     font-weight: 800;
-    letter-spacing: -0.035em;
-    margin-bottom: 1rem;
+    letter-spacing: -0.03em;
+    max-width: 34rem;
+    margin: 0 auto 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .hero-title {
+      font-size: 3rem;
+    }
   }
 
   .hero-sub {
     color: var(--text-secondary);
-    font-size: 1.125rem;
-    line-height: 1.75rem;
-    max-width: 44rem;
-    margin-left: auto;
-    margin-right: auto;
-    margin-bottom: 2rem;
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    max-width: 40rem;
+    margin: 0 auto 1.75rem;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem 1.25rem;
   }
 
   .hero-link {
     color: var(--accent);
     font-weight: 600;
+    text-decoration: none;
+  }
+
+  .hero-link:hover {
+    text-decoration: underline;
+  }
+
+  .hero-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem 0.75rem;
+    max-width: 40rem;
+    margin: 2rem auto 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .hero-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background-color: var(--bg-surface);
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.2rem;
+  }
+
+  .hero-chip :global(svg) {
+    flex-shrink: 0;
+    color: var(--accent);
+  }
+
+  .preview-grid {
+    display: grid;
+    gap: 2rem;
+    margin: 2rem 0;
+  }
+
+  @media (min-width: 800px) {
+    .preview-grid {
+      grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+      align-items: center;
+    }
+  }
+
+  .preview-col {
+    min-width: 0;
+  }
+
+  .preview-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .preview-card :global(.card-label) {
+    margin-bottom: 0;
+  }
+
+  .preview-chars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+  }
+
+  .preview-char {
+    min-width: 2rem;
+    padding: 0.35rem 0.5rem;
+    text-align: center;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--accent);
+    background-color: var(--bg-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+
+  .preview-answer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-inset);
+  }
+
+  .preview-answer-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+  }
+
+  .preview-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    padding: 0.35rem 0.7rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--accent-cta);
+    color: var(--on-accent);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .preview-caption {
+    margin: 0.85rem 0 0;
+  }
+
+  .author-band {
+    margin: 2rem 0;
+    text-align: center;
+  }
+
+  .author-line {
+    max-width: 40rem;
+    margin: 0 auto 0.75rem;
+  }
+
+  .author-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.25rem;
+  }
+
+  .final-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 2.5rem 0 1rem;
+    text-align: center;
+  }
+
+  .final-cta .final-title {
+    margin: 0;
+  }
+
+  .final-body {
+    max-width: 34rem;
+    margin: 0 0 0.75rem;
   }
 
   .feature-link-card {
     text-decoration: none;
     color: inherit;
-  }
-
-  .about-answer {
-    margin-bottom: 1rem;
-  }
-
-  .about-bio {
-    margin-bottom: 0.75rem;
-  }
-
-  .about-grid {
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-    display: grid;
-    gap: 1.5rem;
-  }
-
-  @media (min-width: 640px) {
-    .about-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
   }
 
   .feature-grid {

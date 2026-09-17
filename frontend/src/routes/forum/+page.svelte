@@ -8,7 +8,7 @@
   <title>{m.forum_title()} | OpenCW</title>
 </svelte:head>
 
-<main class="forum-page page-wide">
+<div class="forum-page page-wide">
   <header class="forum-hero">
     <div class="eyebrow"><MessagesSquare size={16} /> {m.forum_eyebrow()}</div>
     <h1 class="page-title">{m.forum_title()}</h1>
@@ -19,12 +19,12 @@
     <Construction size={34} aria-hidden="true" />
     <h2 class="state-title">{m.forum_under_development_title()}</h2>
     <p class="body-text state-note">{m.forum_under_development_note()}</p>
-    <a class="btn-primary state-action" href={href('/morse/learn')}>
+    <a class="btn-primary state-action" href={href('/learn')}>
       <Radio size={17} />
       {m.nav_learn()}
     </a>
   </section>
-</main>
+</div>
 
 <style>
   .forum-page {

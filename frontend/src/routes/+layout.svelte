@@ -8,22 +8,22 @@
   import { goto, afterNavigate } from '$app/navigation';
   import { page } from '$app/state';
   import {
-    Menu,
-    X,
-    Monitor,
-    Sun,
-    Moon,
-    Home,
-    Radio,
-    MessageSquare,
+    Ellipsis,
     Info,
-    LogIn,
-    UserPlus,
-    LogOut,
     Languages,
-    User,
+    LayoutDashboard,
+    LogIn,
+    LogOut,
+    Menu,
+    MessageSquare,
+    Monitor,
+    Moon,
+    Radio,
     Settings,
-    LayoutDashboard
+    Sun,
+    User,
+    UserPlus,
+    X
   } from '@lucide/svelte';
   import {
     lang,
@@ -42,17 +42,28 @@
 
   let { children, data } = $props();
 
-  /** Primary destinations, shared by the desktop links, mobile sheet and tab bar. */
+  /** Desktop link cluster. Home is the brand logo, so it is not repeated here. */
   const PRIMARY_NAV = [
-    { path: '/', label: m.nav_home, icon: Home },
-    { path: '/morse/learn', label: m.nav_learn, icon: Radio },
+    { path: '/learn', label: m.nav_learn, icon: Radio },
     { path: '/forum', label: m.nav_forum, icon: MessageSquare },
     { path: '/about', label: m.nav_about, icon: Info }
   ];
 
+  /** Pinned phone tab bar. The fourth slot opens the "More" sheet, not a page. */
+  const TAB_NAV = [
+    { path: '/learn', label: m.nav_learn, icon: Radio },
+    { path: '/profile', label: m.nav_profile, icon: LayoutDashboard },
+    { path: '/forum', label: m.nav_forum, icon: MessageSquare }
+  ];
+
+  const GITHUB_URL = 'https://github.com/0x5916';
+  const DESKTOP_NAV_QUERY = '(min-width: 640px)';
+
   let theme = $state<Theme>('auto');
   let menuOpen = $state(false);
   let navEl = $state<HTMLElement | null>(null);
+  let sheetEl = $state<HTMLElement | null>(null);
+  let bottomNavEl = $state<HTMLElement | null>(null);
   let ThemeIcon = $derived(themeIconFor(theme));
   let reconciledSettingsForUser = $state<string | null>(null);
 
@@ -143,13 +154,25 @@
     menuOpen = false;
   }
 
+  function focusableIn(container: HTMLElement): HTMLElement[] {
+    return Array.from(
+      container.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    );
+  }
+
   function onDocumentClick(event: MouseEvent) {
+    if (!menuOpen) return;
+
     const target = event.target;
     if (!(target instanceof Node)) return;
 
-    if (menuOpen && navEl && !navEl.contains(target)) {
-      menuOpen = false;
-    }
+    // Both the hamburger (navbar) and the "More" tab (bottom bar) toggle the
+    // sheet, so a click in either one must not immediately dismiss it.
+    if (navEl?.contains(target) || bottomNavEl?.contains(target)) return;
+
+    menuOpen = false;
   }
 
   function onDocumentKeydown(event: KeyboardEvent) {
@@ -193,6 +216,56 @@
       document.removeEventListener('focusout', onDocumentFocusOut);
     };
   });
+
+  // The "More" sheet behaves like a real overlay: focus moves into it on open,
+  // Tab cycles inside it, and focus returns to the trigger on close.
+  $effect(() => {
+    if (!menuOpen || typeof document === 'undefined') return;
+
+    const sheet = sheetEl;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    sheet?.focus();
+
+    function onSheetKeydown(event: KeyboardEvent) {
+      if (event.key !== 'Tab' || !sheet) return;
+
+      const items = focusableIn(sheet);
+      if (items.length === 0) return;
+
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey && (active === first || active === sheet)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', onSheetKeydown);
+
+    return () => {
+      document.removeEventListener('keydown', onSheetKeydown);
+      previous?.focus();
+    };
+  });
+
+  // Above the desktop breakpoint the sheet is not rendered at all, so drop the
+  // open state when the viewport grows past it.
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+
+    const query = window.matchMedia(DESKTOP_NAV_QUERY);
+    function onChange(event: MediaQueryListEvent) {
+      if (event.matches) closeMobileMenu();
+    }
+
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  });
 </script>
 
 <svelte:head>
@@ -225,15 +298,27 @@
   <nav class="navbar" bind:this={navEl}>
     <div class="navbar-inner">
       <!-- Brand -->
-      <a href={href('/')} class="navbar-brand">
-        <img src="/favicon.svg" alt="OpenCW" />
+      <!-- Brand is the home affordance, so "Home" is not duplicated in the links -->
+      <a
+        href={href('/')}
+        class="navbar-brand"
+        title={m.nav_home()}
+        aria-current={isActive('/') ? 'page' : undefined}
+      >
+        <!-- The wordmark next to it already names the link. -->
+        <img src="/favicon.svg" alt="" />
         OpenCW
       </a>
 
       <!-- Desktop: all links + user menu on the right -->
       <div class="navbar-right navbar-desktop">
         {#each PRIMARY_NAV as item (item.path)}
-          <a href={href(item.path)} class="navbar-link">{item.label()}</a>
+          <a
+            href={href(item.path)}
+            class="navbar-link"
+            class:active={isActive(item.path)}
+            aria-current={isActive(item.path) ? 'page' : undefined}>{item.label()}</a
+          >
         {/each}
         <div class="navbar-divider"></div>
         {#if $user}
@@ -262,7 +347,7 @@
           <Dropdown id="guest-menu">
             {#snippet trigger()}
               <User class="nav-icon" aria-hidden="true" />
-              Guest
+              {m.nav_guest()}
             {/snippet}
             {#snippet menu()}
               <a href={href('/profile')} class="user-dropdown-item" role="menuitem"
@@ -284,8 +369,8 @@
           type="button"
           onclick={cycleTheme}
           class="theme-icon-btn"
-          title="Cycle theme"
-          aria-label="Cycle theme"
+          title={m.nav_theme_cycle()}
+          aria-label={m.nav_theme_cycle()}
         >
           <span class="nav-label-icon">
             <ThemeIcon class="nav-icon" aria-hidden="true" />
@@ -322,7 +407,7 @@
           type="button"
           onclick={() => (menuOpen = !menuOpen)}
           class="hamburger"
-          aria-label="Menu"
+          aria-label={menuOpen ? m.nav_menu_close() : m.nav_menu_open()}
           aria-expanded={menuOpen}
           aria-controls="mobile-nav-menu"
         >
@@ -335,38 +420,29 @@
       </div>
     </div>
 
-    <!-- Mobile dropdown menu -->
+    <!-- "More" sheet: the destinations that do not fit in the tab bar -->
     {#if menuOpen}
-      <div class="mobile-menu" id="mobile-nav-menu">
-        {#each PRIMARY_NAV as item (item.path)}
-          <a href={href(item.path)} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><item.icon size={16} />{item.label()}</a
-          >
-        {/each}
+      <div class="mobile-menu" id="mobile-nav-menu" bind:this={sheetEl} tabindex="-1">
+        <a href={href('/about')} class="mobile-link" onclick={() => (menuOpen = false)}
+          ><Info size={16} />{m.nav_about()}</a
+        >
+        <a href={href('/settings')} class="mobile-link" onclick={() => (menuOpen = false)}
+          ><Settings size={16} />{m.nav_settings()}</a
+        >
         <div class="mobile-divider"></div>
         {#if $user}
           <a href={href('/profile')} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><LayoutDashboard size={16} />{m.nav_profile()}</a
-          >
-          <a href={href('/settings')} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><Settings size={16} />{m.nav_settings()}</a
+            ><LayoutDashboard size={16} />{m.nav_profile()} ({$user.username})</a
           >
           <button
             type="button"
             onclick={() => {
-              handleLogout();
+              void handleLogout();
               menuOpen = false;
             }}
-            class="mobile-link mobile-link-btn"
-            ><LogOut size={16} />{m.nav_logout()} ({$user.username})</button
+            class="mobile-link mobile-link-btn"><LogOut size={16} />{m.nav_logout()}</button
           >
         {:else}
-          <a href={href('/profile')} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><LayoutDashboard size={16} />{m.nav_profile()}</a
-          >
-          <a href={href('/settings')} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><Settings size={16} />{m.nav_settings()}</a
-          >
           <a href={href('/login')} class="mobile-link" onclick={() => (menuOpen = false)}
             ><LogIn size={16} />{m.nav_login()}</a
           >
@@ -387,6 +463,7 @@
           <button
             type="button"
             class="mobile-link mobile-link-btn"
+            aria-pressed={lang.value === locale}
             onclick={() => setLanguage(locale)}
             ><Languages size={16} />{languageLabel(locale)}</button
           >
@@ -401,11 +478,19 @@
     {/key}
   </main>
 
-  <footer class="footer">{m.footer_text()}</footer>
+  <footer class="footer">
+    <span>{m.footer_text()}</span>
+    <span class="footer-links">
+      <a href={href('/about')} class="footer-link">{m.nav_about()}</a>
+      <a href={GITHUB_URL} class="footer-link" rel="noopener noreferrer" target="_blank"
+        >{m.footer_link_github()}</a
+      >
+    </span>
+  </footer>
 
   <!-- Mobile: bottom navigation bar (hidden on desktop) -->
-  <nav class="bottom-nav" aria-label={m.nav_primary()}>
-    {#each PRIMARY_NAV as item (item.path)}
+  <nav class="bottom-nav" aria-label={m.nav_primary()} bind:this={bottomNavEl}>
+    {#each TAB_NAV as item (item.path)}
       <a
         href={href(item.path)}
         class="bottom-nav-item"
@@ -416,5 +501,16 @@
         ></a
       >
     {/each}
+    <button
+      type="button"
+      class="bottom-nav-item"
+      class:active={menuOpen}
+      aria-expanded={menuOpen}
+      aria-controls="mobile-nav-menu"
+      onclick={() => (menuOpen = !menuOpen)}
+      ><Ellipsis size={20} class="bottom-nav-icon" aria-hidden="true" /><span
+        class="bottom-nav-label">{m.nav_more()}</span
+      ></button
+    >
   </nav>
 </div>

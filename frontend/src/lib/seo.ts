@@ -10,7 +10,7 @@ export type SeoMetadata = {
 
 export const SITE_NAME = 'OpenCW';
 export const DEFAULT_OG_IMAGE_PATH = '/og-image.png';
-export const PUBLIC_ROUTE_PATHS = ['/', '/about', '/forum', '/morse/learn'] as const;
+export const PUBLIC_ROUTE_PATHS = ['/', '/about', '/forum', '/learn'] as const;
 
 type LocalizedSeoText = {
   title: string;
@@ -58,42 +58,62 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
   '/': {
     localized: {
       en: {
-        title: 'OpenCW - Morse Code (CW) Training & Practice',
+        title: 'OpenCW - Learn Morse Code at Real Speed',
         description:
-          "Practice Morse code (CW) with OpenCW's free Koch method trainer. Track WPM progress and join the amateur radio community."
+          'OpenCW is a free Koch-method Morse code trainer: listen at full speed, type what you hear, and watch your accuracy climb. No account needed to start.'
+      },
+      de: {
+        title: 'OpenCW - Morsecode in echtem Tempo lernen',
+        description:
+          'OpenCW ist ein kostenloser Morsecode-Trainer nach der Koch-Methode: in vollem Tempo hoeren, Gehoertes tippen und die Genauigkeit steigern. Ohne Konto nutzbar.'
+      },
+      ja: {
+        title: 'OpenCW - Jissen Sokudo de Morse o Manabu',
+        description:
+          'OpenCW wa muryo no Koch methodo Morse toreena desu. Jissen sokudo de kiki, kiki totta moji o taipu shi, seido o nobashite ikemasu. Touroku wa fuyo desu.'
+      },
+      'zh-Hans': {
+        title: 'OpenCW - Yi Shizhan Sudu Xuexi Mosi Ma',
+        description:
+          'OpenCW shi mianfei de Koch fangfa Mosi ma xunlianqi: yi shizhan sudu tingxie, shuru nitingdao de neirong, buduan tisheng zhunquelu. Wuxu zhanghu.'
+      },
+      'zh-Hant': {
+        title: 'OpenCW - Yi Shizhan Sudu Xuexi Moshi Dianma',
+        description:
+          'OpenCW shi mianfei de Koch fangfa Moshi dianma xunlianqi: yi shizhan sudu tingxie, shuru nitingdao de neirong, buduan tisheng zhunquelu. Wuxu zhanghu.'
       }
     }
   },
   '/about': {
     localized: {
       en: {
-        title: 'About OpenCW - Koch Method Morse Code Training',
+        title: 'About OpenCW - Koch Method, Project and Author',
         description:
-          'Learn how OpenCW uses the Koch method to teach Morse code effectively for amateur radio and CW operators.'
+          'What OpenCW is, how the Koch method teaches Morse code at full speed, who builds it, and how your practice data is handled.'
       },
       de: {
-        title: 'Ueber OpenCW - Koch-Methode fuer Morsecode',
+        title: 'Ueber OpenCW - Koch-Methode, Projekt und Autor',
         description:
-          'Erfahre, wie OpenCW mit der Koch-Methode Morsecode fuer Funkamateure und CW-Anwender effektiv vermittelt.'
+          'Was OpenCW ist, wie die Koch-Methode Morsecode in vollem Tempo vermittelt, wer dahintersteht und was mit deinen Uebungsdaten passiert.'
       },
       ja: {
-        title: 'OpenCW ni tsuite - Koch methodo de Manabu Morse',
+        title: 'OpenCW ni tsuite - Koch Methodo to Project',
         description:
-          'OpenCW ga Koch methodo de douyatte koukateki ni Morse o oshieru ka o setsumei shimasu.'
+          'OpenCW no gaiyou, Koch methodo de Morse o manabu shikumi, kaihatsu sha, renshuu data no toriatsukai ni tsuite setsumei shimasu.'
       },
       'zh-Hans': {
-        title: 'Guanyu OpenCW - Koch Fangfa Mosi Xunlian',
+        title: 'Guanyu OpenCW - Koch Fangfa, Xiangmu yu Zuozhe',
         description:
-          'Liaojie OpenCW ruhe tongguo Koch fangfa gaoxiao xunlian Mosi ma, mianxiang yuhuo aihaozhe.'
+          'Jieshao OpenCW shi shenme, Koch fangfa ruhe jiao shou Mosi ma, zuozhe shi shui, yiji lianxi shuju ruhe chuli.'
       },
       'zh-Hant': {
-        title: 'Guanyu OpenCW - Koch Fangfa Mosi Xunlian',
+        title: 'Guanyu OpenCW - Koch Fangfa, Zhuanan yu Zuozhe',
         description:
-          'Liaojie OpenCW ruhe tongguo Koch fangfa gao xiao xunlian Mosi ma, mianxiang yuyu dian aihaozhe.'
+          'Jieshao OpenCW shi shenme, Koch fangfa ruhe jiao shou Moshi mima, zuozhe shi shui, yiji lianxi ziliao ruhe chuli.'
       }
     }
   },
-  '/morse/learn': {
+  '/learn': {
     ogImagePath: '/og-image.png',
     localized: {
       en: {
@@ -124,6 +144,9 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
     }
   },
   '/forum': {
+    // The forum is a placeholder until it launches: keep it crawlable for its
+    // links, but keep the thin "under development" page out of the index.
+    robots: 'noindex,follow',
     localized: {
       en: {
         title: 'OpenCW Forum - Community Space in Development',
@@ -222,8 +245,8 @@ export function buildSitemapUrlSet(origin: string, localeCodes: readonly string[
   const urls = new Set<string>();
   const indexablePublicRoutes = getIndexablePublicRoutePaths();
 
-  urls.add(buildAbsoluteUrl(origin, '/'));
-
+  // Every locale (including the base locale) publishes an explicit locale
+  // prefix, so the bare `/` and `/en` spellings never both appear here.
   for (const locale of localeCodes) {
     for (const routePath of indexablePublicRoutes) {
       urls.add(buildAbsoluteUrl(origin, buildLocalizedPath(routePath, locale)));
