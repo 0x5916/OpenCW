@@ -15,7 +15,7 @@
     <p class="body-text">{m.forum_under_development_body()}</p>
   </header>
 
-  <section class="card forum-state">
+  <section class="panel forum-state">
     <Construction size={34} aria-hidden="true" />
     <h2 class="state-title">{m.forum_under_development_title()}</h2>
     <p class="body-text state-note">{m.forum_under_development_note()}</p>
@@ -27,13 +27,19 @@
 </div>
 
 <style>
-  .forum-page {
-    padding-top: 2.25rem;
-    padding-bottom: 3rem;
+  /* The wide tier is reserved for the future thread list. While the page is a
+     placeholder, its content column is capped at the reading measure so the
+     hero and the panel share edges, instead of one sitting centred and the
+     other left-aligned across 80rem. */
+  .forum-hero,
+  .forum-state {
+    max-width: var(--max-width-narrow);
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .forum-hero {
-    margin-bottom: 2rem;
+    margin-bottom: var(--section-gap);
   }
 
   .eyebrow {
@@ -53,7 +59,6 @@
   }
 
   .forum-hero .body-text {
-    max-width: 40rem;
     margin: 0.45rem 0 0;
   }
 

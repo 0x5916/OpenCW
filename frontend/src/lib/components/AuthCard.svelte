@@ -11,7 +11,7 @@
   let { title, subtitle, footer, children }: Props = $props();
 </script>
 
-<main class="page-narrow auth-page">
+<div class="page-narrow auth-page">
   <div class="card auth-card">
     <h1 class="page-title auth-title">{title}</h1>
     <p class="body-text auth-subtitle">{subtitle}</p>
@@ -21,14 +21,9 @@
     <hr class="divider" />
     <p class="body-text auth-footer-text">{@render footer()}</p>
   </div>
-</main>
+</div>
 
 <style>
-  .auth-page {
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
-  }
-
   .auth-card {
     max-width: 38rem;
     margin-left: auto;
@@ -36,9 +31,8 @@
     padding: 1.75rem;
   }
 
+  /* `.page-title` already carries the h1 scale; the card only owns the gap. */
   .auth-title {
-    font-size: 2rem;
-    line-height: 2.25rem;
     margin-bottom: 0.35rem;
   }
 
@@ -54,11 +48,6 @@
   @media (max-width: 639px) {
     .auth-card {
       padding: 1.25rem;
-    }
-
-    .auth-title {
-      font-size: 1.75rem;
-      line-height: 2rem;
     }
   }
 </style>

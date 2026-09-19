@@ -48,13 +48,11 @@
   </ul>
 </section>
 
-<hr class="divider" />
-
 <!-- What a lesson looks like, next to how the method works -->
 <section class="preview-grid">
   <div class="preview-col">
     <!-- Decorative: the interactive trainer lives on /learn -->
-    <div class="card preview-card" aria-hidden="true">
+    <div class="preview-frame" aria-hidden="true">
       <span class="card-label">{m.trainer_label_lesson()} {PREVIEW_LESSON}</span>
       <p class="preview-chars">
         {#each previewChars as char (char)}<span class="preview-char">{char}</span>{/each}
@@ -85,10 +83,8 @@
   </div>
 </section>
 
-<hr class="divider" />
-
-<!-- Feature cards -->
-<section class="feature-grid">
+<!-- Feature cards: browsable, independent, peer-grouped -> genuinely cards. -->
+<section class="card-grid feature-grid">
   <div class="card">
     <div class="feature-icon" aria-hidden="true"><Activity /></div>
     <h2 class="feature-title">{m.home_feature_progress_title()}</h2>
@@ -99,14 +95,12 @@
     <h2 class="feature-title">{m.home_feature_anywhere_title()}</h2>
     <p class="feature-body">{m.home_feature_anywhere_body()}</p>
   </div>
-  <a href={href('/forum')} class="card feature-link-card">
+  <a href={href('/forum')} class="card card--interactive">
     <div class="feature-icon" aria-hidden="true"><MessageSquare /></div>
     <h2 class="feature-title">{m.home_forum_link_label()}</h2>
     <p class="feature-body">{m.home_forum_link_note()}</p>
   </a>
 </section>
-
-<hr class="divider" />
 
 <!-- Who builds it -->
 <section class="author-band">
@@ -129,16 +123,18 @@
 </section>
 
 <style>
+  /* One separation idiom for the whole page: every block below the hero carries
+     the same top margin, and the redundant `<hr class="divider">` separators are
+     gone — a transition used to be spaced three times over (hero bottom padding
+     + rule margins + the next section's margin). */
   .hero {
     text-align: center;
-    padding-top: 3.5rem;
-    padding-bottom: 3rem;
   }
 
   .hero-title {
     color: var(--accent);
-    font-size: 2.25rem;
-    line-height: 1.15;
+    font-size: var(--text-3xl);
+    line-height: var(--leading-tight);
     font-weight: 800;
     letter-spacing: -0.03em;
     max-width: 34rem;
@@ -147,14 +143,14 @@
 
   @media (min-width: 640px) {
     .hero-title {
-      font-size: 3rem;
+      font-size: var(--text-4xl);
     }
   }
 
   .hero-sub {
     color: var(--text-secondary);
-    font-size: 1.0625rem;
-    line-height: 1.7;
+    font-size: var(--text-lg);
+    line-height: var(--leading-relaxed);
     max-width: 40rem;
     margin: 0 auto 1.75rem;
   }
@@ -208,8 +204,8 @@
 
   .preview-grid {
     display: grid;
-    gap: 2rem;
-    margin: 2rem 0;
+    gap: var(--block-gap);
+    margin-top: var(--section-gap);
   }
 
   @media (min-width: 800px) {
@@ -223,13 +219,20 @@
     min-width: 0;
   }
 
-  .preview-card {
+  /* Decorative mock of the trainer: a frame, not a card. The dashed edge keeps
+     it legible as an illustration — a solid edge at the card radius reads as the
+     real trainer — and nothing inside it responds to hover. */
+  .preview-frame {
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
+    padding: 1.25rem;
+    border: 1px dashed var(--border-subtle);
+    border-radius: var(--radius-lg);
+    background-color: var(--bg-surface);
   }
 
-  .preview-card :global(.card-label) {
+  .preview-frame :global(.card-label) {
     margin-bottom: 0;
   }
 
@@ -273,6 +276,9 @@
     font-size: 0.8125rem;
   }
 
+  /* Inside the mock the "check" affordance is a neutral chip, never a filled
+     button: this whole frame is aria-hidden decoration, so anything that looks
+     pressable here is a false affordance. */
   .preview-check {
     display: inline-flex;
     align-items: center;
@@ -280,8 +286,9 @@
     flex-shrink: 0;
     padding: 0.35rem 0.7rem;
     border-radius: var(--radius-sm);
-    background-color: var(--accent-cta);
-    color: var(--on-accent);
+    border: 1px solid var(--border);
+    background-color: var(--bg-surface);
+    color: var(--text-muted);
     font-size: 0.8125rem;
     font-weight: 600;
   }
@@ -291,7 +298,7 @@
   }
 
   .author-band {
-    margin: 2rem 0;
+    margin-top: var(--section-gap);
     text-align: center;
   }
 
@@ -312,7 +319,7 @@
     flex-direction: column;
     align-items: center;
     gap: 0.4rem;
-    margin: 2.5rem 0 1rem;
+    margin-top: var(--section-gap);
     text-align: center;
   }
 
@@ -325,22 +332,8 @@
     margin: 0 0 0.75rem;
   }
 
-  .feature-link-card {
-    text-decoration: none;
-    color: inherit;
-  }
-
   .feature-grid {
-    display: grid;
-    gap: 1.5rem;
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-  }
-
-  @media (min-width: 640px) {
-    .feature-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
+    margin-top: var(--section-gap);
   }
 
   .feature-icon {
@@ -361,14 +354,14 @@
   .feature-title {
     color: var(--text-primary);
     font-weight: 700;
-    font-size: 1.125rem;
-    line-height: 1.75rem;
+    font-size: var(--text-lg);
+    line-height: var(--leading-snug);
     margin-bottom: 0.25rem;
   }
 
   .feature-body {
     color: var(--text-secondary);
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+    font-size: var(--text-sm);
+    line-height: var(--leading-normal);
   }
 </style>

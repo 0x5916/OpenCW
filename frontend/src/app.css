@@ -8,6 +8,9 @@
 
   --border: #334155;
   --border-subtle: #475569;
+  /* Edge of a card/panel surface. Separate from `--border` so flat cards stay
+     legible in light mode without strengthening inputs, navbar or footer. */
+  --border-card: #334155;
 
   --text-primary: #f9fafb;
   --text-secondary: #cbd5e1;
@@ -20,24 +23,42 @@
   --accent-cta-h: #4ade80;
   --danger: #b91c1c;
   --danger-h: #991b1b;
-  --on-accent: #ffffff;
+  /* Filled accent surfaces carry a dark-on-green label: white on the brand
+     green reaches only ~2:1 in dark mode and ~3.4:1 in light. */
+  --on-accent: #052e16;
+  --on-danger: #ffffff;
 
   --result-good-bg: #052e16;
   --result-good-bd: #15803d;
   --result-bad-bg: #1a0000;
   --result-bad-bd: #991b1b;
 
-  --diff-good: #22c55e;
-  --diff-ok: #ca8a04;
-  --diff-bad: #ef4444;
-  --diff-extra: #a855f7;
+  /* Semantic status roles. The result diff, verified/accuracy states and inline
+     banners all read from these; components must not hard-code status hexes.
+     The light theme re-tunes them for contrast on a white surface. */
+  --status-good: #22c55e;
+  --status-ok: #ca8a04;
+  --status-bad: #ef4444;
+  --status-extra: #a855f7;
+  /* Matching washes for pills, banners and the score hero. */
+  --status-good-tint: color-mix(in srgb, var(--status-good) 15%, transparent);
+  --status-ok-tint: color-mix(in srgb, var(--status-ok) 15%, transparent);
+  --status-bad-tint: color-mix(in srgb, var(--status-bad) 15%, transparent);
+  --status-extra-tint: color-mix(in srgb, var(--status-extra) 15%, transparent);
+  /* Aliases so the diff rules below keep reading naturally. */
+  --diff-good: var(--status-good);
+  --diff-ok: var(--status-ok);
+  --diff-bad: var(--status-bad);
+  --diff-extra: var(--status-extra);
 
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
 
-  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.2);
-  --shadow-lift: 0 14px 34px rgba(0, 0, 0, 0.28);
+  /* Elevation is reserved for surfaces that actually stack above the page.
+     Static cards and panels are flat (see `.card` / `.panel` below). */
+  --shadow-menu: 0 8px 16px rgba(0, 0, 0, 0.3);
+  --shadow-overlay: 0 24px 60px rgba(0, 0, 0, 0.4);
 
   --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
 
@@ -53,6 +74,39 @@
   --max-width-container: 64rem;
   --max-width-narrow: 42rem;
   --max-width-wide: 80rem;
+
+  /* Page rhythm. `.page-content` owns the gap above the first content block and
+     below the last one; pages must not set their own vertical padding, or the
+     same content lands at a different height on every route. `--section-gap`
+     separates a page's major sections, `--block-gap` separates sibling blocks
+     inside one. */
+  /* Below the navbar. Keep it under the navbar's own height (~3.25rem), or the
+     empty space above the first line reads as heavier than the chrome itself. */
+  --page-top: 2.5rem;
+  /* Phones have no top bar at all, so this gap is not separating content from
+     anything: it only clears the status bar / notch and lets the first line
+     breathe. It is added to `env(safe-area-inset-top)`, never replaced by it. */
+  --page-top-phone: 1.25rem;
+  --page-bottom: 3.5rem;
+  --section-gap: 2.5rem;
+  --block-gap: 1.5rem;
+  /* Height of the phone tab bar, reserved as bottom clearance by `.page-content`. */
+  --bottom-nav-clearance: 4.25rem;
+
+  /* Type scale: size + unitless leading pairs. Unitless so the ratio survives
+     the responsive size changes (rem leading broke when a heading resized). */
+  --text-xs: 0.75rem; /* meta, eyebrows, control labels */
+  --text-sm: 0.875rem; /* UI text, secondary copy */
+  --text-base: 1rem; /* body prose */
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem; /* .section-title */
+  --text-2xl: 1.875rem; /* .page-title */
+  --text-3xl: 2.25rem; /* home hero */
+  --text-4xl: 3rem; /* home hero, wide */
+  --leading-tight: 1.2;
+  --leading-snug: 1.45;
+  --leading-normal: 1.65;
+  --leading-relaxed: 1.75;
 }
 
 @media (prefers-color-scheme: light) {
@@ -62,16 +116,21 @@
     --bg-inset: #f3f4f6;
     --border: #e5e7eb;
     --border-subtle: #d1d5db;
+    --border-card: #d1d5db;
     --text-primary: #111827;
     --text-secondary: #374151;
     --text-muted: #6b7280;
     --text-label: #4b5563;
-    --accent: #16a34a;
-    --accent-hover: #15803d;
+    --accent: #15803d;
+    --accent-hover: #166534;
     --accent-cta: #16a34a;
     --accent-cta-h: #15803d;
     --danger: #dc2626;
     --danger-h: #b91c1c;
+    --status-good: #15803d;
+    --status-ok: #a16207;
+    --status-bad: #dc2626;
+    --status-extra: #7c3aed;
     --result-good-bg: #f0fdf4;
     --result-good-bd: #86efac;
     --result-bad-bg: #fff1f2;
@@ -85,16 +144,21 @@
   --bg-inset: #f3f4f6;
   --border: #e5e7eb;
   --border-subtle: #d1d5db;
+  --border-card: #d1d5db;
   --text-primary: #111827;
   --text-secondary: #374151;
   --text-muted: #6b7280;
   --text-label: #4b5563;
-  --accent: #16a34a;
-  --accent-hover: #15803d;
+  --accent: #15803d;
+  --accent-hover: #166534;
   --accent-cta: #16a34a;
   --accent-cta-h: #15803d;
   --danger: #dc2626;
   --danger-h: #b91c1c;
+  --status-good: #15803d;
+  --status-ok: #a16207;
+  --status-bad: #dc2626;
+  --status-extra: #7c3aed;
   --result-good-bg: #f0fdf4;
   --result-good-bd: #86efac;
   --result-bad-bg: #fff1f2;
@@ -143,52 +207,94 @@ body {
     color var(--transition-base);
 }
 
-.card {
+/* One visual primitive, two semantic names:
+   - `.card`  — a browsable, independent unit that belongs to a peer group
+                (home feature trio, a link card, the auth form).
+   - `.panel` — a standalone container for sequential or dense content
+                (trainer tool panels, data visualisations, settings groups).
+   Both are flat: surface + hairline border. Elevation belongs only to things
+   that stack above the page (`--shadow-menu` / `--shadow-overlay`), so a
+   static card must never react to hover — that would be a false affordance. */
+.card,
+.card-sm,
+.panel {
   background-color: var(--bg-surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-card);
   border-radius: var(--radius-lg);
-  padding: var(--space-lg);
-  box-shadow: var(--shadow-soft);
+  min-width: 0;
   transition:
     background-color var(--transition-base),
-    border-color var(--transition-base),
-    box-shadow var(--transition-base);
+    border-color var(--transition-base);
 }
 
-.card:hover {
-  box-shadow: var(--shadow-lift);
+.card,
+.panel {
+  padding: var(--space-lg);
 }
 
 .card-sm {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
   padding: 1.25rem;
-  min-width: 0;
-  box-shadow: var(--shadow-soft);
-  transition:
-    background-color var(--transition-base),
-    border-color var(--transition-base),
-    box-shadow var(--transition-base);
 }
 
-.card-sm:hover {
-  box-shadow: var(--shadow-lift);
+/* The whole surface is a link or button. */
+.card--interactive {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.card--interactive:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-card));
+  background-color: color-mix(in srgb, var(--accent) 4%, var(--bg-surface));
+}
+
+.card--interactive:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+
+/* Heading for a card/panel's own content. `.card-label` stays the eyebrow/meta
+   label; use `.card-title` whenever the text actually heads the surface. */
+.card-title {
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  line-height: var(--leading-snug);
+  font-weight: 600;
+  margin: 0 0 0.5rem;
 }
 
 .card-label {
   color: var(--text-muted);
-  font-size: 0.75rem;
-  line-height: 1rem;
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 1rem;
 }
 
+/* Peer cards laid out as an auto-fitting grid (feature trio, stat tiles). */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1.5rem;
+}
+
+/* Inline notice (guest prompts, hints): an inset block, never a card. */
+.notice {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-card);
+  background-color: var(--bg-inset);
+}
+
+/* Rule between two parts of the same section (never between sections: those
+   use `--section-gap`, otherwise the gap and the rule stack up). */
 .divider {
   border-color: var(--border);
-  margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-top: var(--block-gap);
+  margin-bottom: var(--block-gap);
 }
 
 /* Numbered step list — home "how it works", about "how the method works". */
@@ -213,7 +319,7 @@ body {
   height: 1.75rem;
   border-radius: 50%;
   background-color: var(--accent);
-  color: var(--bg-base);
+  color: var(--on-accent);
   font-weight: 700;
   font-size: 0.85rem;
   display: flex;
@@ -229,21 +335,26 @@ body {
   margin-bottom: 0.25rem;
 }
 
+/* Headings carry no margin: the page or the container owns the rhythm, so a
+   heading can move between contexts without bringing spacing with it. */
 .page-title {
   color: var(--accent);
-  font-size: 1.875rem;
-  line-height: 2.25rem;
+  font-size: var(--text-2xl);
+  line-height: var(--leading-tight);
   font-weight: 800;
   letter-spacing: -0.02em;
+  margin: 0;
 }
 
+/* Section headings stay neutral: the accent marks the page identity and the
+   interactive affordances, so structure does not compete with them. */
 .section-title {
-  color: var(--accent);
-  font-size: 1.5rem;
-  line-height: 2rem;
+  color: var(--text-primary);
+  font-size: var(--text-xl);
+  line-height: var(--leading-snug);
   font-weight: 700;
   letter-spacing: -0.015em;
-  margin-bottom: 0.75rem;
+  margin: 0 0 0.75rem;
 }
 
 .sub-title {
@@ -254,14 +365,21 @@ body {
 
 .body-text {
   color: var(--text-secondary);
-  font-size: 0.875rem;
-  line-height: 1.625;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+/* Long-form reading (about, home prose): the one place body copy steps up to
+   16px, because 14px is tuned for UI text, not for paragraphs. */
+.body-text--prose {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
 }
 
 .label-text {
   color: var(--text-label);
-  font-size: 0.75rem;
-  line-height: 1rem;
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
 }
 
 .accent-text {
@@ -332,7 +450,7 @@ body {
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   background-color: var(--danger);
-  color: var(--on-accent);
+  color: var(--on-danger);
   cursor: pointer;
   transition:
     background-color var(--transition-fast),
@@ -596,24 +714,24 @@ select.lesson-select {
 }
 
 .diff-correct {
-  background: color-mix(in srgb, var(--diff-good) 15%, transparent);
-  color: var(--diff-good);
+  background: var(--status-good-tint);
+  color: var(--status-good);
 }
 
 .diff-sub {
-  background: color-mix(in srgb, var(--diff-ok) 15%, transparent);
-  color: var(--diff-ok);
+  background: var(--status-ok-tint);
+  color: var(--status-ok);
 }
 
 .diff-missing {
-  background: color-mix(in srgb, var(--diff-bad) 15%, transparent);
-  color: var(--diff-bad);
+  background: var(--status-bad-tint);
+  color: var(--status-bad);
   text-decoration: line-through;
 }
 
 .diff-extra {
-  background: color-mix(in srgb, var(--diff-extra) 15%, transparent);
-  color: var(--diff-extra);
+  background: var(--status-extra-tint);
+  color: var(--status-extra);
 }
 
 .diff-expected {
@@ -645,7 +763,8 @@ textarea:focus-visible {
   }
 
   .card,
-  .card-sm {
+  .card-sm,
+  .panel {
     border: 1px solid #ccc !important;
     box-shadow: none !important;
   }
@@ -665,7 +784,7 @@ textarea:focus-visible {
 @media (prefers-contrast: more) {
   .card,
   .card-sm,
-  .answer-card {
+  .panel {
     border-width: 2px;
   }
 

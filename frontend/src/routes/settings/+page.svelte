@@ -395,7 +395,7 @@
   }
 </script>
 
-<main class="page-narrow settings-page">
+<div class="page-narrow settings-page">
   <div class="settings-heading">
     <Settings class="settings-page-icon" aria-hidden="true" />
     <h1 class="page-title">{m.settings_title()}</h1>
@@ -407,15 +407,15 @@
     <ErrorAlert message={loadError} />
   {:else}
     {#if !$user}
-      <section class="card settings-card">
+      <div class="notice">
         <GuestNotice class="body-text" />
-      </section>
+      </div>
     {/if}
 
     {#if $user}
       <!-- Account -->
-      <section class="card settings-card">
-        <h2 class="card-label">{m.settings_account_section()}</h2>
+      <section class="panel settings-card">
+        <h2 class="card-title">{m.settings_account_section()}</h2>
         <form onsubmit={saveCallSign} class="settings-form">
           <label class="settings-field">
             <span class="label-text">{m.settings_username_label()}</span>
@@ -519,10 +519,13 @@
             <ErrorAlert message={verificationCheckError} />
           {/if}
         </div>
+      </section>
 
-        <hr class="settings-divider" />
-
-        <h3 class="settings-subtitle">{m.settings_password_section()}</h3>
+      <!-- Password gets its own surface: every panel is then headed by an
+           `h2.card-title` (the password group used to be an `h3` buried half-way
+           down the account panel), and the account panel stays about identity. -->
+      <section class="panel settings-card">
+        <h2 class="card-title">{m.settings_password_section()}</h2>
         <form onsubmit={savePassword} class="settings-form">
           <label class="settings-field">
             <span class="label-text">{m.settings_current_password_label()}</span>
@@ -570,8 +573,8 @@
     {/if}
 
     <!-- Page Settings -->
-    <section class="card settings-card">
-      <h2 class="card-label">{m.settings_page_section()}</h2>
+    <section class="panel settings-card">
+      <h2 class="card-title">{m.settings_page_section()}</h2>
       <form onsubmit={savePage} class="settings-form">
         <label class="settings-field">
           <span class="label-text">{m.settings_language_label()}</span>
@@ -598,8 +601,8 @@
     </section>
 
     <!-- CW Settings -->
-    <section class="card settings-card">
-      <h2 class="card-label">{m.settings_cw_section()}</h2>
+    <section class="panel settings-card">
+      <h2 class="card-title">{m.settings_cw_section()}</h2>
       <form onsubmit={saveCW} class="settings-form">
         <label class="settings-field">
           <span class="label-text">{m.trainer_label_char_wpm()}</span>
@@ -628,13 +631,9 @@
       </form>
     </section>
   {/if}
-</main>
+</div>
 
 <style>
-  .settings-page {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-  }
   .settings-heading {
     display: flex;
     align-items: center;
@@ -646,9 +645,6 @@
     width: 2rem;
     height: 2rem;
     flex-shrink: 0;
-  }
-  .settings-card {
-    margin-bottom: 1.25rem;
   }
   .settings-form {
     display: flex;
@@ -673,19 +669,13 @@
     font-weight: 600;
   }
   .settings-email-status.is-verified {
-    color: var(--diff-good);
+    color: var(--status-good);
   }
   .settings-email-status.is-unverified {
-    color: var(--diff-ok);
+    color: var(--status-ok);
   }
   .settings-verification-form {
     margin-top: 0;
-  }
-  .settings-subtitle {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--text-primary);
   }
   .settings-input-action {
     display: flex;

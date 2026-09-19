@@ -32,7 +32,7 @@
 <div class="about-page page-narrow">
   <header class="about-header">
     <h1 class="page-title">{m.about_title()}</h1>
-    <p class="body-text about-intro">{m.about_intro()}</p>
+    <p class="body-text body-text--prose about-intro">{m.about_intro()}</p>
   </header>
 
   <nav class="about-toc" aria-label={m.about_toc_label()}>
@@ -44,13 +44,13 @@
     </ul>
   </nav>
 
-  <!-- Koch Method Card -->
-  <section class="card about-card" id="koch-method">
-    <div class="about-card-icon" aria-hidden="true">
-      <BookOpen size={32} />
+  <!-- Koch method -->
+  <section class="about-section" id="koch-method">
+    <div class="about-section-icon" aria-hidden="true">
+      <BookOpen size={20} />
     </div>
     <h2 class="section-title">{m.about_koch_title()}</h2>
-    <p class="body-text about-intro">{m.about_koch_intro()}</p>
+    <p class="body-text body-text--prose about-intro">{m.about_koch_intro()}</p>
 
     <hr class="divider" />
 
@@ -72,32 +72,32 @@
 
     <!-- Why it works -->
     <h3 class="sub-title">{m.about_koch_why_title()}</h3>
-    <p class="body-text">{m.about_koch_why_body()}</p>
+    <p class="body-text body-text--prose">{m.about_koch_why_body()}</p>
 
     <hr class="divider" />
 
     <!-- Comparison -->
     <h3 class="sub-title">{m.about_koch_vs_title()}</h3>
-    <div class="koch-vs-grid">
-      <div class="koch-vs-card koch-vs-bad">
-        <span class="card-label">{m.about_koch_vs_traditional_label()}</span>
+    <div class="compare">
+      <div class="compare-col compare-col--bad">
+        <p class="compare-head">{m.about_koch_vs_traditional_label()}</p>
         <p class="body-text">{m.about_koch_vs_traditional_body()}</p>
       </div>
-      <div class="koch-vs-card koch-vs-good">
-        <div class="vs-good-header">
-          <CheckCircle size={16} aria-hidden="true" />
-          <span class="card-label">{m.about_koch_vs_koch_label()}</span>
-        </div>
+      <div class="compare-col compare-col--good">
+        <p class="compare-head">
+          <CheckCircle size={15} aria-hidden="true" />
+          <span>{m.about_koch_vs_koch_label()}</span>
+        </p>
         <p class="body-text">{m.about_koch_vs_koch_body()}</p>
       </div>
     </div>
   </section>
 
   <!-- The project -->
-  <section class="card about-card" id="the-project">
-    <div class="about-card-icon" aria-hidden="true"><Wrench size={32} /></div>
+  <section class="about-section" id="the-project">
+    <div class="about-section-icon" aria-hidden="true"><Wrench size={20} /></div>
     <h2 class="section-title">{m.about_project_title()}</h2>
-    <p class="body-text">{m.about_project_body()}</p>
+    <p class="body-text body-text--prose">{m.about_project_body()}</p>
     <p class="body-text about-links">
       <a href={GITHUB_URL} class="link" rel="noopener noreferrer" target="_blank"
         >{m.about_project_github()}</a
@@ -106,11 +106,11 @@
   </section>
 
   <!-- About the author -->
-  <section class="card about-card" id="about-the-author">
-    <div class="about-card-icon" aria-hidden="true"><UserRound size={32} /></div>
+  <section class="about-section" id="about-the-author">
+    <div class="about-section-icon" aria-hidden="true"><UserRound size={20} /></div>
     <h2 class="section-title">{m.about_author_title()}</h2>
-    <p class="body-text">{m.about_author_p1()}</p>
-    <p class="body-text">
+    <p class="body-text body-text--prose">{m.about_author_p1()}</p>
+    <p class="body-text body-text--prose">
       {m.about_author_p2_pre()}
       <a href={GITHUB_URL} class="link" rel="noopener noreferrer" target="_blank"
         >{m.about_author_github()}</a
@@ -119,10 +119,10 @@
   </section>
 
   <!-- Your data -->
-  <section class="card about-card" id="your-data">
-    <div class="about-card-icon" aria-hidden="true"><ShieldCheck size={32} /></div>
+  <section class="about-section" id="your-data">
+    <div class="about-section-icon" aria-hidden="true"><ShieldCheck size={20} /></div>
     <h2 class="section-title">{m.about_privacy_title()}</h2>
-    <p class="body-text">{m.about_privacy_body()}</p>
+    <p class="body-text body-text--prose">{m.about_privacy_body()}</p>
   </section>
 
   <div class="about-cta">
@@ -133,15 +133,8 @@
 </div>
 
 <style>
-  .about-page {
-    padding-top: 2rem;
-    padding-bottom: 3rem;
-  }
-
-  .about-header {
-    margin-bottom: 0.25rem;
-  }
-
+  /* Width and vertical gaps come from `.page-narrow` and the shell; this page
+     owns only the article's internal rhythm. */
   .about-intro {
     margin: 0.5rem 0 0;
   }
@@ -166,68 +159,89 @@
     font-size: 0.875rem;
   }
 
-  .about-card {
+  /* Long-form, sequential content: no card chrome. Article rhythm + rules read
+     better here than a stack of independent tiles. */
+  .about-section {
     display: flex;
     flex-direction: column;
     gap: 0;
+    margin-top: var(--section-gap);
     /* Keep anchored sections clear of the sticky navbar. */
     scroll-margin-top: 4.5rem;
   }
 
-  .about-card-icon {
+  .about-section-icon {
+    display: flex;
     color: var(--accent);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .about-section-icon :global(svg) {
+    width: 1.5rem;
+    height: 1.5rem;
   }
 
   .about-links {
     margin-top: 0.75rem;
   }
 
-  .koch-vs-grid {
+  /* Two-peer comparison: one container, one shared edge, tinted columns. */
+  .compare {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
     margin-top: 0.75rem;
-  }
-
-  .koch-vs-card {
+    border: 1px solid var(--border-card);
     border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .compare-col {
     padding: 1rem;
-    border: 1px solid;
   }
 
-  .koch-vs-bad {
+  .compare-col + .compare-col {
+    border-left: 1px solid var(--border-card);
+  }
+
+  .compare-col--bad {
     background-color: var(--result-bad-bg);
-    border-color: var(--result-bad-bd);
   }
 
-  .koch-vs-good {
+  .compare-col--good {
     background-color: var(--result-good-bg);
-    border-color: var(--result-good-bd);
   }
 
-  .vs-good-header {
+  .compare-head {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    color: var(--accent);
-    margin-bottom: 0.25rem;
+    margin: 0 0 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
   }
 
-  .vs-good-header .card-label {
-    margin-bottom: 0;
+  .compare-col--good .compare-head {
     color: var(--accent);
   }
 
   .about-cta {
-    margin-top: 1.5rem;
+    margin-top: var(--section-gap);
     display: flex;
     justify-content: center;
   }
 
   @media (max-width: 480px) {
-    .koch-vs-grid {
+    .compare {
       grid-template-columns: 1fr;
+    }
+
+    .compare-col + .compare-col {
+      border-left: none;
+      border-top: 1px solid var(--border-card);
     }
   }
 </style>

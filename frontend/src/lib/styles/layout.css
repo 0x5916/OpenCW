@@ -19,7 +19,11 @@
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  padding: var(--space-lg) var(--space-md);
+  /* The top and bottom gaps are owned here so every page starts and ends at the
+     same height. Do not add a page-level `padding-top`/`padding-bottom` — see
+     `--page-top` and `--page-bottom`, and use `.page-stack` for inter-block
+     rhythm. */
+  padding: var(--page-top) var(--space-md) var(--page-bottom);
 }
 
 .page-narrow {
@@ -28,10 +32,17 @@
   margin-right: auto;
 }
 
-.page-narrow > * + * {
-  margin-top: var(--space-lg);
+/* Vertical rhythm for a page's own children. Width-free on purpose: pair it
+   with whichever tier fits the content (`.page-narrow`, the default, or
+   `.page-wide`) instead of taking the rhythm as a side effect of the width. */
+.page-narrow > * + *,
+.page-stack > * + * {
+  margin-top: var(--block-gap);
 }
 
+/* Widest tier. The navbar and footer are capped at `--max-width-container`, so a
+   page that uses this tier must keep its own inner measure — otherwise its
+   content edge no longer lines up with the chrome. */
 .page-wide {
   max-width: var(--max-width-wide);
   margin-left: auto;
@@ -204,7 +215,7 @@
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-menu);
   z-index: 100;
   overflow: hidden;
 }
@@ -298,7 +309,7 @@
 
   /* Give main content room to scroll clear of the fixed bar */
   .page-content {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 4.25rem);
+    padding-bottom: calc(env(safe-area-inset-bottom) + var(--bottom-nav-clearance));
   }
 
   /* Hide the bar while the soft keyboard is open (input/textarea focus) */
@@ -312,8 +323,11 @@
     display: none;
   }
 
+  /* `calc` on top of the safe area, not `max` against it: `max()` let a notch
+     inset override the gap, so the same pixel value gave 56px of blank in a
+     Safari tab and ~9px below the status bar when installed. */
   .page-content {
-    padding-top: max(var(--space-lg), env(safe-area-inset-top));
+    padding-top: calc(env(safe-area-inset-top) + var(--page-top-phone));
   }
 }
 

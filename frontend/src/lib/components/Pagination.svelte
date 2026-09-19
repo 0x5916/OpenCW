@@ -1,4 +1,6 @@
 <script lang="ts">
+  // Not mounted anywhere yet: the forum is still a placeholder, so this ships
+  // ahead of the thread list it will paginate.
   import { ChevronLeft, ChevronRight } from '@lucide/svelte';
   import * as m from '$lib/paraglide/messages';
 

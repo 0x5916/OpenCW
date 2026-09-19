@@ -62,8 +62,8 @@
     <h1 class="page-title">{m.nav_more()}</h1>
   </div>
 
-  <section class="card">
-    <h2 class="card-label">{m.more_app_section()}</h2>
+  <section class="panel">
+    <h2 class="card-title">{m.more_app_section()}</h2>
     <div class="more-list">
       <a href={href('/')} class="more-link"
         ><House size={16} aria-hidden="true" /><span class="more-link-text">{m.nav_home()}</span></a
@@ -79,8 +79,8 @@
     </div>
   </section>
 
-  <section class="card">
-    <h2 class="card-label">{m.settings_account_section()}</h2>
+  <section class="panel">
+    <h2 class="card-title">{m.settings_account_section()}</h2>
     <div class="more-list">
       {#if $user}
         <button type="button" class="more-link" onclick={() => void handleLogout()}
@@ -102,8 +102,8 @@
     </div>
   </section>
 
-  <section class="card">
-    <h2 class="card-label">{m.settings_page_section()}</h2>
+  <section class="panel">
+    <h2 class="card-title">{m.settings_page_section()}</h2>
     <div class="more-form">
       <label class="settings-field">
         <span class="label-text">{m.settings_theme_label()}</span>
@@ -135,11 +135,6 @@
 </div>
 
 <style>
-  .more-page {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-  }
-
   /* Mirrors `.settings-heading` so the two pages line up. */
   .more-heading {
     display: flex;
@@ -157,36 +152,38 @@
   .more-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
     margin-top: 0.5rem;
   }
 
-  /* Rows borrow the `.input` control shape so they read as part of the same
-     form-like stack as the selects in the card below. */
+  /* The panel already draws the group's boundary, so a row carries no box of
+     its own — just a hairline from the next one. Stacking a bordered, inset
+     control-shaped box per row inside a bordered panel was a box of boxes.
+     (Real controls, like the selects below, still get `.input` chrome: their
+     edge is an affordance, not decoration.) */
   .more-link {
     display: flex;
     align-items: center;
     gap: 0.6rem;
     width: 100%;
-    padding: var(--space-sm) 0.75rem;
+    padding: 0.7rem 0;
     font-family: inherit;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
     text-align: left;
     text-decoration: none;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-subtle);
-    background-color: var(--bg-inset);
+    border: none;
+    border-bottom: 1px solid var(--border);
+    background: none;
     color: var(--text-primary);
     cursor: pointer;
-    transition:
-      background-color 0.15s,
-      border-color 0.15s,
-      color 0.15s;
+    transition: color 0.15s;
+  }
+
+  .more-link:last-child {
+    border-bottom: none;
   }
 
   .more-link:hover {
-    border-color: var(--accent);
     color: var(--accent);
   }
 

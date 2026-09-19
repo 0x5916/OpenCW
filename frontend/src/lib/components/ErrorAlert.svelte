@@ -14,26 +14,28 @@
 <style>
   .error-alert {
     padding: 1rem;
-    border-radius: 0.75rem;
+    border-radius: var(--radius-md);
     border: 1px solid;
   }
 
   .error-alert-error {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    background: var(--status-bad-tint);
+    border-color: color-mix(in srgb, var(--status-bad) 30%, transparent);
+    color: var(--status-bad);
   }
 
   .error-alert-warning {
-    background: rgba(234, 179, 8, 0.1);
-    border-color: rgba(234, 179, 8, 0.3);
-    color: #ca8a04;
+    background: var(--status-ok-tint);
+    border-color: color-mix(in srgb, var(--status-ok) 30%, transparent);
+    color: var(--status-ok);
   }
 
+  /* No dedicated info role exists, so the informational banner borrows the
+     accent (which is already tuned per theme). */
   .error-alert-info {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.3);
-    color: #3b82f6;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+    color: var(--accent);
   }
 
   .error-message {

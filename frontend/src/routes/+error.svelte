@@ -9,8 +9,8 @@
   const isNotFound = $derived(page.status === 404);
 </script>
 
-<div class="error-page">
-  <div class="card error-card">
+<div class="error-page page-narrow">
+  <div class="panel error-card">
     <p class="error-code">{page.status}</p>
     <h1 class="page-title error-title">
       {isNotFound ? m.error_title() : m.error_generic_title()}
@@ -32,12 +32,8 @@
 </div>
 
 <style>
-  .error-page {
-    max-width: var(--max-width-narrow);
-    margin: 0 auto;
-    padding: 3rem 0;
-  }
-
+  /* `.page-narrow` owns the width and the shell owns the vertical gap, so this
+     page needs no size rules of its own. */
   .error-card {
     display: flex;
     flex-direction: column;

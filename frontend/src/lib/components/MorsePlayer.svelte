@@ -180,7 +180,7 @@
   <div class="player-wrapper">
     {#if label || !compact}
       <div class="player-header">
-        {#if label}<p class="card-label player-label">{label}</p>{/if}
+        {#if label}<p class="card-title player-label">{label}</p>{/if}
       </div>
     {/if}
     <div class="player-top">
@@ -213,7 +213,7 @@
               class="player-icon-btn btn-ghost"
               onclick={skipNext}
               disabled={!started}
-              aria-label="Skip to next character"
+              aria-label={m.player_skip_next()}
             >
               <SkipForward size={16} />
             </button>
@@ -277,7 +277,7 @@
                 />
               </label>
               <label class="player-settings-field">
-                <span class="label-text">Volume</span>
+                <span class="label-text">{m.player_volume()}</span>
                 <div class="player-volume-row">
                   <input
                     type="range"
@@ -487,6 +487,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.65rem;
+    /* Floating surface: this is where elevation is allowed. */
+    box-shadow: var(--shadow-menu);
   }
 
   .player-settings-field {

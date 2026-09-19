@@ -71,7 +71,9 @@
 <div class="overlay-backdrop" onclick={handleBackdropClick} role="presentation">
   <div class="overlay-panel" bind:this={panelRef} role="dialog" aria-modal="true">
     <!-- Close -->
-    <button class="overlay-close" onclick={onClose} aria-label="Close"><X size={20} /></button>
+    <button class="overlay-close" onclick={onClose} aria-label={m.overlay_close()}
+      ><X size={20} /></button
+    >
 
     <!-- Score hero -->
     <header class="overlay-hero {colorClass}">
@@ -83,7 +85,7 @@
     <!-- Diff -->
     <section class="overlay-diff-section">
       <div class="overlay-diff-header">
-        <h2 class="card-label">{m.trainer_diff_title()}</h2>
+        <h2 class="card-title">{m.trainer_diff_title()}</h2>
         <div class="diff-legend">
           <span class="diff-token diff-correct">{m.trainer_diff_legend_correct()}</span>
           <span class="diff-token diff-sub">{m.trainer_diff_legend_sub()}</span>
@@ -96,7 +98,7 @@
           {#if tok.type === 'correct'}
             <span class="diff-token diff-correct">{tok.ref}</span>
           {:else if tok.type === 'substitution'}
-            <span class="diff-token diff-sub" title="expected: {tok.ref}"
+            <span class="diff-token diff-sub" title={m.overlay_diff_expected({ char: tok.ref })}
               >{tok.inp}<span class="diff-expected"> ({tok.ref})</span></span
             >
           {:else if tok.type === 'missing'}
@@ -157,7 +159,7 @@
     display: flex;
     flex-direction: column;
     position: relative;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-overlay);
   }
   .overlay-close {
     position: absolute;
@@ -192,25 +194,25 @@
     border-radius: 1rem 1rem 0 0;
   }
   .overlay-good {
-    background: rgba(34, 197, 94, 0.12);
+    background: var(--status-good-tint);
   }
   .overlay-ok {
-    background: rgba(234, 179, 8, 0.12);
+    background: var(--status-ok-tint);
   }
   .overlay-bad {
-    background: rgba(239, 68, 68, 0.12);
+    background: var(--status-bad-tint);
   }
   :global(.overlay-score-icon) {
     opacity: 0.85;
   }
   .overlay-good :global(.overlay-score-icon) {
-    color: #22c55e;
+    color: var(--status-good);
   }
   .overlay-ok :global(.overlay-score-icon) {
-    color: #ca8a04;
+    color: var(--status-ok);
   }
   .overlay-bad :global(.overlay-score-icon) {
-    color: #ef4444;
+    color: var(--status-bad);
   }
   .overlay-pct {
     font-size: 3.5rem;
@@ -219,13 +221,13 @@
     margin: 0;
   }
   .overlay-good .overlay-pct {
-    color: #22c55e;
+    color: var(--status-good);
   }
   .overlay-ok .overlay-pct {
-    color: #ca8a04;
+    color: var(--status-ok);
   }
   .overlay-bad .overlay-pct {
-    color: #ef4444;
+    color: var(--status-bad);
   }
   .overlay-score-text {
     font-size: 1rem;
@@ -246,7 +248,7 @@
     gap: 0.5rem;
     margin-bottom: 0.875rem;
   }
-  .overlay-diff-header :global(.card-label) {
+  .overlay-diff-header :global(.card-title) {
     margin-bottom: 0;
   }
   .overlay-diff-tokens {
