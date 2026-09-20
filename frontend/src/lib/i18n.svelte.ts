@@ -1,5 +1,5 @@
-import { baseLocale, localizeHref, overwriteGetLocale } from '$lib/paraglide/runtime';
-import { writeCookie } from '$lib/cookies';
+import { baseLocale, locales, localizeHref, overwriteGetLocale } from '$lib/paraglide/runtime';
+import { readCookie, writeCookie } from '$lib/cookies';
 import {
   LOCALE_COOKIE,
   LOCALE_PREFERENCE_STORAGE_KEY,
@@ -58,13 +58,40 @@ function navigateToLocalizedPathIfNeeded(): void {
   }
 }
 
+/** The preference the visitor stored on this device, if any. */
+function readStoredPreference(): LocalePreference {
+  if (typeof localStorage !== 'undefined') {
+    const stored = localStorage.getItem(LOCALE_PREFERENCE_STORAGE_KEY);
+    if (stored) return normalizeLocalePreference(stored);
+  }
+
+  return normalizeLocalePreference(readCookie(LOCALE_COOKIE));
+}
+
+/**
+ * A static build cannot read the stored preference while prerendering, so the
+ * client resolves it from localStorage/cookie before falling back to the value
+ * supplied by the server-rendered data.
+ */
+function resolveInitialPreference(initialPreference: string): LocalePreference {
+  if (typeof window === 'undefined') return normalizeLocalePreference(initialPreference);
+
+  const stored = readStoredPreference();
+  return stored === 'auto' ? normalizeLocalePreference(initialPreference) : stored;
+}
+
+/** Whether a pathname carries an explicit locale prefix (e.g. `/de/about`). */
+function hasLocalePrefix(pathname: string): boolean {
+  return locales.some((locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`));
+}
+
 export function initLang(initialLocale: string, initialPreference: string = 'auto') {
-  const preference = normalizeLocalePreference(initialPreference);
+  const preference = resolveInitialPreference(initialPreference);
   const initial = matchLocaleCandidate(initialLocale) ?? (baseLocale as Locale);
 
   if (preference === 'auto') {
     if (typeof window === 'undefined') {
-      // Keep SSR locale for hydration consistency; browser detection is client-only.
+      // Keep the prerendered locale for hydration consistency; browser detection is client-only.
       langPreference.value = 'auto';
       lang.value = initial;
       overwriteGetLocale(() => lang.value);
@@ -78,6 +105,12 @@ export function initLang(initialLocale: string, initialPreference: string = 'aut
   }
 
   applyPreference(preference);
+
+  // Bare paths (e.g. `/about`, the legacy `/morse` target) only exist in the
+  // base locale; send the visitor to their preferred locale's URL instead.
+  if (typeof window !== 'undefined' && !hasLocalePrefix(window.location.pathname)) {
+    navigateToLocalizedPathIfNeeded();
+  }
 }
 
 export function setLangPreference(

@@ -1,6 +1,6 @@
-import type { LayoutServerLoad } from './$types';
-import { LOCALE_COOKIE, normalizeLocalePreference, type LocalePreference } from '$lib/locale';
-import { deLocalizeHref, getLocale, locales, localizeHref } from '$lib/paraglide/runtime';
+import type { LayoutLoad } from './$types';
+import type { LocalePreference } from '$lib/locale';
+import { baseLocale, deLocalizeHref, locales, localizeHref } from '$lib/paraglide/runtime';
 import {
   buildAbsoluteUrl,
   DEFAULT_OG_IMAGE_PATH,
@@ -10,16 +10,24 @@ import {
   SITE_NAME
 } from '$lib/seo';
 
-export const load: LayoutServerLoad = ({ cookies, url, route }) => {
-  const storedPreference = cookies.get(LOCALE_COOKIE);
-  const localePreference = normalizeLocalePreference(storedPreference);
-  const locale = getLocale();
+// The whole app is prerendered at build time; there is no server at runtime.
+export const prerender = true;
+
+export const load: LayoutLoad = ({ url, route }) => {
   const normalizedPath = normalizePathname(url.pathname);
+  // The locale is derived from the URL prefix — a static build cannot read
+  // request cookies. Bare paths (`/about`, legacy URLs) fall back to the base
+  // locale; the client redirects them to the visitor's preference on hydration.
+  const locale =
+    locales.find(
+      (candidate) =>
+        normalizedPath === `/${candidate}` || normalizedPath.startsWith(`/${candidate}/`)
+    ) ?? baseLocale;
   const basePath = normalizePathname(deLocalizeHref(normalizedPath));
   const metadata = resolveSeoMetadata(route.id, locale);
   // Always canonicalise to the locale-explicit URL (e.g. `/en/about`) so the
   // canonical is one of the `hreflang` alternates below instead of a
-  // locale-ambiguous bare path that depends on the visitor's cookie.
+  // locale-ambiguous bare path that depends on the visitor's preference.
   const canonicalUrl = buildAbsoluteUrl(url.origin, localizeHref(basePath, { locale }));
   // An unmatched route (`route.id === null`) still renders the root layout, so
   // make sure the 404 it renders can never be indexed.
@@ -78,7 +86,9 @@ export const load: LayoutServerLoad = ({ cookies, url, route }) => {
 
   return {
     locale,
-    localePreference: localePreference as LocalePreference,
+    // The stored preference only exists on the client; `initLang` refines this
+    // from localStorage/cookie once the app hydrates.
+    localePreference: 'auto' as LocalePreference,
     seo: {
       ...metadata,
       robots,

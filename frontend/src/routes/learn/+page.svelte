@@ -7,7 +7,7 @@
   import { untrack, onDestroy } from 'svelte';
   import { ClipboardCheck } from '@lucide/svelte';
   import { CW_STORAGE_KEYS, UI_STORAGE_KEYS } from '$lib/storageKeys';
-  import { writeCookie } from '$lib/cookies';
+  import { readCookie, writeCookie } from '$lib/cookies';
   import { langPreference } from '$lib/i18n.svelte';
   import { SCORE_GOOD, SCORE_OK, score, diffWords } from '$lib/score';
   import type { DiffToken } from '$lib/score';
@@ -23,12 +23,11 @@
   } from '$lib/cwSync';
   import * as m from '$lib/paraglide/messages';
 
-  let { data } = $props();
-
   let inputText = $state('');
 
-  // svelte-ignore state_referenced_locally
-  let chosenLesson = $state(data.lesson);
+  // The stored lesson can only be read in the browser (the site is fully
+  // static), so start from the first lesson and restore it on mount below.
+  let chosenLesson = $state(1);
 
   let result = $state(-1);
   let showOverlay = $state(false);
@@ -84,6 +83,19 @@
       .catch(() => {
         // Keep local defaults if server restore fails.
       });
+  });
+
+  // Restore the last used lesson. This is a `pre` effect so it runs before the
+  // persistence effect below can overwrite the stored value with the default.
+  $effect.pre(() => {
+    if (!browser) return;
+
+    const stored =
+      readCookie(CW_STORAGE_KEYS.lesson) ?? localStorage.getItem(CW_STORAGE_KEYS.lesson);
+    const parsed = Number.parseInt(stored ?? '', 10);
+    if (Number.isFinite(parsed)) {
+      chosenLesson = normalizeLesson(parsed, LESSONS.length);
+    }
   });
 
   $effect(() => {

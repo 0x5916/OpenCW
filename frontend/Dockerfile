@@ -9,24 +9,21 @@ RUN npm ci
 
 COPY . .
 
-# Required by $env/static/public imports during `npm run build`.
+# Both are build-time values: PUBLIC_API_BASE is baked into the client bundle
+# via $env/static/public, and PRERENDER_ORIGIN becomes the origin of the
+# canonical/hreflang/Open Graph URLs and sitemap.xml written during the build.
 ARG PUBLIC_API_BASE=http://localhost:8000
+ARG PRERENDER_ORIGIN=https://opencw.net
 ENV PUBLIC_API_BASE=$PUBLIC_API_BASE
+ENV PRERENDER_ORIGIN=$PRERENDER_ORIGIN
 
 # Generate .svelte-kit files in clean build environments, then build.
 RUN npm run prepare && npm run build
 
-FROM node:24-alpine AS runtime
-WORKDIR /app
-ENV NODE_ENV=production
-ENV PORT=3000
+# The output is a fully static site (prerendered pages, assets, fallback 404).
+FROM nginx:alpine
 
-# Install runtime-only dependencies for a smaller production image.
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/build /usr/share/nginx/html
 
-COPY --from=build /app/build ./build
-
-USER node
-EXPOSE 3000
-CMD ["node", "build"]
+EXPOSE 80

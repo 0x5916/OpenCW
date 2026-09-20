@@ -25,6 +25,7 @@
   } from '@lucide/svelte';
   import {
     lang,
+    langPreference,
     setLang,
     setLangPreference,
     initLang,
@@ -68,8 +69,9 @@
     })
   );
 
-  // initLang receives the locale the server read from the cookie —
-  // so SSR renders the correct language from the very first request.
+  // initLang receives the locale derived from the URL prefix so the prerendered
+  // HTML carries the right language; on the client it refines the preference
+  // from localStorage/cookie and redirects bare paths to the preferred locale.
   // svelte-ignore state_referenced_locally
   initLang(data.locale, data.localePreference);
 
@@ -92,7 +94,9 @@
 
     void reconcileSettingsWithServer({
       maxLesson: LESSONS.length,
-      fallbackLanguagePreference: data.localePreference,
+      // A static build cannot read the stored preference while prerendering,
+      // so fall back to the client-resolved one.
+      fallbackLanguagePreference: langPreference.value,
       onLocale: setLangPreference
     }).catch(() => {
       // Keep app startup/login resilient if reconciliation fails.
