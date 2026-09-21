@@ -13,8 +13,7 @@
 4. [User Management](#user-management)
 5. [Settings Management](#settings-management)
 6. [Progress Tracking](#progress-tracking)
-7. [Forum](#forum)
-8. [Error Handling](#error-handling)
+7. [Error Handling](#error-handling)
 
 ---
 
@@ -40,12 +39,6 @@
 | POST   | /v1/settings/page              | Update Page settings                      | Yes           |
 | GET    | /v1/cw/progress                | Get all progress records                  | Yes           |
 | PUT    | /v1/cw/progress                | Add/Create new progress record            | Yes           |
-| GET    | /v1/forum/categories           | List forum categories                     | No            |
-| GET    | /v1/forum/categories/:categoryID/threads | List threads in a category       | No            |
-| GET    | /v1/forum/threads/:threadID    | Get forum thread details                 | No            |
-| GET    | /v1/forum/threads/:threadID/posts | List posts in a thread                | No            |
-| POST   | /v1/forum/threads              | Create a thread and first post            | Yes           |
-| POST   | /v1/forum/threads/:threadID/posts | Create a reply                         | Yes           |
 | GET    | /v1/hello                      | Test authenticated endpoint               | Yes           |
 
 ---
@@ -80,66 +73,6 @@ curl -X GET http://localhost:8080/v1/health
 **Request Body**:
 ```json
 {
-  "username": "johndoe",
-  "email": "john@example.com",
-  "password": "securepassword123"
-}
-```
-
-**Validation Rules**:
-- `username`: Custom validator (username format)
-- `email`: Valid email format, max 254 characters
-- `password`: Minimum 8 characters, maximum 256 characters
-
-**Response (200)**:
-```json
-{
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-**Error Responses**:
-| Status | Error Code                      | Message                                          |
-|--------|--------------------------------|--------------------------------------------------|
-| 400    | `INVALID_REQUEST_BODY`         | Invalid request body                             |
-| 409    | `USERNAME_ALREADY_IN_USE`      | Username already exists                          |
-| 409    | `EMAIL_VERIFIED_BY_ANOTHER_ACCOUNT` | Email already verified by another account  |
-| 500    | `PASSWORD_HASH_FAILED`         | Failed to hash password                          |
-| 500    | `TOKEN_ISSUE_FAILED`           | Failed to issue token, try to login              |
-| 500    | `DATABASE_FAILURE`             | Database failure                                 |
-| 500    | `INTERNAL_SERVER_ERROR`        | Failed to create user                            |
-
-**Example cURL**:
-```bash
-curl -X POST http://localhost:8080/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "johndoe",
-    "email": "john@example.com",
-    "password": "securepassword123"
-  }'
-```
-
----
-
-### POST /v1/auth/login
-**Login with email/username and password**
-
-**Authentication**: None
-
-**Request Body**:
-```json
-{
-  "identifier": "johndoe",
-  "password": "securepassword123"
-}
-```
-
-**Notes**: `identifier` can be either username or email
-
-**Response (200)**:
-```json
 {
   "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -181,66 +114,6 @@ curl -X POST http://localhost:8080/v1/auth/login \
 **Response (200)**:
 ```json
 {
-  "message": "Logged out"
-}
-```
-
-**Error Responses**:
-| Status | Error Code              | Message                      |
-|--------|------------------------|-------------------------------|
-| 400    | `INVALID_REQUEST_BODY` | Invalid request body          |
-| 401    | `INVALID_TOKEN`        | Invalid refresh token         |
-| 500    | `INTERNAL_SERVER_ERROR`| Failed to logout              |
-
-**Example cURL**:
-```bash
-curl -X POST http://localhost:8080/v1/auth/logout \
-  -H "Authorization: Bearer <access_token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }'
-```
-
----
-
-### POST /v1/auth/refresh
-**Refresh the access token using refresh token**
-
-**Authentication**: None (uses refresh token in body)
-
-**Request Body**:
-```json
-{
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-**Response (200)**:
-```json
-{
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-**Error Responses**:
-| Status | Error Code              | Message                      |
-|--------|------------------------|-------------------------------|
-| 400    | `INVALID_REQUEST_BODY` | Invalid request body          |
-| 401    | `INVALID_TOKEN`        | Invalid refresh token         |
-| 401    | `EXPIRED_TOKEN`        | Token has expired             |
-
-**Example cURL**:
-```bash
-curl -X POST http://localhost:8080/v1/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{
-    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }'
-```
-
----
 
 ### POST /v1/auth/send-verification-email
 **Send email verification code to user's email**
@@ -785,68 +658,6 @@ curl -X PUT http://localhost:8080/v1/cw/progress \
     "client_created_at": "2026-03-20T10:25:00Z"
   }'
 ```
-
----
-
-## Forum
-
-Forum categories are administrator-managed. Users select an existing category when creating a thread; they cannot create categories through the public API. A thread must have one category and is created together with its first post.
-
-### GET /v1/forum/categories
-
-Returns public categories ordered by name.
-
-### GET /v1/forum/categories/:categoryID/threads
-
-Returns public threads for an existing category. Legacy `page` and `limit` query parameters are supported. The default page is `1`, the default limit is `20`, and the maximum limit is `100`. Results are ordered by pinned status, latest activity, and ID for deterministic pagination.
-
-For feeds, use cursor pagination with `cursor=first&limit=20`, then pass the returned `next_cursor` as `cursor` on subsequent requests. Cursor responses contain `limit`, `has_more`, and `next_cursor`; they do not include `total`. Do not combine `cursor` with `page`.
-
-### GET /v1/forum/threads/:threadID
-
-Returns one public thread. Missing threads return `404 FORUM_THREAD_NOT_FOUND`.
-
-### GET /v1/forum/threads/:threadID/posts
-
-Returns public posts ordered by creation time and ID. It supports the same `page` and `limit` bounds as thread listings, or cursor pagination using `cursor=first` followed by the returned `next_cursor`. Do not combine `cursor` with `page`.
-
-### POST /v1/forum/threads
-
-Authentication is required. `category_id` is required and must identify an existing category.
-
-```json
-{
-  "category_id": "category-uuid",
-  "title": "Thread title",
-  "body": "Opening post body"
-}
-```
-
-Returns `201 Created`:
-
-```json
-{
-  "data": {
-    "thread": {},
-    "first_post": {}
-  }
-}
-```
-
-Thread and first-post creation is atomic. If either insert fails, neither record is persisted.
-
-### POST /v1/forum/threads/:threadID/posts
-
-Authentication is required. A reply may include an optional `parent_id` from the same thread.
-
-```json
-{
-  "body": "Reply body",
-  "parent_id": "optional-post-uuid"
-}
-```
-
-Returns `201 Created` with the created post. Replies to locked threads return `409 FORUM_THREAD_LOCKED`; invalid or cross-thread parents return `400 FORUM_PARENT_POST_INVALID`.
 
 ---
 

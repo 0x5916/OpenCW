@@ -3,8 +3,6 @@ package common
 import (
 	"opencw/internal/models"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type RegisterInput struct {
@@ -73,15 +71,4 @@ type ProgressInput struct {
 	EffWPM          int        `json:"eff_wpm"           binding:"required,min=5,max=50"`
 	Accuracy        *float64   `json:"accuracy"          binding:"required,min=0.0,max=1.0"`
 	ClientCreatedAt *time.Time `json:"client_created_at"`
-}
-
-type CreateForumThreadInput struct {
-	CategoryID uuid.UUID `json:"category_id" binding:"required"`
-	Title      string    `json:"title"       binding:"required,min=3,max=200"`
-	Body       string    `json:"body"        binding:"required,min=1,max=10000"`
-}
-
-type CreateForumPostInput struct {
-	Body     string     `json:"body"      binding:"required,min=1,max=10000"`
-	ParentID *uuid.UUID `json:"parent_id"`
 }

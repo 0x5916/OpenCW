@@ -2,8 +2,6 @@ package common
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type ProgressResponse struct {
@@ -55,38 +53,4 @@ type HttpErrorResponse struct {
 	Status int
 	Code   string
 	Err    string
-}
-
-type ForumCategoryResponse struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-}
-
-type ForumThreadResponse struct {
-	ID         uuid.UUID `json:"id"`
-	CategoryID uuid.UUID `json:"category_id"`
-	AuthorID   uuid.UUID `json:"author_id"`
-	Title      string    `json:"title"`
-	IsPinned   bool      `json:"is_pinned"`
-	IsLocked   bool      `json:"is_locked"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
-}
-
-type ForumThreadCreatedResponse struct {
-	Thread    ForumThreadResponse `json:"thread"`
-	FirstPost ForumPostResponse   `json:"first_post"`
-}
-
-type ForumPostResponse struct {
-	ID        uuid.UUID  `json:"id"`
-	ThreadID  uuid.UUID  `json:"thread_id"`
-	AuthorID  uuid.UUID  `json:"author_id"`
-	Body      string     `json:"body"`
-	ParentID  *uuid.UUID `json:"parent_id"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
 }

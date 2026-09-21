@@ -8,7 +8,6 @@ import (
 	"opencw/internal/configs"
 	"opencw/internal/models"
 
-	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -38,19 +37,8 @@ func Connect() {
 		&models.CWSettings{},
 		&models.PageSettings{},
 		&models.Progress{},
-		&models.ForumCategory{},
-		&models.ForumPost{},
-		&models.ForumThread{},
 	); err != nil {
 		slog.Error("Failed to migrate database", "err", err)
-	}
-
-	if err := ensureDefaultForumCategory(db); err != nil {
-		slog.Error("Failed to seed default forum category", "err", err)
-	}
-
-	if err := ensureForumIndexes(db); err != nil {
-		slog.Error("Failed to migrate forum indexes", "err", err)
 	}
 
 	if err := ensureUserEmailIndexes(db); err != nil {
@@ -70,40 +58,6 @@ func Connect() {
 	sqlDB.SetConnMaxIdleTime(configs.App.DBConnMaxIdleTime)
 
 	slog.Info("Database connected and migrated successfully")
-}
-
-func ensureForumIndexes(db *gorm.DB) error {
-	statements := []string{
-		`CREATE INDEX IF NOT EXISTS idx_forum_threads_category_cursor ON forum_thread (category_id, is_pinned DESC, updated_at DESC, id DESC) WHERE deleted_at IS NULL;`,
-		`CREATE INDEX IF NOT EXISTS idx_forum_posts_thread_cursor ON forum_post (thread_id, created_at ASC, id ASC) WHERE deleted_at IS NULL;`,
-	}
-
-	for _, statement := range statements {
-		if err := db.Exec(statement).Error; err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func ensureDefaultForumCategory(db *gorm.DB) error {
-	const defaultCategoryName = "General"
-
-	var category models.ForumCategory
-	result := db.Where("name = ?", defaultCategoryName).Limit(1).Find(&category)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected > 0 {
-		return nil
-	}
-
-	return db.Create(&models.ForumCategory{
-		ID:          uuid.MustParse("9f3f1b2c-4e5d-4f6a-8b7c-1a2b3c4d5e6f"),
-		Name:        defaultCategoryName,
-		Description: "General discussion about CW and OpenCW.",
-	}).Error
 }
 
 func ensureUserEmailIndexes(db *gorm.DB) error {
