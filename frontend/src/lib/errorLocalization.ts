@@ -65,22 +65,22 @@ export function localizeApiError(error: unknown, fallback: () => string): string
       return m.api_error_login_failed();
     case 'REGISTER_FAILED':
       return m.api_error_register_failed();
-    case 'FORUM_CATEGORIES_FETCH_FAILED':
-      return m.api_error_forum_categories_fetch_failed();
-    case 'FORUM_THREADS_FETCH_FAILED':
-      return m.api_error_forum_threads_fetch_failed();
-    case 'FORUM_POSTS_FETCH_FAILED':
-      return m.api_error_forum_posts_fetch_failed();
-    case 'FORUM_THREAD_NOT_FOUND':
-      return m.api_error_forum_thread_not_found();
-    case 'FORUM_THREAD_CREATE_FAILED':
-      return m.api_error_forum_thread_create_failed();
-    case 'FORUM_POST_CREATE_FAILED':
-      return m.api_error_forum_post_create_failed();
-    case 'FORUM_THREAD_LOCKED':
-      return m.api_error_forum_thread_locked();
-    case 'FORUM_PARENT_POST_INVALID':
-      return m.api_error_forum_parent_post_invalid();
+    case 'FORUM_QUERY_FAILED':
+      return m.api_error_forum_query_failed();
+    case 'FORUM_CREATE_FAILED':
+      return m.api_error_forum_create_failed();
+    case 'FORUM_DELETE_FAILED':
+      return m.api_error_forum_delete_failed();
+    case 'THREAD_NOT_FOUND':
+      return m.api_error_thread_not_found();
+    case 'REPLY_NOT_FOUND':
+      return m.api_error_reply_not_found();
+    case 'NOT_AUTHOR':
+      return m.api_error_not_author();
+    case 'EMAIL_NOT_VERIFIED':
+      return m.api_error_email_not_verified();
+    case 'INVALID_QUERY_PARAMETER':
+      return m.api_error_invalid_query_parameter();
     default:
       return fallback();
   }

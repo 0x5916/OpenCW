@@ -12,8 +12,8 @@ export function formatDate(value?: string): string {
 }
 
 /** Display name for a forum author, falling back to a localized community label. */
-export function authorLabel(entry: { username?: string; author?: string }): string {
-  return entry.username ?? entry.author ?? m.forum_community_member();
+export function authorLabel(author: { username?: string } | null | undefined): string {
+  return author?.username ?? m.forum_community_member();
 }
 
 /** Format a lesson number or cumulative character string as "3 - K, M". */

@@ -1,7 +1,7 @@
 import { apiFetch } from './auth';
 import { extractErrorCodeFromBody } from './errorCode';
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number;
 
   body: unknown;
@@ -101,6 +101,15 @@ async function apiPost(path: string, fallback: string): Promise<void> {
   if (!res.ok) return throwApiError(res, fallback);
 }
 
+async function apiDelete(path: string, fallback: string): Promise<void> {
+  const res = await apiFetch(path, {
+    method: 'DELETE',
+    headers: { Accept: 'application/json' }
+  });
+
+  if (!res.ok) return throwApiError(res, fallback);
+}
+
 export interface CWSettings {
   char_wpm: number;
   eff_wpm: number;
@@ -123,155 +132,131 @@ export interface UserInfo {
   created_at: string;
 }
 
-export interface ForumCategory {
-  id: string;
-  name: string;
-  description?: string | null;
-  created_at?: string;
-  updated_at?: string;
+export const FORUM_CATEGORIES = ['general', 'help', 'showcase', 'feedback'] as const;
+
+export type ForumCategoryValue = (typeof FORUM_CATEGORIES)[number];
+
+export function isForumCategory(value: string | null | undefined): value is ForumCategoryValue {
+  return typeof value === 'string' && (FORUM_CATEGORIES as readonly string[]).includes(value);
 }
 
-export interface ForumThread {
+export interface ForumAuthor {
+  username: string;
+  call_sign: string | null;
+}
+
+export interface ForumThreadSummary {
   id: string;
-  category_id: string;
-  author_id?: string;
-  author?: string;
-  username?: string;
+  category: ForumCategoryValue;
   title: string;
-  is_pinned: boolean;
-  is_locked: boolean;
+  author: ForumAuthor;
+  reply_count: number;
   created_at: string;
-  updated_at?: string;
-  latest_activity?: string;
-  post_count?: number;
 }
 
-export interface ForumPost {
-  id: string;
-  thread_id: string;
-  author_id?: string;
-  author?: string;
-  username?: string;
+export interface ForumThreadDetail extends ForumThreadSummary {
   body: string;
-  parent_id?: string | null;
+  updated_at: string;
+}
+
+export interface ForumReply {
+  id: string;
+  parent_id: string | null;
+  body: string | null;
+  author: ForumAuthor | null;
+  is_deleted: boolean;
   created_at: string;
-  updated_at?: string;
+  children: ForumReply[];
 }
 
-export interface ForumPage<T> {
-  data: T[];
-  page: number;
+export interface ForumThreadListPage {
+  data: ForumThreadSummary[];
+  total: number;
   limit: number;
-  total?: number;
-  total_pages?: number;
+  next_cursor: string | null;
 }
 
-export interface ForumThreadCreated {
-  thread: ForumThread;
-  first_post: ForumPost;
+export interface ForumReplyList {
+  data: ForumReply[];
+  total: number;
 }
 
-function normalizeForumPage<T>(
-  value: T[] | { data?: T[]; page?: number; limit?: number; total?: number; total_pages?: number },
-  page: number,
-  limit: number
-): ForumPage<T> {
-  if (Array.isArray(value)) return { data: value, page, limit };
+export interface ForumThreadQuery {
+  category?: ForumCategoryValue | null;
+  cursor?: string | null;
+  limit?: number;
+}
+
+export async function getForumThreads(query: ForumThreadQuery = {}): Promise<ForumThreadListPage> {
+  const limit = Math.min(100, Math.max(1, Math.floor(query.limit ?? 20)));
+  const params = new URLSearchParams();
+  params.set('limit', String(limit));
+  if (query.category) params.set('category', query.category);
+  if (query.cursor) params.set('cursor', query.cursor);
+
+  const response = await apiGetJson<ForumThreadListPage>(
+    `/forum/threads?${params.toString()}`,
+    'FORUM_QUERY_FAILED'
+  );
 
   return {
-    data: value.data ?? [],
-    page: value.page ?? page,
-    limit: value.limit ?? limit,
-    total: value.total,
-    total_pages: value.total_pages
+    data: response.data ?? [],
+    total: response.total ?? 0,
+    limit: response.limit ?? limit,
+    next_cursor: response.next_cursor ?? null
   };
 }
 
-function forumQuery(page: number, limit: number): string {
-  const safePage = Math.max(1, Math.floor(page));
-  const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
-  return `?page=${safePage}&limit=${safeLimit}`;
-}
-
-export async function getForumCategories(): Promise<ForumCategory[]> {
-  const response = await apiGetJson<ForumCategory[] | { data?: ForumCategory[] }>(
-    '/forum/categories',
-    'FORUM_CATEGORIES_FETCH_FAILED'
-  );
-  return Array.isArray(response) ? response : (response.data ?? []);
-}
-
-export async function getForumCategoryThreads(
-  categoryId: string,
-  page = 1,
-  limit = 20
-): Promise<ForumPage<ForumThread>> {
-  const response = await apiGetJson<
-    | ForumThread[]
-    | { data?: ForumThread[]; page?: number; limit?: number; total?: number; total_pages?: number }
-  >(
-    `/forum/categories/${encodeURIComponent(categoryId)}/threads${forumQuery(page, limit)}`,
-    'FORUM_THREADS_FETCH_FAILED'
-  );
-  return normalizeForumPage(response, page, limit);
-}
-
-export async function getForumThread(threadId: string): Promise<ForumThread> {
-  const response = await apiGetJson<{ data?: ForumThread } | ForumThread>(
+export async function getForumThread(threadId: string): Promise<ForumThreadDetail> {
+  const response = await apiGetJson<{ data: ForumThreadDetail } | ForumThreadDetail>(
     `/forum/threads/${encodeURIComponent(threadId)}`,
-    'FORUM_THREAD_NOT_FOUND'
+    'FORUM_QUERY_FAILED'
   );
-  if ('data' in response && response.data) return response.data;
-  return response as ForumThread;
+  return 'data' in response && response.data ? response.data : (response as ForumThreadDetail);
 }
 
-export async function getForumThreadPosts(
-  threadId: string,
-  page = 1,
-  limit = 20
-): Promise<ForumPage<ForumPost>> {
-  const response = await apiGetJson<
-    | ForumPost[]
-    | { data?: ForumPost[]; page?: number; limit?: number; total?: number; total_pages?: number }
-  >(
-    `/forum/threads/${encodeURIComponent(threadId)}/posts${forumQuery(page, limit)}`,
-    'FORUM_POSTS_FETCH_FAILED'
+export async function getForumThreadReplies(threadId: string): Promise<ForumReplyList> {
+  const response = await apiGetJson<ForumReplyList>(
+    `/forum/threads/${encodeURIComponent(threadId)}/replies`,
+    'FORUM_QUERY_FAILED'
   );
-  return normalizeForumPage(response, page, limit);
+  return { data: response.data ?? [], total: response.total ?? 0 };
 }
 
 export async function createForumThread(
-  categoryId: string,
+  category: ForumCategoryValue,
   title: string,
   body: string
-): Promise<ForumThreadCreated> {
-  const response = await apiSendJson<{
-    data?: ForumThreadCreated;
-    thread?: ForumThread;
-    first_post?: ForumPost;
-  }>(
+): Promise<ForumThreadDetail> {
+  const response = await apiSendJson<{ data: ForumThreadDetail }>(
     '/forum/threads',
     'POST',
-    { category_id: categoryId, title, body },
-    'FORUM_THREAD_CREATE_FAILED'
+    { category, title, body },
+    'FORUM_CREATE_FAILED'
   );
-  if (response.data) return response.data;
-  return { thread: response.thread as ForumThread, first_post: response.first_post as ForumPost };
+  return response.data;
 }
 
-export async function createForumPost(
+export async function createForumReply(
   threadId: string,
   body: string,
   parentId?: string
-): Promise<ForumPost> {
-  const response = await apiSendJson<{ data?: ForumPost } | ForumPost>(
-    `/forum/threads/${encodeURIComponent(threadId)}/posts`,
+): Promise<ForumReply> {
+  const response = await apiSendJson<{ data: ForumReply }>(
+    `/forum/threads/${encodeURIComponent(threadId)}/replies`,
     'POST',
     { body, ...(parentId ? { parent_id: parentId } : {}) },
-    'FORUM_POST_CREATE_FAILED'
+    'FORUM_CREATE_FAILED'
   );
-  if ('data' in response && response.data) return response.data;
-  return response as ForumPost;
+  return response.data;
+}
+
+export async function deleteForumThread(threadId: string): Promise<void> {
+  await apiDelete(`/forum/threads/${encodeURIComponent(threadId)}`, 'FORUM_DELETE_FAILED');
+}
+
+export async function deleteForumReply(replyId: string): Promise<void> {
+  await apiDelete(`/forum/replies/${encodeURIComponent(replyId)}`, 'FORUM_DELETE_FAILED');
 }
 
 export interface CombinedSettings {

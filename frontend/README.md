@@ -61,12 +61,16 @@ src/
     theme.ts       Theme normalization + apply helpers
     components/    Shared UI (auth card, dropdown, Morse player, alerts, …)
   routes/          Pages (home, about, learn, login, register, profile,
-                   settings, a placeholder /forum, and legacy /morse redirects)
+                   settings, the forum list + /forum/[id] threads, and legacy
+                   /morse redirects)
 ```
 
-`/forum` currently renders an "under development" card. The forum parts of
-`api.ts` and `components/Pagination.svelte` are intentionally kept (and still
-covered by localized `api_error_forum_*` messages) for when the forum returns.
+`/forum` is backed by the API: a cursor-paginated thread list with category
+filters and an inline composer, plus client-rendered thread pages at
+`/forum/[id]` with nested replies, author-only deletes and tombstones. Thread
+IDs only exist at runtime, so thread pages are not prerendered: deep links are
+served the adapter-static fallback by `nginx.conf`, which returns HTTP 200 for
+forum deep links so shared links open and unfurl correctly.
 
 ## Internationalization
 
@@ -106,4 +110,6 @@ docker run -p 3000:80 opencw-frontend
 The image builds the static site and serves it with nginx. Both arguments are
 build-time values: `PUBLIC_API_BASE` is baked into the client bundle through
 `$env/static/public`, and `PRERENDER_ORIGIN` (default `https://opencw.net`) into
-the canonical/hreflang/Open Graph URLs and `sitemap.xml`.
+the canonical/hreflang/Open Graph URLs and `sitemap.xml`. The bundled nginx
+config serves forum thread deep links (`/<locale>/forum/<id>`) the SPA fallback
+with a 200 status; every other unknown URL keeps its 404 status.

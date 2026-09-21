@@ -173,34 +173,31 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
     }
   },
   '/forum': {
-    // The forum is a placeholder until it launches: keep it crawlable for its
-    // links, but keep the thin "under development" page out of the index.
-    robots: 'noindex,follow',
     localized: {
       en: {
-        title: 'OpenCW Forum - Community Space in Development',
+        title: 'OpenCW Forum - Morse Code & Amateur Radio Community',
         description:
-          'The OpenCW community forum for Morse code learners and amateur radio operators is currently in development. Check back soon.'
+          'Ask questions, share your Morse code progress, and swap CW tips with other amateur radio operators in the OpenCW community forum.'
       },
       de: {
-        title: 'OpenCW Forum - Community in Entwicklung',
+        title: 'OpenCW Forum - Morsecode-Community und Funkamateure',
         description:
-          'Das OpenCW Community-Forum fuer Morsecode-Lernende und Funkamateure befindet sich in Entwicklung. Schau bald wieder vorbei.'
+          'Stelle Fragen, teile deinen Fortschritt und tausche Tipps mit anderen Funkamateuren und Morsecode-Lernenden im OpenCW-Forum aus.'
       },
       ja: {
-        title: 'OpenCW Forum - Community Kaihatsu-chuu',
+        title: 'OpenCW Forum - Morse to Musen no Community',
         description:
-          'OpenCW no community forum wa morse gakushu sha to amateur radio operator no tame ni junbi shite imasu. Mata kondo check shite kudasai.'
+          'Shitsumon, shinchoku no kyoyu, CW no kotsu no kokan ga dekiru OpenCW no community forum desu. Kigaru ni sanka shite, saisho no thread o tatete mimashou.'
       },
       'zh-Hans': {
-        title: 'OpenCW Luntan - Kaifa Zhong',
+        title: 'OpenCW Luntan - Mosi Ma yu Wuxiandian Shequ',
         description:
-          'OpenCW shequ luntan zheng zai kaifa zhong, zhuan wei Mosi ma xuexi zhe yu yuhuo wuxiandian aihaozhe. Qing shao hou zai lai kankan.'
+          'Zai OpenCW shequ luntan tiwen, fenxiang jinbu, yu qita wuxiandian aihaozhe jiaoliu Mosi ma xinde.'
       },
       'zh-Hant': {
-        title: 'OpenCW Luntan - Zhengzai Kaifa',
+        title: 'OpenCW Luntan - Moshi Dianma yu Wuxian Shequ',
         description:
-          'OpenCW shequ luntan muqian zheng zai kaifa zhong, zhuan wei Mosi dianma xuexi zhe yu yeyu wuxiandian aihaozhe. Jingqing qidai.'
+          'Zai OpenCW shequ luntan tiwen, fenxiang jinbu, yu qita yeyu wuxiandian aihaozhe jiaoliu Moshi dianma xinde.'
       }
     }
   },
