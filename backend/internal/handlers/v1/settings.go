@@ -51,7 +51,6 @@ func (h SettingsHandler) GetAllSettings(c *gin.Context) {
 		UpdatedAt:  cwSettings.UpdatedAt,
 	}
 	response.PageSettings = common.PageSettingsResponse{
-		Theme:     pageSettings.Theme,
 		Lang:      pageSettings.Lang,
 		CurLesson: pageSettings.CurLesson,
 		UpdatedAt: pageSettings.UpdatedAt,

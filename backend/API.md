@@ -505,7 +505,6 @@ curl -X PUT http://localhost:8080/v1/user/password \
     "updated_at": "2026-03-20T10:30:00Z"
   },
   "page_settings": {
-    "theme": "auto",
     "language": "auto",
     "cur_lesson": 0,
     "updated_at": "2026-03-20T10:30:00Z"
@@ -573,7 +572,6 @@ curl -X GET http://localhost:8080/v1/settings/cw \
 **Response (200)**:
 ```json
 {
-  "theme": "auto",
   "language": "auto",
   "cur_lesson": 0,
   "updated_at": "2026-03-20T10:30:00Z"
@@ -581,7 +579,6 @@ curl -X GET http://localhost:8080/v1/settings/cw \
 ```
 
 **Default Values** (if not set):
-- `theme`: "auto"
 - `language`: "auto"
 - `cur_lesson`: 0
 
@@ -657,14 +654,12 @@ curl -X POST http://localhost:8080/v1/settings/cw \
 **Request Body**:
 ```json
 {
-  "theme": "dark",
   "language": "en",
   "cur_lesson": 5
 }
 ```
 
 **Validation Rules**:
-- `theme`: Must be one of: "auto", "dark", "light"
 - `language`: Language code (custom validation)
 - `cur_lesson`: Required integer
 
@@ -688,7 +683,6 @@ curl -X POST http://localhost:8080/v1/settings/page \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "theme": "dark",
     "language": "en",
     "cur_lesson": 5
   }'

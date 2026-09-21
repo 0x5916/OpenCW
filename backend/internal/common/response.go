@@ -24,7 +24,6 @@ type CWSettingsResponse struct {
 }
 
 type PageSettingsResponse struct {
-	Theme     string    `json:"theme"`
 	Lang      string    `json:"language"`
 	CurLesson int       `json:"cur_lesson"`
 	UpdatedAt time.Time `json:"updated_at"`
