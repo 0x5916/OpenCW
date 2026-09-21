@@ -23,14 +23,14 @@ function routePathFor(url: string): string {
 function priorityFor(url: string): string {
   const path = routePathFor(url);
   if (path === '/') return '1.0';
-  return path === '/learn' ? '0.9' : '0.8';
+  return path === '/morse/learn' ? '0.9' : '0.8';
 }
 
 function buildXml(urls: string[]): string {
   const now = new Date().toISOString().slice(0, 10);
   const body = urls
     .map((url) => {
-      const changefreq = routePathFor(url) === '/learn' ? 'monthly' : 'weekly';
+      const changefreq = routePathFor(url) === '/morse/learn' ? 'monthly' : 'weekly';
 
       return `  <url>\n    <loc>${escapeXml(url)}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priorityFor(url)}</priority>\n  </url>`;
     })

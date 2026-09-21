@@ -3,7 +3,6 @@ import { baseLocale, isLocale, locales } from '$lib/paraglide/runtime';
 export type Locale = (typeof locales)[number];
 export type LocalePreference = Locale | 'auto';
 
-export const LOCALE_COOKIE = 'PARAGLIDE_LOCALE';
 export const LOCALE_PREFERENCE_STORAGE_KEY = 'PARAGLIDE_LOCALE_PREF';
 
 export const LOCALE_DISPLAY: Record<Locale, { short: string; native: string; english: string }> = {

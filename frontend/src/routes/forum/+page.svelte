@@ -19,7 +19,7 @@
     <Construction size={34} aria-hidden="true" />
     <h2 class="state-title">{m.forum_under_development_title()}</h2>
     <p class="body-text state-note">{m.forum_under_development_note()}</p>
-    <a class="btn-primary state-action" href={href('/learn')}>
+    <a class="btn-primary state-action" href={href('/morse/learn')}>
       <Radio size={17} />
       {m.nav_learn()}
     </a>

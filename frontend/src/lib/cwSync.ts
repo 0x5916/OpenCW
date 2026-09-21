@@ -7,12 +7,10 @@ import {
 } from '$lib/api';
 import { isLocale } from '$lib/paraglide/runtime';
 import {
-  LOCALE_COOKIE,
   LOCALE_PREFERENCE_STORAGE_KEY,
   normalizeLocalePreference,
   type LocalePreference
 } from '$lib/locale';
-import { readCookie, writeCookie } from '$lib/cookies';
 import { CW_STORAGE_KEYS } from '$lib/storageKeys';
 
 export type { CWSettings, PageSettings };
@@ -133,8 +131,7 @@ export function readClientPageSettings(
     typeof localStorage === 'undefined'
       ? null
       : localStorage.getItem(LOCALE_PREFERENCE_STORAGE_KEY);
-  const cookieLang = readCookie(LOCALE_COOKIE);
-  const language = normalizeLocalePreference(localLang ?? cookieLang ?? fallbackLanguagePreference);
+  const language = normalizeLocalePreference(localLang ?? fallbackLanguagePreference);
 
   return {
     language,
@@ -157,12 +154,6 @@ export function applyClientPageSettings(
     if (applyLanguage) {
       localStorage.setItem(LOCALE_PREFERENCE_STORAGE_KEY, language);
     }
-  }
-
-  writeCookie(CW_STORAGE_KEYS.lesson, String(lesson));
-
-  if (applyLanguage) {
-    writeCookie(LOCALE_COOKIE, language);
   }
 
   if (applyLanguage && (language === 'auto' || isLocale(language))) {

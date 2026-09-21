@@ -10,7 +10,7 @@ export default defineConfig({
     paraglideVitePlugin({
       project: './project.inlang',
       outdir: './src/lib/paraglide',
-      strategy: ['url', 'cookie', 'preferredLanguage', 'globalVariable', 'baseLocale'],
+      strategy: ['url', 'preferredLanguage', 'globalVariable', 'baseLocale'],
       urlPatterns: [
         {
           pattern: ':protocol://:domain(.*)::port?/:path(.*)?',

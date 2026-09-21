@@ -1,7 +1,6 @@
 import { baseLocale, locales, localizeHref, overwriteGetLocale } from '$lib/paraglide/runtime';
-import { readCookie, writeCookie } from '$lib/cookies';
+import { migrateLegacyPreferences } from '$lib/cookies';
 import {
-  LOCALE_COOKIE,
   LOCALE_PREFERENCE_STORAGE_KEY,
   matchLocaleCandidate,
   normalizeLocalePreference,
@@ -65,12 +64,12 @@ function readStoredPreference(): LocalePreference {
     if (stored) return normalizeLocalePreference(stored);
   }
 
-  return normalizeLocalePreference(readCookie(LOCALE_COOKIE));
+  return 'auto';
 }
 
 /**
  * A static build cannot read the stored preference while prerendering, so the
- * client resolves it from localStorage/cookie before falling back to the value
+ * client resolves it from localStorage before falling back to the value
  * supplied by the server-rendered data.
  */
 function resolveInitialPreference(initialPreference: string): LocalePreference {
@@ -86,6 +85,7 @@ function hasLocalePrefix(pathname: string): boolean {
 }
 
 export function initLang(initialLocale: string, initialPreference: string = 'auto') {
+  migrateLegacyPreferences();
   const preference = resolveInitialPreference(initialPreference);
   const initial = matchLocaleCandidate(initialLocale) ?? (baseLocale as Locale);
 
@@ -121,8 +121,6 @@ export function setLangPreference(
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(LOCALE_PREFERENCE_STORAGE_KEY, preference);
   }
-  writeCookie(LOCALE_COOKIE, preference);
-
   if (options.navigate !== false) {
     navigateToLocalizedPathIfNeeded();
   }

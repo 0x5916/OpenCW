@@ -126,7 +126,7 @@
   </section>
 
   <div class="about-cta">
-    <a href={href('/learn')} class="btn-cta"
+    <a href={href('/morse/learn')} class="btn-cta"
       >{m.home_cta()}<ArrowRight size={18} aria-hidden="true" /></a
     >
   </div>

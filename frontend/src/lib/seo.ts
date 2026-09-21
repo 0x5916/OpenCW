@@ -10,7 +10,7 @@ export type SeoMetadata = {
 
 export const SITE_NAME = 'OpenCW';
 export const DEFAULT_OG_IMAGE_PATH = '/og-image.png';
-export const PUBLIC_ROUTE_PATHS = ['/', '/about', '/forum', '/learn'] as const;
+export const PUBLIC_ROUTE_PATHS = ['/', '/about', '/forum', '/morse', '/morse/learn'] as const;
 
 type LocalizedSeoText = {
   title: string;
@@ -113,7 +113,36 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
       }
     }
   },
-  '/learn': {
+  '/morse': {
+    localized: {
+      en: {
+        title: 'Morse Tools - OpenCW',
+        description:
+          'Explore OpenCW Morse code tools, starting with a free Koch-method trainer for listening practice and practical CW improvement.'
+      },
+      de: {
+        title: 'Morsewerkzeuge - OpenCW',
+        description:
+          'Entdecke die Morsewerkzeuge von OpenCW, beginnend mit einem kostenlosen Koch-Trainer fuer Hoeruebungen und praktische CW-Verbesserung.'
+      },
+      ja: {
+        title: 'Morse Tools - OpenCW',
+        description:
+          'OpenCW no Morse tool o shiryou shi, listening practice to jissen-teki na CW no nouryoku o nobasu Koch toreena o hajimemashou.'
+      },
+      'zh-Hans': {
+        title: 'Mosi Ma Gongju - OpenCW',
+        description:
+          'Tan suo OpenCW de Mosi ma gongju, cong mianfei Koch xunlianqi kaishi, jinxing tingli lianxi he shizhan CW nengli tisheng.'
+      },
+      'zh-Hant': {
+        title: 'Moshi Ma Gongju - OpenCW',
+        description:
+          'Tan suo OpenCW de Moshi ma gongju, cong mianfei Koch xunlianqi kaishi, jinxing tingli lianxi he shizhan CW nengli tisheng.'
+      }
+    }
+  },
+  '/morse/learn': {
     ogImagePath: '/og-image.png',
     localized: {
       en: {

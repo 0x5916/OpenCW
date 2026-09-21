@@ -36,7 +36,7 @@
   <h1 class="hero-title">{m.home_hero_title()}</h1>
   <p class="hero-sub">{m.home_hero_subtitle()}</p>
   <div class="hero-actions">
-    <a href={href('/learn')} class="btn-cta"
+    <a href={href('/morse/learn')} class="btn-cta"
       >{m.home_cta()}<ArrowRight size={18} aria-hidden="true" /></a
     >
     <a href={href('/about')} class="hero-link">{m.home_hero_cta_secondary()}</a>
@@ -51,7 +51,7 @@
 <!-- What a lesson looks like, next to how the method works -->
 <section class="preview-grid">
   <div class="preview-col">
-    <!-- Decorative: the interactive trainer lives on /learn -->
+    <!-- Decorative: the interactive trainer lives on /morse/learn -->
     <div class="preview-frame" aria-hidden="true">
       <span class="card-label">{m.trainer_label_lesson()} {PREVIEW_LESSON}</span>
       <p class="preview-chars">
@@ -117,7 +117,7 @@
 <section class="final-cta">
   <h2 class="section-title final-title">{m.home_final_title()}</h2>
   <p class="body-text final-body">{m.home_final_body()}</p>
-  <a href={href('/learn')} class="btn-cta"
+  <a href={href('/morse/learn')} class="btn-cta"
     >{m.home_cta()}<ArrowRight size={18} aria-hidden="true" /></a
   >
 </section>

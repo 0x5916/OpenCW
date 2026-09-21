@@ -1,14 +1,10 @@
-/**
- * Client-side cookie helpers.
- *
- * The app persists locale + lesson preferences in cookies so the server can read
- * them on the next request (see `+layout.server.ts` and `morse/learn/+page.server.ts`).
- */
+import { normalizeLocalePreference, LOCALE_PREFERENCE_STORAGE_KEY } from '$lib/locale';
+import { CW_STORAGE_KEYS } from '$lib/storageKeys';
 
-/** Lifetime used for preference cookies: one year. */
-export const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
+const LEGACY_LOCALE_COOKIE = 'PARAGLIDE_LOCALE';
+const LEGACY_LESSON_COOKIE = CW_STORAGE_KEYS.lesson;
 
-/** Read a cookie value by name. Returns `null` on the server or when absent. */
+/** Read a legacy cookie value by name. Returns `null` on the server or absent. */
 export function readCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
 
@@ -18,12 +14,41 @@ export function readCookie(name: string): string | null {
     .map((part) => part.trim())
     .find((part) => part.startsWith(target));
 
-  return item ? decodeURIComponent(item.slice(target.length)) : null;
+  if (!item) return null;
+
+  try {
+    return decodeURIComponent(item.slice(target.length));
+  } catch {
+    return item.slice(target.length);
+  }
 }
 
-/** Persist a site-wide cookie. No-op on the server. */
-export function writeCookie(name: string, value: string, maxAgeSeconds = ONE_YEAR_SECONDS): void {
+function expireCookie(name: string): void {
   if (typeof document === 'undefined') return;
 
-  document.cookie = `${name}=${value}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`;
+  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+}
+
+/**
+ * Move preferences written by older builds into localStorage once. Existing
+ * localStorage values win, and the legacy cookies are removed either way.
+ */
+export function migrateLegacyPreferences(): void {
+  if (typeof localStorage === 'undefined' || typeof document === 'undefined') return;
+
+  const legacyLocale = readCookie(LEGACY_LOCALE_COOKIE);
+  if (!localStorage.getItem(LOCALE_PREFERENCE_STORAGE_KEY) && legacyLocale) {
+    const preference = normalizeLocalePreference(legacyLocale);
+    if (preference !== 'auto') {
+      localStorage.setItem(LOCALE_PREFERENCE_STORAGE_KEY, preference);
+    }
+  }
+
+  const legacyLesson = readCookie(LEGACY_LESSON_COOKIE);
+  if (!localStorage.getItem(CW_STORAGE_KEYS.lesson) && legacyLesson) {
+    localStorage.setItem(CW_STORAGE_KEYS.lesson, legacyLesson);
+  }
+
+  expireCookie(LEGACY_LOCALE_COOKIE);
+  expireCookie(LEGACY_LESSON_COOKIE);
 }

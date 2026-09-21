@@ -63,7 +63,7 @@ export const load: LayoutLoad = ({ url, route }) => {
           inLanguage: locale,
           description: metadata.description
         },
-        ...(route.id === '/learn'
+        ...(route.id === '/morse/learn'
           ? [
               {
                 '@context': 'https://schema.org',
@@ -87,7 +87,7 @@ export const load: LayoutLoad = ({ url, route }) => {
   return {
     locale,
     // The stored preference only exists on the client; `initLang` refines this
-    // from localStorage/cookie once the app hydrates.
+    // from localStorage once the app hydrates.
     localePreference: 'auto' as LocalePreference,
     seo: {
       ...metadata,

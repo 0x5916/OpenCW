@@ -23,7 +23,7 @@
         <Home size={16} aria-hidden="true" />
         {m.error_cta_home()}
       </a>
-      <a href={href('/learn')} class="btn-ghost error-btn error-btn-accent">
+      <a href={href('/morse/learn')} class="btn-ghost error-btn error-btn-accent">
         <Radio size={16} aria-hidden="true" />
         {m.home_cta()}
       </a>

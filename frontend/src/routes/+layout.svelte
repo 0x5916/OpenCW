@@ -43,14 +43,14 @@
 
   /** Desktop link cluster. Home is the brand logo, so it is not repeated here. */
   const PRIMARY_NAV = [
-    { path: '/learn', label: m.nav_learn, icon: Radio },
+    { path: '/morse/learn', label: m.nav_learn, icon: Radio },
     { path: '/forum', label: m.nav_forum, icon: MessageSquare },
     { path: '/about', label: m.nav_about, icon: Info }
   ];
 
   /** Pinned phone tab bar. All four slots are real destinations. */
   const TAB_NAV = [
-    { path: '/learn', label: m.nav_learn, icon: Radio },
+    { path: '/morse/learn', label: m.nav_learn, icon: Radio },
     { path: '/profile', label: m.nav_profile, icon: LayoutDashboard },
     { path: '/forum', label: m.nav_forum, icon: MessageSquare },
     { path: '/more', label: m.nav_more, icon: Ellipsis }
@@ -71,7 +71,7 @@
 
   // initLang receives the locale derived from the URL prefix so the prerendered
   // HTML carries the right language; on the client it refines the preference
-  // from localStorage/cookie and redirects bare paths to the preferred locale.
+  // from localStorage and redirects bare paths to the preferred locale.
   // svelte-ignore state_referenced_locally
   initLang(data.locale, data.localePreference);
 

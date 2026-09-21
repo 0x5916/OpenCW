@@ -46,7 +46,7 @@ src/
   lib/
     api.ts         Typed API client (settings, user, forum, progress)
     auth.ts        Token handling (login/register/refresh/logout) + apiFetch
-    cookies.ts     Cookie read/write helpers + preference lifetime
+    cookies.ts     One-time migration from legacy preference cookies
     cwSync.ts      Client/server CW + page settings reconciliation
     errorCode.ts   API error-code extraction
     errorLocalization.ts  Error code → localized message
@@ -57,7 +57,7 @@ src/
     progressSync.ts Offline-first progress queue
     score.ts       Accuracy scoring, word-level diff, grade thresholds
     seo.ts         Route metadata, sitemap URL builder (used by scripts)
-    storageKeys.ts localStorage/cookie key registry
+    storageKeys.ts localStorage key registry
     theme.ts       Theme normalization + apply helpers
     components/    Shared UI (auth card, dropdown, Morse player, alerts, …)
   routes/          Pages (home, about, learn, login, register, profile,
@@ -78,7 +78,8 @@ covered by localized `api_error_forum_*` messages) for when the forum returns.
   prerendered, so the active locale always comes from the URL.
 - Bare paths (`/about`) and legacy `/morse` URLs exist only in the base locale in
   the build; once the app hydrates they redirect to the visitor's preferred
-  locale (stored in `localStorage` and the `PARAGLIDE_LOCALE` cookie).
+  locale (stored in `localStorage`). Existing visitors' legacy preference
+  cookies are migrated once and then removed.
 
 ## SEO validation gate
 
