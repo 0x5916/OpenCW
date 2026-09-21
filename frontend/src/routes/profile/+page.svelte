@@ -3,14 +3,15 @@
   import { user } from '$lib/auth';
   import { getUserInfo, getCWSettings, getProgress } from '$lib/api';
   import type { ProgressRecord } from '$lib/api';
-  import { LESSONS } from '$lib/morse';
   import { readClientCwSettings } from '$lib/cwSync';
   import { getLocalProgressRecords } from '$lib/progressSync';
-  import { User, Radio, Calendar, Activity, Zap, Check, X } from 'lucide-svelte';
+  import { User, Calendar, Activity, Check, X } from '@lucide/svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+  import GuestNotice from '$lib/components/GuestNotice.svelte';
   import { localizeApiError } from '$lib/errorLocalization';
-  import { localizeHref } from '$lib/paraglide/runtime';
+  import { accuracyClass, formatDate, formatLesson, percentage } from '$lib/format';
+  import { localizedHref } from '$lib/i18n.svelte';
   import * as m from '$lib/paraglide/messages';
 
   let loading = $state(true);
@@ -30,7 +31,17 @@
   let heatmapScrollEl = $state<HTMLDivElement | null>(null);
   let lastAuthLoaded = $state<boolean | null>(null);
 
-  const WEEKDAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', ''] as const;
+  // Locale-dependent, so it is derived on the component instance: a
+  // module-level constant would not be re-evaluated when the language changes.
+  let weekdayLabels = $derived([
+    m.profile_heatmap_weekday_mon(),
+    '',
+    m.profile_heatmap_weekday_wed(),
+    '',
+    m.profile_heatmap_weekday_fri(),
+    '',
+    ''
+  ]);
   const CURRENT_YEAR = new Date().getFullYear();
   const DAY_MS = 24 * 60 * 60 * 1000;
   const MONTH_FORMATTER = new Intl.DateTimeFormat(undefined, { month: 'short' });
@@ -153,7 +164,7 @@
       const earliestCreatedAtMs =
         parsedCreatedAt.length === 0 ? Date.now() : Math.min(...parsedCreatedAt);
 
-      username = 'Guest';
+      username = m.nav_guest();
       email = '';
       callSign = null;
       emailVerified = false;
@@ -197,27 +208,6 @@
     } finally {
       loading = false;
     }
-  }
-
-  function formatLesson(lessonStr: string): string {
-    const numericLesson = Number.parseInt(lessonStr, 10);
-    if (Number.isInteger(numericLesson) && numericLesson >= 1 && numericLesson <= LESSONS.length) {
-      return `${numericLesson} - ${LESSONS[numericLesson - 1].split('').join(', ')}`;
-    }
-
-    let cumulative = '';
-    for (let i = 0; i < LESSONS.length; i++) {
-      cumulative += LESSONS[i];
-      if (cumulative === lessonStr.toUpperCase()) {
-        return `${i + 1} - ${LESSONS[i].split('').join(', ')}`;
-      }
-    }
-    // Fallback: truncate raw string
-    return lessonStr.length > 12 ? lessonStr.slice(0, 12) + '…' : lessonStr;
-  }
-
-  function pct(v: number) {
-    return Math.round(v * 100) + '%';
   }
 
   function utcDayStart(ms: number): number {
@@ -358,39 +348,22 @@
 
     return weeks;
   }
-
-  function accuracyClass(v: number) {
-    return v >= 0.9 ? 'acc-good' : v >= 0.7 ? 'acc-ok' : 'acc-bad';
-  }
-
-  function formatDate(iso: string) {
-    return new Date(iso).toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  }
 </script>
 
-<main class="profile-page">
+<div class="profile-page page-stack">
   {#if loading}
     <LoadingSpinner variant="spinner" />
   {:else if loadError}
     <ErrorAlert message={loadError} />
   {:else}
     {#if isGuest}
-      <section class="card">
-        <p class="body-text">
-          {m.trainer_guest_notice()}
-          <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
-          /
-          <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
-        </p>
-      </section>
+      <div class="notice">
+        <GuestNotice class="body-text" />
+      </div>
     {/if}
 
-    <!-- Header -->
-    <header class="profile-header card">
+    <!-- Header: identity block, not a card. -->
+    <header class="profile-header">
       <div class="profile-avatar">
         <User size={48} />
       </div>
@@ -434,13 +407,24 @@
       </div>
     </header>
 
-    <section class="card profile-heatmap-card">
+    <section class="panel profile-heatmap-card">
       <div class="profile-section-header profile-section-header--split">
         <div class="profile-section-title-wrap">
           <Activity size={16} />
-          <h2 class="card-label">{yearTotalSessions} sessions in {selectedYear}</h2>
+          <h2 class="card-title">
+            {yearTotalSessions === 1
+              ? m.profile_sessions_in_year_one({ year: String(selectedYear) })
+              : m.profile_sessions_in_year({
+                  count: String(yearTotalSessions),
+                  year: String(selectedYear)
+                })}
+          </h2>
         </div>
-        <div class="profile-heatmap-year-picker" role="tablist" aria-label="Heatmap year selector">
+        <div
+          class="profile-heatmap-year-picker"
+          role="tablist"
+          aria-label={m.profile_heatmap_year_aria()}
+        >
           {#each availableYears as year (year)}
             <button
               type="button"
@@ -461,7 +445,7 @@
           class="profile-heatmap-shell"
           style={`--week-count:${heatmapWeekCount}`}
           role="img"
-          aria-label={`Training activity heatmap for ${selectedYear}`}
+          aria-label={m.profile_heatmap_image_aria({ year: String(selectedYear) })}
         >
           <div class="profile-heatmap-months" aria-hidden="true">
             <div class="profile-heatmap-months-spacer"></div>
@@ -476,7 +460,7 @@
 
           <div class="profile-heatmap-main">
             <div class="profile-heatmap-weekdays" aria-hidden="true">
-              {#each WEEKDAY_LABELS as label, idx (`${idx}-${label}`)}
+              {#each weekdayLabels as label, idx (`${idx}-${label}`)}
                 <span>{label}</span>
               {/each}
             </div>
@@ -500,10 +484,19 @@
                           : ''
                       }`}
                       title={cell.outsideYear
-                        ? `Outside ${selectedYear}`
+                        ? m.profile_heatmap_outside_year({ year: String(selectedYear) })
                         : cell.beforeAccount
-                          ? `Before account creation (${DAY_FORMATTER.format(cell.dateMs)})`
-                          : `${cell.count} session${cell.count === 1 ? '' : 's'} on ${DAY_FORMATTER.format(cell.dateMs)}`}
+                          ? m.profile_heatmap_before_account({
+                              date: DAY_FORMATTER.format(cell.dateMs)
+                            })
+                          : cell.count === 1
+                            ? m.profile_heatmap_day_one({
+                                date: DAY_FORMATTER.format(cell.dateMs)
+                              })
+                            : m.profile_heatmap_day_many({
+                                count: String(cell.count),
+                                date: DAY_FORMATTER.format(cell.dateMs)
+                              })}
                     ></span>
                   {/each}
                 </div>
@@ -514,51 +507,42 @@
       </div>
 
       <div class="profile-heatmap-legend" aria-hidden="true">
-        <span>Less</span>
+        <span>{m.profile_heatmap_less()}</span>
         <span class="profile-heatmap-cell level-0"></span>
         <span class="profile-heatmap-cell level-1"></span>
         <span class="profile-heatmap-cell level-2"></span>
         <span class="profile-heatmap-cell level-3"></span>
         <span class="profile-heatmap-cell level-4"></span>
-        <span>More</span>
+        <span>{m.profile_heatmap_more()}</span>
       </div>
     </section>
 
-    <!-- CW Settings snapshot -->
-    <section class="card profile-cw-card">
-      <div class="profile-section-header">
-        <Radio size={16} />
-        <h2 class="card-label">{m.profile_cw_settings()}</h2>
-      </div>
+    <!-- CW settings snapshot: peer metrics, so a stat strip rather than a card. -->
+    <section class="profile-cw-card">
+      <h2 class="card-title">{m.profile_cw_settings()}</h2>
       <div class="profile-cw-grid">
         <div class="profile-cw-item">
-          <Zap size={14} />
           <span class="profile-cw-val">{charWpm}</span>
           <span class="profile-cw-key">{m.profile_cw_char_wpm()}</span>
         </div>
         <div class="profile-cw-item">
-          <Zap size={14} />
           <span class="profile-cw-val">{effWpm}</span>
           <span class="profile-cw-key">{m.profile_cw_eff_wpm()}</span>
         </div>
         <div class="profile-cw-item">
-          <Zap size={14} />
           <span class="profile-cw-val">{freq} Hz</span>
           <span class="profile-cw-key">{m.profile_cw_freq()}</span>
         </div>
       </div>
     </section>
 
-    <!-- Progress history -->
-    <section class="card profile-history-card">
-      <div class="profile-section-header">
-        <Activity size={16} />
-        <h2 class="card-label">{m.profile_history()}</h2>
-      </div>
+    <!-- Progress history: dense tabular data, the table is the content. -->
+    <section class="panel profile-history-card">
+      <h2 class="card-title">{m.profile_history()}</h2>
       {#if recentRecords.length === 0}
         <p class="body-text profile-empty">
           {m.profile_history_empty()}
-          <a href={localizeHref('/morse/learn')} class="link">{m.nav_learn()}</a>
+          <a href={localizedHref('/morse/learn')} class="link">{m.nav_learn()}</a>
         </p>
       {:else}
         <div class="profile-table-wrap">
@@ -577,7 +561,7 @@
                   <td class="profile-lesson-cell">{formatLesson(rec.lesson)}</td>
                   <td
                     ><span class="profile-acc {accuracyClass(rec.accuracy)}"
-                      >{pct(rec.accuracy)}</span
+                      >{percentage(rec.accuracy)}</span
                     ></td
                   >
                   <td class="profile-wpm-cell">{rec.char_wpm} / {rec.eff_wpm}</td>
@@ -590,23 +574,21 @@
       {/if}
     </section>
   {/if}
-</main>
+</div>
 
 <style>
-  .profile-page {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
+  /* The default width tier plus `.page-stack` rhythm: this page is a dashboard
+     (heatmap, stat strip, four-column table), not a single-column form, and at
+     42rem the ~834px heatmap was force-scrolling. `.page-stack` keeps the
+     inter-block rhythm that `.page-narrow` used to provide. */
 
-  /* Header */
+  /* Header: identity block delimited by a rule, not a card. */
   .profile-header {
     display: flex;
     align-items: center;
     gap: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
   }
   .profile-avatar {
     width: 5rem;
@@ -626,7 +608,8 @@
     gap: 0.25rem;
   }
   .profile-username {
-    font-size: 1.75rem;
+    font-size: var(--text-2xl);
+    line-height: var(--leading-tight);
     font-weight: 800;
     color: var(--text-primary);
     margin: 0;
@@ -666,10 +649,10 @@
     flex-shrink: 0;
   }
   :global(.profile-status-icon-ok) {
-    color: #22c55e;
+    color: var(--status-good);
   }
   :global(.profile-status-icon-bad) {
-    color: #ef4444;
+    color: var(--status-bad);
   }
 
   /* Activity heatmap */
@@ -774,21 +757,25 @@
     background: color-mix(in srgb, var(--bg-inset), black 12%);
     display: inline-block;
   }
+  /* Level ramp derived from the accent so it matches the brand in both themes
+     (the raw GitHub greens were dark-only and clashed on a white surface). */
+  .profile-heatmap-cell.level-1,
+  .profile-heatmap-cell.level-2,
+  .profile-heatmap-cell.level-3,
+  .profile-heatmap-cell.level-4 {
+    border-color: transparent;
+  }
   .profile-heatmap-cell.level-1 {
-    background: #0e4429;
-    border-color: #0e4429;
+    background: color-mix(in srgb, var(--accent-cta) 22%, var(--bg-inset));
   }
   .profile-heatmap-cell.level-2 {
-    background: #006d32;
-    border-color: #006d32;
+    background: color-mix(in srgb, var(--accent-cta) 45%, var(--bg-inset));
   }
   .profile-heatmap-cell.level-3 {
-    background: #26a641;
-    border-color: #26a641;
+    background: color-mix(in srgb, var(--accent-cta) 70%, var(--bg-inset));
   }
   .profile-heatmap-cell.level-4 {
-    background: #39d353;
-    border-color: #39d353;
+    background: var(--accent-cta);
   }
   .profile-heatmap-cell.is-future {
     opacity: 0.45;
@@ -813,7 +800,7 @@
     color: var(--text-muted);
   }
 
-  /* CW Settings */
+  /* Section headers (heatmap, history) */
   .profile-section-header {
     display: flex;
     align-items: center;
@@ -821,26 +808,34 @@
     margin-bottom: 0.75rem;
     color: var(--text-muted);
   }
-  .profile-section-header :global(.card-label) {
+  .profile-section-header :global(.card-title) {
     margin-bottom: 0;
   }
+
+  /* CW settings: peer metrics in an inset stat strip. */
   .profile-cw-grid {
-    display: flex;
-    gap: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.75rem;
   }
   .profile-cw-item {
     display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    color: var(--text-muted);
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: var(--radius-md);
+    background-color: var(--bg-inset);
   }
   .profile-cw-val {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     font-weight: 700;
-    color: var(--accent);
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
   }
   .profile-cw-key {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    line-height: 1.15;
     color: var(--text-muted);
   }
 
@@ -851,7 +846,8 @@
   .profile-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
   }
   .profile-table th {
     text-align: left;
@@ -887,16 +883,16 @@
     font-size: 0.8rem;
   }
   .acc-good {
-    background: rgba(34, 197, 94, 0.15);
-    color: #22c55e;
+    background: var(--status-good-tint);
+    color: var(--status-good);
   }
   .acc-ok {
-    background: rgba(234, 179, 8, 0.15);
-    color: #ca8a04;
+    background: var(--status-ok-tint);
+    color: var(--status-ok);
   }
   .acc-bad {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
+    background: var(--status-bad-tint);
+    color: var(--status-bad);
   }
   .profile-wpm-cell {
     font-variant-numeric: tabular-nums;

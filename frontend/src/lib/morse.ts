@@ -165,7 +165,6 @@ export function generateTimedLesson(
       if (left < overshoot) break;
 
       result += group;
-      total += groupDur;
       break;
     }
     result += group + ' ';

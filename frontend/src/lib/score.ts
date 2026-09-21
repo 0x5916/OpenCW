@@ -1,3 +1,18 @@
+/**
+ * Shared accuracy thresholds. These drive the result overlay, the lesson
+ * progression buttons and the history badges, so they live in one place.
+ */
+export const SCORE_GOOD = 0.9;
+export const SCORE_OK = 0.7;
+
+export type ScoreGrade = 'good' | 'ok' | 'bad';
+
+export function scoreGrade(accuracy: number): ScoreGrade {
+  if (accuracy >= SCORE_GOOD) return 'good';
+  if (accuracy >= SCORE_OK) return 'ok';
+  return 'bad';
+}
+
 export function score(reference: string, input: string): number {
   const ref = reference.toUpperCase().trim().replace(/\s+/g, ' ');
   const ans = input.toUpperCase().trim().replace(/\s+/g, ' ');

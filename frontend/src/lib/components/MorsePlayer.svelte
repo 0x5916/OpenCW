@@ -1,9 +1,9 @@
 <script lang="ts">
   import { calculateDuration, getFarnsworthWpmSet, MORSE } from '$lib/morse';
   import { onDestroy } from 'svelte';
-  import { Play, Square, Pause, SlidersHorizontal, SkipForward } from 'lucide-svelte';
+  import { Play, Square, Pause, SlidersHorizontal, SkipForward } from '@lucide/svelte';
   import { user } from '$lib/auth';
-  import { localizeHref } from '$lib/paraglide/runtime';
+  import GuestNotice from '$lib/components/GuestNotice.svelte';
   import * as m from '$lib/paraglide/messages';
 
   let {
@@ -180,7 +180,7 @@
   <div class="player-wrapper">
     {#if label || !compact}
       <div class="player-header">
-        {#if label}<p class="card-label player-label">{label}</p>{/if}
+        {#if label}<p class="card-title player-label">{label}</p>{/if}
       </div>
     {/if}
     <div class="player-top">
@@ -213,7 +213,7 @@
               class="player-icon-btn btn-ghost"
               onclick={skipNext}
               disabled={!started}
-              aria-label="Skip to next character"
+              aria-label={m.player_skip_next()}
             >
               <SkipForward size={16} />
             </button>
@@ -277,7 +277,7 @@
                 />
               </label>
               <label class="player-settings-field">
-                <span class="label-text">Volume</span>
+                <span class="label-text">{m.player_volume()}</span>
                 <div class="player-volume-row">
                   <input
                     type="range"
@@ -306,12 +306,9 @@
                 </label>
               {/if}
               {#if !$user}
-                <p class="player-settings-auth-hint">
-                  {m.trainer_guest_notice()}
-                  <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
-                  /
-                  <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
-                </p>
+                <div class="player-settings-auth-hint">
+                  <GuestNotice />
+                </div>
               {/if}
               <p class="player-settings-hint">Visit Settings to save permanently</p>
             </div>
@@ -490,6 +487,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.65rem;
+    /* Floating surface: this is where elevation is allowed. */
+    box-shadow: var(--shadow-menu);
   }
 
   .player-settings-field {

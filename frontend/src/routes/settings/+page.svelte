@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { browser } from '$app/environment';
   import { user } from '$lib/auth';
   import {
     saveCWSettings,
@@ -13,7 +12,7 @@
     type PageSettings
   } from '$lib/api';
   import { langPreference, setLangPreference, type Locale } from '$lib/i18n.svelte';
-  import { locales, localizeHref } from '$lib/paraglide/runtime';
+  import { locales } from '$lib/paraglide/runtime';
   import {
     getLocaleLongLabel,
     normalizeLocalePreference,
@@ -25,17 +24,17 @@
     normalizeLesson,
     readClientCwSettings,
     readClientPageSettings,
+    readStoredLesson,
     restoreSettingsFromServer,
     saveClientCwSettings
   } from '$lib/cwSync';
   import { localizeApiError } from '$lib/errorLocalization';
-  import { CW_STORAGE_KEYS } from '$lib/storageKeys';
-  import { Settings } from 'lucide-svelte';
+  import { Settings } from '@lucide/svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
+  import GuestNotice from '$lib/components/GuestNotice.svelte';
+  import SaveButton from '$lib/components/SaveButton.svelte';
   import * as m from '$lib/paraglide/messages';
-
-  type Theme = 'auto' | 'dark' | 'light';
 
   // Account section
   let username = $state('');
@@ -67,8 +66,6 @@
   let passwordSaved = $state(false);
 
   // Page settings section
-  let pageTheme = $state<Theme>('auto');
-  let initialPageTheme = $state<Theme>('auto');
   let pageLanguage = $state<LocalePreference>(langPreference.value);
   let initialPageLanguage = $state<LocalePreference>(langPreference.value);
   let pageLesson = $state(1);
@@ -100,8 +97,7 @@
   const callSignDirty = $derived(callSign.trim().toUpperCase() !== initialCallSign);
   const emailDirty = $derived(email.trim() !== initialEmail.trim());
   const pageDirty = $derived(
-    pageTheme !== initialPageTheme ||
-      pageLanguage !== initialPageLanguage ||
+    pageLanguage !== initialPageLanguage ||
       normalizeLesson(pageLesson, LESSONS.length) !== initialPageLesson
   );
   const cwDirty = $derived(
@@ -118,14 +114,6 @@
     lastAuthLoaded = isAuthenticated;
     loadAll();
   });
-
-  function getStoredLesson(): number {
-    if (!browser) return 1;
-
-    const rawLesson = localStorage.getItem(CW_STORAGE_KEYS.lesson);
-    const parsedLesson = Number.parseInt(rawLesson ?? '1', 10);
-    return normalizeLesson(parsedLesson, LESSONS.length);
-  }
 
   function applyCwState(cw: {
     char_wpm: number;
@@ -144,8 +132,6 @@
   }
 
   function applyPageState(page: PageSettings) {
-    pageTheme = page.theme;
-    initialPageTheme = page.theme;
     pageLanguage = normalizeLocalePreference(page.language);
     initialPageLanguage = pageLanguage;
     pageLesson = normalizeLesson(page.cur_lesson, LESSONS.length);
@@ -165,12 +151,6 @@
     setTimeout(() => setter(false), durationMs);
   }
 
-  function saveButtonLabel(saved: boolean, saving: boolean): string {
-    if (saved) return m.settings_saved();
-    if (saving) return m.settings_saving();
-    return m.settings_update();
-  }
-
   async function loadAll() {
     loading = true;
     loadError = '';
@@ -178,7 +158,7 @@
     if (!$user) {
       const localCw = readClientCwSettings();
       const localPage = readClientPageSettings(
-        getStoredLesson(),
+        readStoredLesson(LESSONS.length),
         LESSONS.length,
         langPreference.value
       );
@@ -393,7 +373,6 @@
 
     try {
       const pagePayload: PageSettings = {
-        theme: pageTheme,
         language: pageLanguage,
         cur_lesson: pageLesson
       };
@@ -403,7 +382,6 @@
       }
 
       applyClientPageSettings(pagePayload, LESSONS.length, setLangPreference);
-      initialPageTheme = pageTheme;
       initialPageLanguage = pageLanguage;
       initialPageLesson = pageLesson;
       showSavedFlag((value) => {
@@ -417,7 +395,7 @@
   }
 </script>
 
-<main class="page-narrow settings-page">
+<div class="page-narrow settings-page">
   <div class="settings-heading">
     <Settings class="settings-page-icon" aria-hidden="true" />
     <h1 class="page-title">{m.settings_title()}</h1>
@@ -429,20 +407,15 @@
     <ErrorAlert message={loadError} />
   {:else}
     {#if !$user}
-      <section class="card settings-card">
-        <p class="body-text">
-          {m.trainer_guest_notice()}
-          <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
-          /
-          <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
-        </p>
-      </section>
+      <div class="notice">
+        <GuestNotice class="body-text" />
+      </div>
     {/if}
 
     {#if $user}
       <!-- Account -->
-      <section class="card settings-card">
-        <h2 class="card-label">{m.settings_account_section()}</h2>
+      <section class="panel settings-card">
+        <h2 class="card-title">{m.settings_account_section()}</h2>
         <form onsubmit={saveCallSign} class="settings-form">
           <label class="settings-field">
             <span class="label-text">{m.settings_username_label()}</span>
@@ -459,18 +432,12 @@
                 maxlength="32"
               />
               {#if callSignDirty || callSignSaving || callSignSaved}
-                <button
-                  type="submit"
-                  class="btn-primary settings-btn-compact"
-                  disabled={callSignSaving}
-                >
-                  {saveButtonLabel(callSignSaved, callSignSaving)}
-                </button>
+                <SaveButton saving={callSignSaving} saved={callSignSaved} />
               {/if}
             </div>
           </label>
           {#if callSignError}
-            <p class="settings-error">⚠ {callSignError}</p>
+            <ErrorAlert message={callSignError} />
           {/if}
         </form>
 
@@ -482,18 +449,12 @@
             <div class="settings-input-action">
               <input type="email" bind:value={email} class="input" required />
               {#if emailDirty || emailSaving || emailSaved}
-                <button
-                  type="submit"
-                  class="btn-primary settings-btn-compact"
-                  disabled={emailSaving}
-                >
-                  {saveButtonLabel(emailSaved, emailSaving)}
-                </button>
+                <SaveButton saving={emailSaving} saved={emailSaved} />
               {/if}
             </div>
           </label>
           {#if emailError}
-            <p class="settings-error">⚠ {emailError}</p>
+            <ErrorAlert message={emailError} />
           {/if}
         </form>
 
@@ -552,16 +513,19 @@
           {/if}
 
           {#if verificationSendError}
-            <p class="settings-error">⚠ {verificationSendError}</p>
+            <ErrorAlert message={verificationSendError} />
           {/if}
           {#if verificationCheckError}
-            <p class="settings-error">⚠ {verificationCheckError}</p>
+            <ErrorAlert message={verificationCheckError} />
           {/if}
         </div>
+      </section>
 
-        <hr class="settings-divider" />
-
-        <h3 class="settings-subtitle">{m.settings_password_section()}</h3>
+      <!-- Password gets its own surface: every panel is then headed by an
+           `h2.card-title` (the password group used to be an `h3` buried half-way
+           down the account panel), and the account panel stays about identity. -->
+      <section class="panel settings-card">
+        <h2 class="card-title">{m.settings_password_section()}</h2>
         <form onsubmit={savePassword} class="settings-form">
           <label class="settings-field">
             <span class="label-text">{m.settings_current_password_label()}</span>
@@ -597,17 +561,11 @@
             />
           </label>
           {#if passwordError}
-            <p class="settings-error">⚠ {passwordError}</p>
+            <ErrorAlert message={passwordError} />
           {/if}
           {#if passwordDirty || passwordSaving || passwordSaved}
             <div class="settings-action-row">
-              <button
-                type="submit"
-                class="btn-primary settings-btn-compact"
-                disabled={passwordSaving}
-              >
-                {saveButtonLabel(passwordSaved, passwordSaving)}
-              </button>
+              <SaveButton saving={passwordSaving} saved={passwordSaved} />
             </div>
           {/if}
         </form>
@@ -615,17 +573,9 @@
     {/if}
 
     <!-- Page Settings -->
-    <section class="card settings-card">
-      <h2 class="card-label">{m.settings_page_section()}</h2>
+    <section class="panel settings-card">
+      <h2 class="card-title">{m.settings_page_section()}</h2>
       <form onsubmit={savePage} class="settings-form">
-        <label class="settings-field">
-          <span class="label-text">{m.settings_theme_label()}</span>
-          <select bind:value={pageTheme} class="input">
-            <option value="auto">{m.theme_auto()}</option>
-            <option value="light">{m.theme_light()}</option>
-            <option value="dark">{m.theme_dark()}</option>
-          </select>
-        </label>
         <label class="settings-field">
           <span class="label-text">{m.settings_language_label()}</span>
           <select bind:value={pageLanguage} class="input">
@@ -640,21 +590,19 @@
           <input type="number" bind:value={pageLesson} min="1" max={LESSONS.length} class="input" />
         </label>
         {#if pageError}
-          <p class="settings-error">⚠ {pageError}</p>
+          <ErrorAlert message={pageError} />
         {/if}
         {#if pageDirty || pageSaving || pageSaved}
           <div class="settings-action-row">
-            <button type="submit" class="btn-primary settings-btn-compact" disabled={pageSaving}>
-              {saveButtonLabel(pageSaved, pageSaving)}
-            </button>
+            <SaveButton saving={pageSaving} saved={pageSaved} />
           </div>
         {/if}
       </form>
     </section>
 
     <!-- CW Settings -->
-    <section class="card settings-card">
-      <h2 class="card-label">{m.settings_cw_section()}</h2>
+    <section class="panel settings-card">
+      <h2 class="card-title">{m.settings_cw_section()}</h2>
       <form onsubmit={saveCW} class="settings-form">
         <label class="settings-field">
           <span class="label-text">{m.trainer_label_char_wpm()}</span>
@@ -673,25 +621,19 @@
           <input type="number" bind:value={startDelay} min="0" max="10" step="0.5" class="input" />
         </label>
         {#if cwError}
-          <p class="settings-error">⚠ {cwError}</p>
+          <ErrorAlert message={cwError} />
         {/if}
         {#if cwDirty || cwSaving || cwSaved}
           <div class="settings-action-row">
-            <button type="submit" class="btn-primary settings-btn-compact" disabled={cwSaving}>
-              {saveButtonLabel(cwSaved, cwSaving)}
-            </button>
+            <SaveButton saving={cwSaving} saved={cwSaved} />
           </div>
         {/if}
       </form>
     </section>
   {/if}
-</main>
+</div>
 
 <style>
-  .settings-page {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-  }
   .settings-heading {
     display: flex;
     align-items: center;
@@ -704,18 +646,11 @@
     height: 2rem;
     flex-shrink: 0;
   }
-  .settings-card {
-    margin-bottom: 1.25rem;
-  }
   .settings-form {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
     margin-top: 0.5rem;
-  }
-  .settings-error {
-    color: var(--error, #ef4444);
-    font-size: 0.875rem;
   }
   .settings-divider {
     border: none;
@@ -734,19 +669,13 @@
     font-weight: 600;
   }
   .settings-email-status.is-verified {
-    color: var(--success, #10b981);
+    color: var(--status-good);
   }
   .settings-email-status.is-unverified {
-    color: var(--warning, #d97706);
+    color: var(--status-ok);
   }
   .settings-verification-form {
     margin-top: 0;
-  }
-  .settings-subtitle {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--text-primary);
   }
   .settings-input-action {
     display: flex;
@@ -761,22 +690,11 @@
     display: flex;
     justify-content: flex-end;
   }
-  .settings-btn-compact {
-    padding: var(--space-sm) 0.9rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    min-height: calc(1.25rem + (var(--space-sm) * 2) + 2px);
-    width: auto;
-    white-space: nowrap;
-  }
 
   @media (max-width: 720px) {
     .settings-input-action {
       flex-direction: column;
       align-items: stretch;
-    }
-    .settings-btn-compact {
-      width: 100%;
     }
   }
 </style>

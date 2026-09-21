@@ -3,7 +3,6 @@ import { baseLocale, isLocale, locales } from '$lib/paraglide/runtime';
 export type Locale = (typeof locales)[number];
 export type LocalePreference = Locale | 'auto';
 
-export const LOCALE_COOKIE = 'PARAGLIDE_LOCALE';
 export const LOCALE_PREFERENCE_STORAGE_KEY = 'PARAGLIDE_LOCALE_PREF';
 
 export const LOCALE_DISPLAY: Record<Locale, { short: string; native: string; english: string }> = {
@@ -13,28 +12,6 @@ export const LOCALE_DISPLAY: Record<Locale, { short: string; native: string; eng
   'zh-Hans': { short: '简', native: '简体中文', english: 'Chinese (Simplified)' },
   'zh-Hant': { short: '繁', native: '繁體中文', english: 'Chinese (Traditional)' }
 };
-
-type WeightedLanguage = { value: string; q: number };
-
-function parseAcceptLanguage(header: string): WeightedLanguage[] {
-  return header
-    .split(',')
-    .map((part) => {
-      const [rawValue, ...params] = part.trim().split(';');
-      const value = rawValue?.trim();
-      if (!value) return null;
-
-      const qParam = params.map((p) => p.trim()).find((p) => p.startsWith('q='));
-      const q = qParam ? Number.parseFloat(qParam.slice(2)) : 1;
-
-      return {
-        value,
-        q: Number.isFinite(q) ? q : 1
-      };
-    })
-    .filter((item): item is WeightedLanguage => item !== null)
-    .sort((a, b) => b.q - a.q);
-}
 
 export function normalizeLocalePreference(value: string | null | undefined): LocalePreference {
   if (!value || value === 'auto') return 'auto';
@@ -70,20 +47,6 @@ export function detectLocaleFromAcceptedLanguages(candidates: readonly string[])
   }
 
   return baseLocale as Locale;
-}
-
-export function detectLocaleFromAcceptLanguageHeader(header: string | null | undefined): Locale {
-  if (!header) return baseLocale as Locale;
-  const accepted = parseAcceptLanguage(header).map((entry) => entry.value);
-  return detectLocaleFromAcceptedLanguages(accepted);
-}
-
-export function resolveLocalePreference(
-  preference: LocalePreference,
-  acceptedLanguages: readonly string[] = []
-): Locale {
-  if (preference !== 'auto') return preference;
-  return detectLocaleFromAcceptedLanguages(acceptedLanguages);
 }
 
 export function getLocaleShortLabel(locale: Locale): string {

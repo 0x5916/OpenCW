@@ -1,76 +1,83 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import favicon from '$lib/assets/favicon.svg';
   import '../app.css';
   import { user, initAuth, logout } from '$lib/auth';
   import { flushQueuedProgress, initializeProgressSync } from '$lib/progressSync';
   import { LESSONS } from '$lib/morse';
   import { reconcileSettingsWithServer, touchLocalPageSettingsUpdatedAt } from '$lib/cwSync';
   import { goto, afterNavigate } from '$app/navigation';
+  import { page } from '$app/state';
   import {
-    ChevronDown,
-    Menu,
-    X,
-    Monitor,
-    Sun,
-    Moon,
-    Home,
-    Radio,
-    MessageSquare,
+    Ellipsis,
     Info,
-    LogIn,
-    UserPlus,
-    LogOut,
     Languages,
-    User,
+    LayoutDashboard,
+    LogIn,
+    LogOut,
+    MessageSquare,
+    Monitor,
+    Moon,
+    Radio,
     Settings,
-    LayoutDashboard
-  } from 'lucide-svelte';
-  import { lang, setLang, setLangPreference, initLang } from '$lib/i18n.svelte';
-  import { locales, localizeHref } from '$lib/paraglide/runtime';
+    Sun,
+    User,
+    UserPlus
+  } from '@lucide/svelte';
+  import {
+    lang,
+    langPreference,
+    setLang,
+    setLangPreference,
+    initLang,
+    localizedHref as href
+  } from '$lib/i18n.svelte';
+  import { locales } from '$lib/paraglide/runtime';
+  import Dropdown from '$lib/components/Dropdown.svelte';
   import { getLocaleLongLabel, getLocaleShortLabel } from '$lib/locale';
+  import { THEME_CYCLE, applyTheme, readStoredTheme, setTheme } from '$lib/theme';
   import * as m from '$lib/paraglide/messages';
   import type { Locale } from '$lib/i18n.svelte';
+  import type { Theme } from '$lib/theme';
 
   let { children, data } = $props();
 
-  type Theme = 'auto' | 'light' | 'dark';
+  /** Desktop link cluster. Home is the brand logo, so it is not repeated here. */
+  const PRIMARY_NAV = [
+    { path: '/morse/learn', label: m.nav_learn, icon: Radio },
+    { path: '/forum', label: m.nav_forum, icon: MessageSquare },
+    { path: '/about', label: m.nav_about, icon: Info }
+  ];
 
-  const CYCLE: Record<Theme, Theme> = { auto: 'light', light: 'dark', dark: 'auto' };
+  /** Pinned phone tab bar. All four slots are real destinations. */
+  const TAB_NAV = [
+    { path: '/morse/learn', label: m.nav_learn, icon: Radio },
+    { path: '/profile', label: m.nav_profile, icon: LayoutDashboard },
+    { path: '/forum', label: m.nav_forum, icon: MessageSquare },
+    { path: '/more', label: m.nav_more, icon: Ellipsis }
+  ];
 
-  function load(): Theme {
-    if (typeof localStorage === 'undefined') return 'auto';
-    return (localStorage.getItem('theme') as Theme) ?? 'auto';
-  }
-
-  function apply(t: Theme) {
-    if (t === 'auto') document.documentElement.removeAttribute('data-theme');
-    else document.documentElement.setAttribute('data-theme', t);
-  }
+  const GITHUB_URL = 'https://github.com/0x5916';
 
   let theme = $state<Theme>('auto');
-  let menuOpen = $state(false);
-  let userMenuOpen = $state(false);
-  let guestMenuOpen = $state(false);
-  let userMenuLeaveTimer = 0;
-  let guestMenuLeaveTimer = 0;
-  let langMenuLeaveTimer = 0;
-  let navEl = $state<HTMLElement | null>(null);
-  let userMenuEl = $state<HTMLElement | null>(null);
-  let guestMenuEl = $state<HTMLElement | null>(null);
-  let langMenuEl = $state<HTMLElement | null>(null);
-  let langMenuOpen = $state(false);
   let ThemeIcon = $derived(themeIconFor(theme));
   let reconciledSettingsForUser = $state<string | null>(null);
 
-  // initLang receives the locale the server read from the cookie —
-  // so SSR renders the correct language from the very first request.
+  const structuredDataScripts = $derived(
+    data.seo.structuredData.map((schema) => {
+      // eslint-disable-next-line no-useless-escape -- Svelte ends script blocks at a literal closing script tag
+      return `<script type="application/ld+json">${JSON.stringify(schema)}<\/script>`;
+    })
+  );
+
+  // initLang receives the locale derived from the URL prefix so the prerendered
+  // HTML carries the right language; on the client it refines the preference
+  // from localStorage and redirects bare paths to the preferred locale.
   // svelte-ignore state_referenced_locally
   initLang(data.locale, data.localePreference);
 
   $effect(() => {
-    theme = load();
-    apply(theme);
+    theme = readStoredTheme();
+    applyTheme(theme);
     initAuth();
   });
 
@@ -87,7 +94,9 @@
 
     void reconcileSettingsWithServer({
       maxLesson: LESSONS.length,
-      fallbackLanguagePreference: data.localePreference,
+      // A static build cannot read the stored preference while prerendering,
+      // so fall back to the client-resolved one.
+      fallbackLanguagePreference: langPreference.value,
       onLocale: setLangPreference
     }).catch(() => {
       // Keep app startup/login resilient if reconciliation fails.
@@ -96,37 +105,6 @@
 
   onMount(() => {
     initializeProgressSync();
-
-    if ('serviceWorker' in navigator) {
-      const localePrefixes = ['/en', '/zh-Hant', '/zh-Hans', '/ja', '/de'];
-
-      void (async () => {
-        try {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-
-          for (const registration of registrations) {
-            const scriptUrl =
-              registration.active?.scriptURL ??
-              registration.installing?.scriptURL ??
-              registration.waiting?.scriptURL;
-            const scriptPath = scriptUrl ? new URL(scriptUrl).pathname : '';
-            const scopePath = new URL(registration.scope).pathname.replace(/\/$/, '') || '/';
-            const scopeIsLocale = localePrefixes.some(
-              (prefix) => scopePath === prefix || scopePath.startsWith(`${prefix}/`)
-            );
-            const scriptIsLegacy = scriptPath.endsWith('/sw.js');
-
-            if (scopeIsLocale || scriptIsLegacy) {
-              await registration.unregister();
-            }
-          }
-        } catch {
-          // Ignore cleanup failures.
-        }
-      })().catch(() => {
-        // Avoid breaking page initialization if cleanup fails.
-      });
-    }
   });
 
   function langLabel(locale: Locale): string {
@@ -140,27 +118,29 @@
   function setLanguage(locale: Locale): void {
     setLang(locale);
     touchLocalPageSettingsUpdatedAt();
-    langMenuOpen = false;
   }
 
-  function setTheme(nextTheme: Theme) {
-    theme = nextTheme;
-    localStorage.setItem('theme', theme);
-    apply(theme);
-    touchLocalPageSettingsUpdatedAt();
+  // Theme is a device-local preference: changing it must not mark the synced page
+  // settings (language, lesson) as locally newer than the server's copy.
+  function changeTheme(nextTheme: Theme) {
+    theme = setTheme(nextTheme);
   }
 
   function cycleTheme() {
-    setTheme(CYCLE[theme]);
+    changeTheme(THEME_CYCLE[theme]);
   }
 
   async function handleLogout() {
     await logout();
-    await goto(localizeHref('/', { locale: lang.value }));
+    await goto(href('/'));
   }
 
-  function href(path: string) {
-    return localizeHref(path, { locale: lang.value });
+  function stripTrailingSlash(path: string): string {
+    return path.replace(/\/+$/, '') || '/';
+  }
+
+  function isActive(path: string): boolean {
+    return stripTrailingSlash(page.url.pathname) === stripTrailingSlash(href(path));
   }
 
   function themeIconFor(currentTheme: Theme) {
@@ -169,53 +149,39 @@
     return Monitor;
   }
 
-  function closeMenus() {
-    menuOpen = false;
-    userMenuOpen = false;
-    guestMenuOpen = false;
-    langMenuOpen = false;
-  }
-
-  function onDocumentClick(event: MouseEvent) {
+  // Toggle a body class when an input/textarea gains or loses focus so the
+  // mobile bottom nav can hide while the soft keyboard is open. Selects are
+  // excluded on purpose: they open a picker, not a keyboard, and leaving one
+  // focused would keep the tab bar hidden.
+  function onDocumentFocusIn(event: FocusEvent) {
     const target = event.target;
-    if (!(target instanceof Node)) return;
-
-    if (menuOpen && navEl && !navEl.contains(target)) {
-      menuOpen = false;
-    }
-
-    if (userMenuOpen && userMenuEl && !userMenuEl.contains(target)) {
-      userMenuOpen = false;
-    }
-
-    if (guestMenuOpen && guestMenuEl && !guestMenuEl.contains(target)) {
-      guestMenuOpen = false;
-    }
-
-    if (langMenuOpen && langMenuEl && !langMenuEl.contains(target)) {
-      langMenuOpen = false;
+    if (target instanceof HTMLElement && target.matches('input, textarea')) {
+      document.body.classList.add('keyboard-open');
     }
   }
 
-  function onDocumentKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
-      closeMenus();
+  function onDocumentFocusOut(event: FocusEvent) {
+    const target = event.target;
+    if (target instanceof HTMLElement && target.matches('input, textarea')) {
+      document.body.classList.remove('keyboard-open');
     }
   }
 
+  // The desktop theme button keeps a stored preference that other pages can
+  // change (Settings, the More page), so refresh it on every navigation.
   afterNavigate(() => {
-    closeMenus();
+    theme = readStoredTheme();
   });
 
   $effect(() => {
     if (typeof document === 'undefined') return;
 
-    document.addEventListener('click', onDocumentClick);
-    document.addEventListener('keydown', onDocumentKeydown);
+    document.addEventListener('focusin', onDocumentFocusIn);
+    document.addEventListener('focusout', onDocumentFocusOut);
 
     return () => {
-      document.removeEventListener('click', onDocumentClick);
-      document.removeEventListener('keydown', onDocumentKeydown);
+      document.removeEventListener('focusin', onDocumentFocusIn);
+      document.removeEventListener('focusout', onDocumentFocusOut);
     };
   });
 </script>
@@ -240,151 +206,89 @@
   <meta name="twitter:title" content={data.seo.title} />
   <meta name="twitter:description" content={data.seo.description} />
   <meta name="twitter:image" content={data.seo.openGraphImage} />
-  {#each data.seo.structuredData as schema, index (index)}
-    <script type="application/ld+json">{JSON.stringify(schema)}</script>
+  {#each structuredDataScripts as scriptTag (scriptTag)}
+    <!-- eslint-disable-next-line svelte/no-at-html-tags -- server-built JSON-LD, no user input -->
+    {@html scriptTag}
   {/each}
-  <link rel="icon" href={favicon} />
 </svelte:head>
 
 <div class="page-wrapper">
-  <nav class="navbar" bind:this={navEl}>
+  <nav class="navbar">
     <div class="navbar-inner">
       <!-- Brand -->
-      <a href={href('/')} class="navbar-brand">
-        <img src={favicon} alt="OpenCW" />
+      <!-- Brand is the home affordance, so "Home" is not duplicated in the links -->
+      <a
+        href={href('/')}
+        class="navbar-brand"
+        title={m.nav_home()}
+        aria-current={isActive('/') ? 'page' : undefined}
+      >
+        <!-- The wordmark next to it already names the link. -->
+        <img src="/favicon.svg" alt="" />
         OpenCW
       </a>
 
       <!-- Desktop: all links + user menu on the right -->
       <div class="navbar-right navbar-desktop">
-        <a href={href('/')} class="navbar-link">{m.nav_home()}</a>
-        <a href={href('/morse/learn')} class="navbar-link">{m.nav_learn()}</a>
-        <a href={href('/forum')} class="navbar-link">{m.nav_forum()}</a>
-        <a href={href('/about')} class="navbar-link">{m.nav_about()}</a>
+        {#each PRIMARY_NAV as item (item.path)}
+          <a
+            href={href(item.path)}
+            class="navbar-link"
+            class:active={isActive(item.path)}
+            aria-current={isActive(item.path) ? 'page' : undefined}>{item.label()}</a
+          >
+        {/each}
         <div class="navbar-divider"></div>
         {#if $user}
-          <div
-            class="user-menu-wrapper"
-            role="group"
-            bind:this={userMenuEl}
-            onmouseenter={() => {
-              clearTimeout(userMenuLeaveTimer);
-              userMenuOpen = true;
-            }}
-            onmouseleave={() => {
-              userMenuLeaveTimer = window.setTimeout(() => (userMenuOpen = false), 150);
-            }}
-          >
-            <button
-              type="button"
-              onclick={() => (userMenuOpen = !userMenuOpen)}
-              class="navbar-user-btn"
-              aria-expanded={userMenuOpen}
-              aria-haspopup="menu"
-              aria-controls="user-menu"
-            >
-              <span class="nav-label-icon">
-                <User class="nav-icon" aria-hidden="true" />
-                {$user.username}
-                <ChevronDown class="nav-icon" aria-hidden="true" />
-              </span>
-            </button>
-            {#if userMenuOpen}
-              <div class="user-dropdown" id="user-menu" role="menu">
-                <a
-                  href={href('/profile')}
-                  onclick={() => (userMenuOpen = false)}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  ><LayoutDashboard size={14} style="pointer-events:none" /> {m.nav_profile()}</a
-                >
-                <a
-                  href={href('/settings')}
-                  onclick={() => (userMenuOpen = false)}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  ><Settings size={14} style="pointer-events:none" /> {m.nav_settings()}</a
-                >
-                <button
-                  type="button"
-                  onclick={() => {
-                    void handleLogout();
-                    userMenuOpen = false;
-                  }}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  ><LogOut size={14} style="pointer-events:none" /> {m.nav_logout()}</button
-                >
-              </div>
-            {/if}
-          </div>
+          <Dropdown id="user-menu">
+            {#snippet trigger()}
+              <User class="nav-icon" aria-hidden="true" />
+              {$user.username}
+            {/snippet}
+            {#snippet menu()}
+              <a href={href('/profile')} class="user-dropdown-item" role="menuitem"
+                ><LayoutDashboard size={14} style="pointer-events:none" /> {m.nav_profile()}</a
+              >
+              <a href={href('/settings')} class="user-dropdown-item" role="menuitem"
+                ><Settings size={14} style="pointer-events:none" /> {m.nav_settings()}</a
+              >
+              <button
+                type="button"
+                onclick={() => void handleLogout()}
+                class="user-dropdown-item"
+                role="menuitem"
+                ><LogOut size={14} style="pointer-events:none" /> {m.nav_logout()}</button
+              >
+            {/snippet}
+          </Dropdown>
         {:else}
-          <div
-            class="user-menu-wrapper"
-            role="group"
-            bind:this={guestMenuEl}
-            onmouseenter={() => {
-              clearTimeout(guestMenuLeaveTimer);
-              guestMenuOpen = true;
-            }}
-            onmouseleave={() => {
-              guestMenuLeaveTimer = window.setTimeout(() => (guestMenuOpen = false), 150);
-            }}
-          >
-            <button
-              type="button"
-              onclick={() => (guestMenuOpen = !guestMenuOpen)}
-              class="navbar-user-btn"
-              aria-expanded={guestMenuOpen}
-              aria-haspopup="menu"
-              aria-controls="guest-menu"
-            >
-              <span class="nav-label-icon">
-                <User class="nav-icon" aria-hidden="true" />
-                Guest
-                <ChevronDown class="nav-icon" aria-hidden="true" />
-              </span>
-            </button>
-            {#if guestMenuOpen}
-              <div class="user-dropdown" id="guest-menu" role="menu">
-                <a
-                  href={href('/profile')}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  onclick={() => (guestMenuOpen = false)}
-                  ><LayoutDashboard size={14} style="pointer-events:none" /> {m.nav_profile()}</a
-                >
-                <a
-                  href={href('/settings')}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  onclick={() => (guestMenuOpen = false)}
-                  ><Settings size={14} style="pointer-events:none" /> {m.nav_settings()}</a
-                >
-                <a
-                  href={href('/login')}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  onclick={() => (guestMenuOpen = false)}
-                  ><LogIn size={14} style="pointer-events:none" /> {m.nav_login()}</a
-                >
-                <a
-                  href={href('/register')}
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  onclick={() => (guestMenuOpen = false)}
-                  ><UserPlus size={14} style="pointer-events:none" /> {m.nav_register()}</a
-                >
-              </div>
-            {/if}
-          </div>
+          <Dropdown id="guest-menu">
+            {#snippet trigger()}
+              <User class="nav-icon" aria-hidden="true" />
+              {m.nav_guest()}
+            {/snippet}
+            {#snippet menu()}
+              <a href={href('/profile')} class="user-dropdown-item" role="menuitem"
+                ><LayoutDashboard size={14} style="pointer-events:none" /> {m.nav_profile()}</a
+              >
+              <a href={href('/settings')} class="user-dropdown-item" role="menuitem"
+                ><Settings size={14} style="pointer-events:none" /> {m.nav_settings()}</a
+              >
+              <a href={href('/login')} class="user-dropdown-item" role="menuitem"
+                ><LogIn size={14} style="pointer-events:none" /> {m.nav_login()}</a
+              >
+              <a href={href('/register')} class="user-dropdown-item" role="menuitem"
+                ><UserPlus size={14} style="pointer-events:none" /> {m.nav_register()}</a
+              >
+            {/snippet}
+          </Dropdown>
         {/if}
         <button
           type="button"
           onclick={cycleTheme}
           class="theme-icon-btn"
-          title="Cycle theme"
-          aria-label="Cycle theme"
+          title={m.nav_theme_cycle()}
+          aria-label={m.nav_theme_cycle()}
         >
           <span class="nav-label-icon">
             <ThemeIcon class="nav-icon" aria-hidden="true" />
@@ -395,135 +299,26 @@
                 : m.theme_dark()}
           </span>
         </button>
-        <div
-          class="user-menu-wrapper"
-          role="group"
-          bind:this={langMenuEl}
-          onmouseenter={() => {
-            clearTimeout(langMenuLeaveTimer);
-            langMenuOpen = true;
-          }}
-          onmouseleave={() => {
-            langMenuLeaveTimer = window.setTimeout(() => (langMenuOpen = false), 150);
-          }}
-        >
-          <button
-            type="button"
-            onclick={() => (langMenuOpen = !langMenuOpen)}
-            class="navbar-user-btn"
-            aria-expanded={langMenuOpen}
-            aria-haspopup="menu"
-            aria-controls="lang-menu"
-            title={m.settings_language_label()}
-            aria-label={m.settings_language_label()}
-          >
-            <span class="nav-label-icon">
-              <Languages class="nav-icon" aria-hidden="true" />
-              {langLabel(lang.value)}
-              <ChevronDown class="nav-icon" aria-hidden="true" />
-            </span>
-          </button>
-          {#if langMenuOpen}
-            <div class="user-dropdown" id="lang-menu" role="menu">
-              {#each locales as locale (locale)}
-                <button
-                  type="button"
-                  class="user-dropdown-item"
-                  role="menuitem"
-                  onclick={() => setLanguage(locale as Locale)}
-                >
-                  {languageLabel(locale as Locale)}
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </div>
-      </div>
-
-      <!-- Mobile: hamburger only -->
-      <div class="navbar-mobile-controls">
-        <button
-          type="button"
-          onclick={() => (menuOpen = !menuOpen)}
-          class="hamburger"
-          aria-label="Menu"
-          aria-expanded={menuOpen}
-          aria-controls="mobile-nav-menu"
-        >
-          {#if menuOpen}
-            <X class="nav-icon" aria-hidden="true" />
-          {:else}
-            <Menu class="nav-icon" aria-hidden="true" />
-          {/if}
-        </button>
+        <Dropdown id="lang-menu" label={m.settings_language_label()}>
+          {#snippet trigger()}
+            <Languages class="nav-icon" aria-hidden="true" />
+            {langLabel(lang.value)}
+          {/snippet}
+          {#snippet menu()}
+            {#each locales as locale (locale)}
+              <button
+                type="button"
+                class="user-dropdown-item"
+                role="menuitem"
+                onclick={() => setLanguage(locale as Locale)}
+              >
+                {languageLabel(locale as Locale)}
+              </button>
+            {/each}
+          {/snippet}
+        </Dropdown>
       </div>
     </div>
-
-    <!-- Mobile dropdown menu -->
-    {#if menuOpen}
-      <div class="mobile-menu" id="mobile-nav-menu">
-        <a href={href('/')} class="mobile-link" onclick={() => (menuOpen = false)}
-          ><Home size={16} />{m.nav_home()}</a
-        >
-        <a href={href('/morse/learn')} class="mobile-link" onclick={() => (menuOpen = false)}
-          ><Radio size={16} />{m.nav_learn()}</a
-        >
-        <a href={href('/forum')} class="mobile-link" onclick={() => (menuOpen = false)}
-          ><MessageSquare size={16} />{m.nav_forum()}</a
-        >
-        <a href={href('/about')} class="mobile-link" onclick={() => (menuOpen = false)}
-          ><Info size={16} />{m.nav_about()}</a
-        >
-        <div class="mobile-divider"></div>
-        {#if $user}
-          <a href={href('/profile')} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><LayoutDashboard size={16} />{m.nav_profile()}</a
-          >
-          <a href={href('/settings')} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><Settings size={16} />{m.nav_settings()}</a
-          >
-          <button
-            type="button"
-            onclick={() => {
-              handleLogout();
-              menuOpen = false;
-            }}
-            class="mobile-link mobile-link-btn"
-            ><LogOut size={16} />{m.nav_logout()} ({$user.username})</button
-          >
-        {:else}
-          <a href={href('/profile')} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><LayoutDashboard size={16} />{m.nav_profile()}</a
-          >
-          <a href={href('/settings')} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><Settings size={16} />{m.nav_settings()}</a
-          >
-          <a href={href('/login')} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><LogIn size={16} />{m.nav_login()}</a
-          >
-          <a href={href('/register')} class="mobile-link" onclick={() => (menuOpen = false)}
-            ><UserPlus size={16} />{m.nav_register()}</a
-          >
-        {/if}
-        <div class="mobile-divider"></div>
-        <button type="button" onclick={cycleTheme} class="mobile-link mobile-link-btn"
-          ><ThemeIcon size={16} />{theme === 'auto'
-            ? m.theme_auto()
-            : theme === 'light'
-              ? m.theme_light()
-              : m.theme_dark()}</button
-        >
-        <div class="mobile-divider"></div>
-        {#each locales as locale (locale)}
-          <button
-            type="button"
-            class="mobile-link mobile-link-btn"
-            onclick={() => setLanguage(locale)}
-            ><Languages size={16} />{languageLabel(locale)}</button
-          >
-        {/each}
-      </div>
-    {/if}
   </nav>
 
   <main class="page-content">
@@ -532,5 +327,28 @@
     {/key}
   </main>
 
-  <footer class="footer">{m.footer_text()}</footer>
+  <footer class="footer">
+    <span>{m.footer_text()}</span>
+    <span class="footer-links">
+      <a href={href('/about')} class="footer-link">{m.nav_about()}</a>
+      <a href={GITHUB_URL} class="footer-link" rel="noopener noreferrer" target="_blank"
+        >{m.footer_link_github()}</a
+      >
+    </span>
+  </footer>
+
+  <!-- Mobile: bottom navigation bar (hidden on desktop) -->
+  <nav class="bottom-nav" aria-label={m.nav_primary()}>
+    {#each TAB_NAV as item (item.path)}
+      <a
+        href={href(item.path)}
+        class="bottom-nav-item"
+        class:active={isActive(item.path)}
+        aria-current={isActive(item.path) ? 'page' : undefined}
+        ><item.icon size={20} class="bottom-nav-icon" aria-hidden="true" /><span
+          class="bottom-nav-label">{item.label()}</span
+        ></a
+      >
+    {/each}
+  </nav>
 </div>

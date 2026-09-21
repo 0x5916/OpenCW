@@ -1,6 +1,6 @@
-import { baseLocale, localizeHref, overwriteGetLocale } from '$lib/paraglide/runtime';
+import { baseLocale, locales, localizeHref, overwriteGetLocale } from '$lib/paraglide/runtime';
+import { migrateLegacyPreferences } from '$lib/cookies';
 import {
-  LOCALE_COOKIE,
   LOCALE_PREFERENCE_STORAGE_KEY,
   matchLocaleCandidate,
   normalizeLocalePreference,
@@ -9,12 +9,18 @@ import {
   type LocalePreference
 } from '$lib/locale';
 
-const ONE_YEAR_SECONDS = 31536000;
-
 export const lang = $state<{ value: Locale }>({ value: baseLocale as Locale });
 export const langPreference = $state<{ value: LocalePreference }>({ value: 'auto' });
 
 export type { Locale, LocalePreference };
+
+/**
+ * Locale-aware href builder for in-app links. Reads `lang.value` so links
+ * re-render when the active language changes.
+ */
+export function localizedHref(path: string): string {
+  return localizeHref(path, { locale: lang.value });
+}
 
 function applyDocumentLocale(locale: Locale): void {
   if (typeof document === 'undefined') return;
@@ -51,13 +57,41 @@ function navigateToLocalizedPathIfNeeded(): void {
   }
 }
 
+/** The preference the visitor stored on this device, if any. */
+function readStoredPreference(): LocalePreference {
+  if (typeof localStorage !== 'undefined') {
+    const stored = localStorage.getItem(LOCALE_PREFERENCE_STORAGE_KEY);
+    if (stored) return normalizeLocalePreference(stored);
+  }
+
+  return 'auto';
+}
+
+/**
+ * A static build cannot read the stored preference while prerendering, so the
+ * client resolves it from localStorage before falling back to the value
+ * supplied by the server-rendered data.
+ */
+function resolveInitialPreference(initialPreference: string): LocalePreference {
+  if (typeof window === 'undefined') return normalizeLocalePreference(initialPreference);
+
+  const stored = readStoredPreference();
+  return stored === 'auto' ? normalizeLocalePreference(initialPreference) : stored;
+}
+
+/** Whether a pathname carries an explicit locale prefix (e.g. `/de/about`). */
+function hasLocalePrefix(pathname: string): boolean {
+  return locales.some((locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`));
+}
+
 export function initLang(initialLocale: string, initialPreference: string = 'auto') {
-  const preference = normalizeLocalePreference(initialPreference);
+  migrateLegacyPreferences();
+  const preference = resolveInitialPreference(initialPreference);
   const initial = matchLocaleCandidate(initialLocale) ?? (baseLocale as Locale);
 
   if (preference === 'auto') {
     if (typeof window === 'undefined') {
-      // Keep SSR locale for hydration consistency; browser detection is client-only.
+      // Keep the prerendered locale for hydration consistency; browser detection is client-only.
       langPreference.value = 'auto';
       lang.value = initial;
       overwriteGetLocale(() => lang.value);
@@ -71,6 +105,12 @@ export function initLang(initialLocale: string, initialPreference: string = 'aut
   }
 
   applyPreference(preference);
+
+  // Bare paths (e.g. `/about`, the legacy `/morse` target) only exist in the
+  // base locale; send the visitor to their preferred locale's URL instead.
+  if (typeof window !== 'undefined' && !hasLocalePrefix(window.location.pathname)) {
+    navigateToLocalizedPathIfNeeded();
+  }
 }
 
 export function setLangPreference(
@@ -81,10 +121,6 @@ export function setLangPreference(
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(LOCALE_PREFERENCE_STORAGE_KEY, preference);
   }
-  if (typeof document !== 'undefined') {
-    document.cookie = `${LOCALE_COOKIE}=${preference}; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
-  }
-
   if (options.navigate !== false) {
     navigateToLocalizedPathIfNeeded();
   }

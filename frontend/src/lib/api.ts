@@ -71,7 +71,12 @@ async function apiGetJson<T>(path: string, fallback: string): Promise<T> {
   }
 }
 
-async function apiSendJson(path: string, method: 'POST' | 'PUT', body: unknown, fallback: string) {
+async function apiSendJson<T = void>(
+  path: string,
+  method: 'POST' | 'PUT',
+  body: unknown,
+  fallback: string
+): Promise<T> {
   const res = await apiFetch(path, {
     method,
     headers: JSON_HEADERS,
@@ -79,6 +84,12 @@ async function apiSendJson(path: string, method: 'POST' | 'PUT', body: unknown, 
   });
 
   if (!res.ok) return throwApiError(res, fallback);
+
+  try {
+    return await parseJsonBody<T>(res);
+  } catch {
+    throw new ApiError(fallback, res.status, null);
+  }
 }
 
 async function apiPost(path: string, fallback: string): Promise<void> {
@@ -99,7 +110,6 @@ export interface CWSettings {
 }
 
 export interface PageSettings {
-  theme: 'auto' | 'dark' | 'light';
   language: string;
   cur_lesson: number;
   updated_at?: string;
@@ -111,6 +121,157 @@ export interface UserInfo {
   email: string;
   email_verified: boolean;
   created_at: string;
+}
+
+export interface ForumCategory {
+  id: string;
+  name: string;
+  description?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ForumThread {
+  id: string;
+  category_id: string;
+  author_id?: string;
+  author?: string;
+  username?: string;
+  title: string;
+  is_pinned: boolean;
+  is_locked: boolean;
+  created_at: string;
+  updated_at?: string;
+  latest_activity?: string;
+  post_count?: number;
+}
+
+export interface ForumPost {
+  id: string;
+  thread_id: string;
+  author_id?: string;
+  author?: string;
+  username?: string;
+  body: string;
+  parent_id?: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface ForumPage<T> {
+  data: T[];
+  page: number;
+  limit: number;
+  total?: number;
+  total_pages?: number;
+}
+
+export interface ForumThreadCreated {
+  thread: ForumThread;
+  first_post: ForumPost;
+}
+
+function normalizeForumPage<T>(
+  value: T[] | { data?: T[]; page?: number; limit?: number; total?: number; total_pages?: number },
+  page: number,
+  limit: number
+): ForumPage<T> {
+  if (Array.isArray(value)) return { data: value, page, limit };
+
+  return {
+    data: value.data ?? [],
+    page: value.page ?? page,
+    limit: value.limit ?? limit,
+    total: value.total,
+    total_pages: value.total_pages
+  };
+}
+
+function forumQuery(page: number, limit: number): string {
+  const safePage = Math.max(1, Math.floor(page));
+  const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
+  return `?page=${safePage}&limit=${safeLimit}`;
+}
+
+export async function getForumCategories(): Promise<ForumCategory[]> {
+  const response = await apiGetJson<ForumCategory[] | { data?: ForumCategory[] }>(
+    '/forum/categories',
+    'FORUM_CATEGORIES_FETCH_FAILED'
+  );
+  return Array.isArray(response) ? response : (response.data ?? []);
+}
+
+export async function getForumCategoryThreads(
+  categoryId: string,
+  page = 1,
+  limit = 20
+): Promise<ForumPage<ForumThread>> {
+  const response = await apiGetJson<
+    | ForumThread[]
+    | { data?: ForumThread[]; page?: number; limit?: number; total?: number; total_pages?: number }
+  >(
+    `/forum/categories/${encodeURIComponent(categoryId)}/threads${forumQuery(page, limit)}`,
+    'FORUM_THREADS_FETCH_FAILED'
+  );
+  return normalizeForumPage(response, page, limit);
+}
+
+export async function getForumThread(threadId: string): Promise<ForumThread> {
+  const response = await apiGetJson<{ data?: ForumThread } | ForumThread>(
+    `/forum/threads/${encodeURIComponent(threadId)}`,
+    'FORUM_THREAD_NOT_FOUND'
+  );
+  if ('data' in response && response.data) return response.data;
+  return response as ForumThread;
+}
+
+export async function getForumThreadPosts(
+  threadId: string,
+  page = 1,
+  limit = 20
+): Promise<ForumPage<ForumPost>> {
+  const response = await apiGetJson<
+    | ForumPost[]
+    | { data?: ForumPost[]; page?: number; limit?: number; total?: number; total_pages?: number }
+  >(
+    `/forum/threads/${encodeURIComponent(threadId)}/posts${forumQuery(page, limit)}`,
+    'FORUM_POSTS_FETCH_FAILED'
+  );
+  return normalizeForumPage(response, page, limit);
+}
+
+export async function createForumThread(
+  categoryId: string,
+  title: string,
+  body: string
+): Promise<ForumThreadCreated> {
+  const response = await apiSendJson<{
+    data?: ForumThreadCreated;
+    thread?: ForumThread;
+    first_post?: ForumPost;
+  }>(
+    '/forum/threads',
+    'POST',
+    { category_id: categoryId, title, body },
+    'FORUM_THREAD_CREATE_FAILED'
+  );
+  if (response.data) return response.data;
+  return { thread: response.thread as ForumThread, first_post: response.first_post as ForumPost };
+}
+
+export async function createForumPost(
+  threadId: string,
+  body: string,
+  parentId?: string
+): Promise<ForumPost> {
+  const response = await apiSendJson<{ data?: ForumPost } | ForumPost>(
+    `/forum/threads/${encodeURIComponent(threadId)}/posts`,
+    'POST',
+    { body, ...(parentId ? { parent_id: parentId } : {}) },
+    'FORUM_POST_CREATE_FAILED'
+  );
+  if ('data' in response && response.data) return response.data;
+  return response as ForumPost;
 }
 
 export interface CombinedSettings {

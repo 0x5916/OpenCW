@@ -19,7 +19,11 @@
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  padding: var(--space-lg) var(--space-md);
+  /* The top and bottom gaps are owned here so every page starts and ends at the
+     same height. Do not add a page-level `padding-top`/`padding-bottom` — see
+     `--page-top` and `--page-bottom`, and use `.page-stack` for inter-block
+     rhythm. */
+  padding: var(--page-top) var(--space-md) var(--page-bottom);
 }
 
 .page-narrow {
@@ -28,10 +32,17 @@
   margin-right: auto;
 }
 
-.page-narrow > * + * {
-  margin-top: var(--space-lg);
+/* Vertical rhythm for a page's own children. Width-free on purpose: pair it
+   with whichever tier fits the content (`.page-narrow`, the default, or
+   `.page-wide`) instead of taking the rhythm as a side effect of the width. */
+.page-narrow > * + *,
+.page-stack > * + * {
+  margin-top: var(--block-gap);
 }
 
+/* Widest tier. The navbar and footer are capped at `--max-width-container`, so a
+   page that uses this tier must keep its own inner measure — otherwise its
+   content edge no longer lines up with the chrome. */
 .page-wide {
   max-width: var(--max-width-wide);
   margin-left: auto;
@@ -44,6 +55,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
+  padding-top: env(safe-area-inset-top);
   backdrop-filter: saturate(130%) blur(10px);
   background-color: color-mix(in srgb, var(--bg-surface) 88%, transparent);
   transition:
@@ -83,23 +95,15 @@
   height: 1.5rem;
 }
 
-.navbar-desktop {
+/* The desktop cluster carries both classes, so the hide rule is not order
+   dependent against `.navbar-right { display: flex }`. */
+.navbar-right.navbar-desktop {
   display: none;
-  visibility: hidden;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-  flex: 0 0 auto;
 }
 
 @media (min-width: 640px) {
-  .navbar-desktop {
+  .navbar-right.navbar-desktop {
     display: flex;
-    visibility: visible;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    flex: 1 1 0;
   }
 }
 
@@ -133,6 +137,14 @@
 }
 
 .navbar-link:hover::after {
+  transform: scaleX(1);
+}
+
+.navbar-link.active {
+  color: var(--accent);
+}
+
+.navbar-link.active::after {
   transform: scaleX(1);
 }
 
@@ -203,7 +215,7 @@
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-menu);
   z-index: 100;
   overflow: hidden;
 }
@@ -272,93 +284,107 @@
   transform: scaleX(1);
 }
 
-.navbar-mobile-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+/* Mobile bottom navigation bar (primary destinations) */
+.bottom-nav {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 45;
+  display: none;
+  align-items: stretch;
+  background-color: color-mix(in srgb, var(--bg-surface) 92%, transparent);
+  backdrop-filter: saturate(130%) blur(12px);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+  transition:
+    background-color var(--transition-base),
+    border-color var(--transition-base),
+    transform var(--transition-base) var(--ease-smooth);
 }
 
-@media (min-width: 640px) {
-  .navbar-mobile-controls {
+@media (max-width: 639px) {
+  .bottom-nav {
+    display: flex;
+  }
+
+  /* Give main content room to scroll clear of the fixed bar */
+  .page-content {
+    padding-bottom: calc(env(safe-area-inset-bottom) + var(--bottom-nav-clearance));
+  }
+
+  /* Hide the bar while the soft keyboard is open (input/textarea focus) */
+  body.keyboard-open .bottom-nav {
+    transform: translateY(100%);
+  }
+
+  /* The top bar is desktop-only: phones navigate from the tab bar and the
+     "More" page. Content takes over the notch padding the navbar used to hold. */
+  .navbar {
     display: none;
+  }
+
+  /* `calc` on top of the safe area, not `max` against it: `max()` let a notch
+     inset override the gap, so the same pixel value gave 56px of blank in a
+     Safari tab and ~9px below the status bar when installed. */
+  .page-content {
+    padding-top: calc(env(safe-area-inset-top) + var(--page-top-phone));
   }
 }
 
-.hamburger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--nav-control-height);
-  box-sizing: border-box;
-  line-height: 1;
-  min-width: 3rem;
-  padding: 0 0.7rem;
-  font-size: 1.125rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--border-subtle);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition:
-    color 0.15s,
-    border-color 0.15s,
-    background 0.15s;
-}
-
-.hamburger:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: var(--bg-inset);
-}
-
-.mobile-menu {
-  background-color: var(--bg-surface);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  border-radius: 0 0 0.9rem 0.9rem;
+/* The "More" tab is a link like the rest, so no button reset is needed here. */
+.bottom-nav-item {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 49;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-}
-
-.mobile-link {
-  display: flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  justify-content: center;
+  gap: 0.2rem;
+  height: 3.25rem;
+  padding: 0.3rem 0.25rem;
+  font-size: 0.6875rem;
+  line-height: 1;
   font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s;
+}
+
+.bottom-nav-item:hover {
   color: var(--text-secondary);
-  border-bottom: 1px solid var(--border);
-  transition:
-    color 0.15s,
-    background-color 0.15s;
 }
 
-.mobile-link:hover {
+.bottom-nav-item.active {
   color: var(--accent);
-  background-color: var(--bg-inset);
 }
 
-.mobile-link-btn {
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  cursor: pointer;
+.bottom-nav-item.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2.5rem;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--accent);
 }
 
-.mobile-divider {
-  height: 1px;
-  background-color: var(--border);
-  margin: 0.25rem 0;
+.bottom-nav-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.bottom-nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /* Footer */
@@ -366,6 +392,11 @@
   background-color: var(--bg-surface);
   border-top: 1px solid var(--border);
   padding: 0.7rem var(--space-md);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem 1rem;
   text-align: center;
   font-size: 0.8125rem;
   line-height: 1.2rem;
@@ -373,6 +404,28 @@
   transition:
     background-color var(--transition-base),
     border-color var(--transition-base);
+}
+
+.footer-links {
+  display: inline-flex;
+  gap: 1rem;
+}
+
+.footer-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.footer-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+@media (max-width: 639px) {
+  /* Hide the footer on phones; the fixed bottom nav already labels the app */
+  .footer {
+    display: none;
+  }
 }
 
 /* Background gradient effect */
@@ -410,7 +463,6 @@
 }
 
 /* Prevent SVG icons from capturing touch events */
-.mobile-link svg,
 .navbar-link svg,
 .navbar-user-btn svg,
 .theme-icon-btn svg,
@@ -418,7 +470,6 @@
 .btn-primary svg,
 .btn-success svg,
 .btn-danger svg,
-.btn-ghost svg,
-.hamburger svg {
+.btn-ghost svg {
   pointer-events: none;
 }

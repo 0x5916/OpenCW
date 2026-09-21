@@ -13,5 +13,6 @@ export const CW_STORAGE_KEYS = {
 } as const;
 
 export const UI_STORAGE_KEYS = {
-  theme: 'theme'
+  theme: 'theme',
+  quickstartDismissed: 'learn.quickstart.dismissed'
 } as const;

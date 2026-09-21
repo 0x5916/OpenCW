@@ -3,11 +3,12 @@
   import { generateTimedLesson, LESSONS } from '$lib/morse';
   import MorsePlayer from '$lib/components/MorsePlayer.svelte';
   import ResultOverlay from '$lib/components/ResultOverlay.svelte';
+  import GuestNotice from '$lib/components/GuestNotice.svelte';
   import { untrack, onDestroy } from 'svelte';
-  import { ClipboardCheck } from 'lucide-svelte';
-  import { CW_STORAGE_KEYS } from '$lib/storageKeys';
+  import { ClipboardCheck } from '@lucide/svelte';
+  import { CW_STORAGE_KEYS, UI_STORAGE_KEYS } from '$lib/storageKeys';
   import { langPreference } from '$lib/i18n.svelte';
-  import { score, diffWords } from '$lib/score';
+  import { SCORE_GOOD, SCORE_OK, score, diffWords } from '$lib/score';
   import type { DiffToken } from '$lib/score';
   import { user } from '$lib/auth';
   import { saveProgressOfflineFirst } from '$lib/progressSync';
@@ -19,17 +20,13 @@
     saveClientCwSettings,
     syncSettingsToServer
   } from '$lib/cwSync';
-  import { localizeHref } from '$lib/paraglide/runtime';
   import * as m from '$lib/paraglide/messages';
-
-  const QUICKSTART_DISMISSED_KEY = 'learn.quickstart.dismissed';
-
-  let { data } = $props();
 
   let inputText = $state('');
 
-  // svelte-ignore state_referenced_locally
-  let chosenLesson = $state(data.lesson);
+  // The stored lesson can only be read in the browser (the site is fully
+  // static), so start from the first lesson and restore it on mount below.
+  let chosenLesson = $state(1);
 
   let result = $state(-1);
   let showOverlay = $state(false);
@@ -45,7 +42,7 @@
 
   $effect(() => {
     if (!browser) return;
-    showQuickStart = localStorage.getItem(QUICKSTART_DISMISSED_KEY) !== '1';
+    showQuickStart = localStorage.getItem(UI_STORAGE_KEYS.quickstartDismissed) !== '1';
   });
 
   $effect(() => {
@@ -61,7 +58,7 @@
     showQuickStart = false;
     showQuickTips = false;
     if (!browser) return;
-    localStorage.setItem(QUICKSTART_DISMISSED_KEY, '1');
+    localStorage.setItem(UI_STORAGE_KEYS.quickstartDismissed, '1');
   }
 
   function openQuickTips() {
@@ -87,10 +84,21 @@
       });
   });
 
+  // Restore the last used lesson. This is a `pre` effect so it runs before the
+  // persistence effect below can overwrite the stored value with the default.
+  $effect.pre(() => {
+    if (!browser) return;
+
+    const stored = localStorage.getItem(CW_STORAGE_KEYS.lesson);
+    const parsed = Number.parseInt(stored ?? '', 10);
+    if (Number.isFinite(parsed)) {
+      chosenLesson = normalizeLesson(parsed, LESSONS.length);
+    }
+  });
+
   $effect(() => {
     const val = String(normalizeLesson(chosenLesson, LESSONS.length));
     localStorage.setItem(CW_STORAGE_KEYS.lesson, val);
-    document.cookie = `${CW_STORAGE_KEYS.lesson}=${val}; path=/; max-age=31536000; SameSite=Lax`;
   });
 
   let lessonText = $derived(generateTimedLesson(chosenLesson, 60, charWpm, effWpm));
@@ -121,9 +129,9 @@
     }
   }
 
-  let hasNextLesson = $derived(result >= 0.9 && chosenLesson < LESSONS.length);
-  let hasPrevLesson = $derived(result < 0.7 && chosenLesson > 1);
-  let shouldRegenerate = $derived(result >= 0.7 && result < 0.9);
+  let hasNextLesson = $derived(result >= SCORE_GOOD && chosenLesson < LESSONS.length);
+  let hasPrevLesson = $derived(result < SCORE_OK && chosenLesson > 1);
+  let shouldRegenerate = $derived(result >= SCORE_OK && result < SCORE_GOOD);
 
   function prevLesson() {
     chosenLesson -= 1;
@@ -221,25 +229,23 @@
 <!-- Full-width heading -->
 <header class="learn-heading">
   <h1 class="page-title">{m.trainer_title()}</h1>
-  <p class="page-title-sub">
-    <span class="accent-text">{m.trainer_subtitle_pre()}</span>
-    {m.trainer_subtitle_post()}
-  </p>
 </header>
 
 {#if showQuickStart}
-  <section class="card-sm quickstart-card" aria-label="Quick start">
-    <h2 class="quickstart-title">How to Train</h2>
+  <section class="card-sm quickstart-card" aria-label={m.trainer_quickstart_aria()}>
+    <h2 class="quickstart-title">{m.trainer_quickstart_title()}</h2>
     <ol class="quickstart-steps">
-      <li>Pick a lesson or single letter</li>
-      <li>Press ▶ to hear Morse code</li>
-      <li>Type what you hear → Check Result</li>
+      <li>{m.trainer_quickstart_step1()}</li>
+      <li>{m.trainer_quickstart_step2()}</li>
+      <li>{m.trainer_quickstart_step3()}</li>
     </ol>
     <div class="quickstart-actions">
       <button type="button" class="btn-success quickstart-btn" onclick={dismissQuickStart}
-        >Start Training</button
+        >{m.trainer_quickstart_start()}</button
       >
-      <button type="button" class="btn-ghost quickstart-btn" onclick={openQuickTips}>Tips</button>
+      <button type="button" class="btn-ghost quickstart-btn" onclick={openQuickTips}
+        >{m.trainer_quickstart_tips()}</button
+      >
     </div>
 
     {#if showQuickTips}
@@ -248,30 +254,25 @@
           class="quickstart-modal card-sm"
           role="dialog"
           aria-modal="true"
-          aria-label="Training tips"
+          aria-label={m.trainer_quickstart_tips_title()}
           tabindex="-1"
           onclick={(event) => event.stopPropagation()}
           onkeydown={(event) => {
             if (event.key === 'Escape') closeQuickTips();
           }}
         >
-          <h3 class="quickstart-modal-title">Tips</h3>
+          <h3 class="quickstart-modal-title">{m.trainer_quickstart_tips_title()}</h3>
           <ul class="quickstart-modal-list">
-            <li>Start with slower WPM and increase gradually.</li>
-            <li>Use the single-letter player to isolate difficult characters.</li>
-            <li>Check result often and focus on repeated mistakes.</li>
+            <li>{m.trainer_quickstart_tip1()}</li>
+            <li>{m.trainer_quickstart_tip2()}</li>
+            <li>{m.trainer_quickstart_tip3()}</li>
             {#if !$user}
-              <li>
-                {m.trainer_guest_notice()}
-                <a href={localizeHref('/login')} class="link">{m.nav_login()}</a>
-                /
-                <a href={localizeHref('/register')} class="link">{m.nav_register()}</a>
-              </li>
+              <li><GuestNotice /></li>
             {/if}
           </ul>
           <div class="quickstart-actions">
             <button type="button" class="btn-ghost quickstart-btn" onclick={closeQuickTips}
-              >Close</button
+              >{m.trainer_quickstart_close()}</button
             >
           </div>
         </div>
@@ -280,29 +281,32 @@
   </section>
 {/if}
 
-<main class="learn-page">
-  <!-- Left column: lesson + settings + player -->
+<div class="learn-page">
+  <!-- Left column: one tool panel — lesson select, then character select. -->
   <div class="learn-col-left">
-    <div class="card-sm">
-      <h2 class="card-label">{m.trainer_label_lesson()}</h2>
+    <section
+      class="panel trainer-panel"
+      class:lesson-char-highlight={showQuickStart && chosenLesson === 1}
+    >
+      <h2 class="card-title">{m.trainer_label_lesson()}</h2>
       <div class="lesson-row">
         <p class="lesson-current-label">{m.trainer_current_lesson()}</p>
-        <select bind:value={chosenLesson} onchange={onLessonSelectChange} class="lesson-select">
+        <select bind:value={chosenLesson} onchange={onLessonSelectChange} class="select">
           {#each LESSONS as lesson, index (index)}
             <option value={index + 1}>{index + 1} — {lesson.split('').join(', ')}</option>
           {/each}
         </select>
       </div>
-    </div>
 
-    <div class="card-sm" class:lesson-char-highlight={showQuickStart && chosenLesson === 1}>
-      <h2 class="card-label">{m.trainer_label_current_chars()}</h2>
+      <hr class="trainer-divider" />
+
+      <h2 class="card-title">{m.trainer_label_current_chars()}</h2>
       <div class="lesson-char-row">
         <p class="lesson-char-preview">{m.trainer_choose_letter()}</p>
         <select
           bind:value={selectedLessonChar}
           onchange={onSelectedCharChange}
-          class="lesson-select lesson-char-select"
+          class="select lesson-char-select"
         >
           {#each currentLessonChars as char (char)}
             <option value={char}>{char}</option>
@@ -320,15 +324,16 @@
         mediaStyle
         onSettingsInput={onCwSettingInput}
         playLabel={currentLessonChars.length > 1
-          ? `Play "${selectedLessonChar}"`
+          ? m.trainer_play_char({ char: selectedLessonChar })
           : m.trainer_play_letter()}
       />
-    </div>
+    </section>
   </div>
 
-  <!-- Right column: answer + result -->
+  <!-- Right column: answer + result. Both columns are peer tool surfaces, so
+       they share one primitive and therefore one padding. -->
   <div class="learn-col-right">
-    <div class="answer-card learn-answer-card">
+    <div class="panel learn-answer-card">
       <MorsePlayer
         bind:this={fullLessonPlayer}
         text={lessonText}
@@ -351,14 +356,13 @@
         autocomplete="off"
         autocorrect="off"
         spellcheck="false"
-        class="textarea learn-answer-textarea"
-      ></textarea>
+        class="textarea learn-answer-textarea"></textarea>
       <button onclick={checkResult} class="btn-primary"
         ><ClipboardCheck size={16} />{m.trainer_check()}</button
       >
     </div>
   </div>
-</main>
+</div>
 
 {#if showOverlay}
   <ResultOverlay
@@ -380,7 +384,7 @@
   .learn-page {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--block-gap);
     min-width: 0;
   }
 
@@ -388,43 +392,49 @@
   .learn-col-right {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--block-gap);
     min-width: 0;
   }
 
   .learn-heading {
-    margin-bottom: 1rem;
+    margin-bottom: var(--block-gap);
   }
 
-  .learn-page :global(.card-label) {
-    color: var(--text-label);
+  .trainer-panel {
+    display: flex;
+    flex-direction: column;
   }
 
-  .learn-answer-card :global(.card-label) {
+  .trainer-divider {
+    width: 100%;
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: var(--block-gap) 0;
+  }
+
+  .learn-answer-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .learn-answer-card :global(.card-title) {
     margin-bottom: 0;
   }
 
-  .page-title-sub {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    line-height: 1.5;
-    margin-top: 0.25rem;
-  }
-
+  /* Onboarding hint: flat like every other surface, with an accent edge to mark
+     it as the transient one. Gradients are not part of the card system. */
   .quickstart-card {
-    margin-bottom: 1rem;
-    border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
-    background:
-      linear-gradient(170deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 45%),
-      var(--bg-surface);
+    margin-bottom: var(--block-gap);
+    border-color: color-mix(in srgb, var(--accent) 32%, var(--border-card));
   }
 
   .quickstart-title {
     margin: 0;
-    color: var(--accent);
-    font-size: 1rem;
-    line-height: 1.4;
-    letter-spacing: 0.01em;
+    color: var(--text-primary);
+    font-size: var(--text-base);
+    line-height: var(--leading-snug);
+    font-weight: 600;
   }
 
   .quickstart-steps {
@@ -461,7 +471,8 @@
 
   .quickstart-modal {
     width: min(26rem, calc(100vw - 2rem));
-    border-color: color-mix(in srgb, var(--accent) 26%, var(--border));
+    border-color: color-mix(in srgb, var(--accent) 26%, var(--border-card));
+    box-shadow: var(--shadow-overlay);
   }
 
   .quickstart-modal-title {
@@ -488,37 +499,18 @@
 
   .lesson-current-label {
     margin: 0;
-    color: var(--accent);
-    font-weight: 500;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
     white-space: nowrap;
   }
 
-  .lesson-select {
+  /* Both selects use the shared control vocabulary (`.select`); the row and the
+     grid below supply the flex/grid sizing they need to share a line. */
+  .lesson-row .select {
     flex: 1;
     min-width: 0;
-    width: 100%;
-    padding: 0.5rem 2rem 0.5rem 0.75rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-subtle);
-    background-color: var(--bg-inset);
-    color: var(--text-primary);
-    transition:
-      background-color 0.2s,
-      border-color 0.2s,
-      color 0.2s;
-  }
-
-  .lesson-select:hover {
-    border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
-  }
-
-  .lesson-select:focus {
-    outline: none;
-    box-shadow: var(--focus-ring);
   }
 
   .lesson-char-row {
@@ -535,43 +527,18 @@
     font-size: 0.8125rem;
     font-weight: 600;
     margin: 0;
-    line-height: 2.15rem;
+    line-height: var(--leading-snug);
     white-space: nowrap;
   }
 
   .lesson-char-select {
-    margin-left: 0;
     min-width: 0;
-    width: 100%;
-    max-width: none;
   }
 
+  /* Transient onboarding emphasis: an accent edge, no shadow. Static surfaces
+     are flat; elevation is reserved for things that stack above the page. */
   .lesson-char-highlight {
-    border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
-    box-shadow:
-      var(--shadow-soft),
-      0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent),
-      0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent);
-  }
-
-  .answer-card {
-    background-color: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1.25rem;
-    min-width: 0;
-    box-shadow: var(--shadow-soft);
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    transition:
-      background-color var(--transition-base),
-      border-color var(--transition-base),
-      box-shadow var(--transition-base);
-  }
-
-  .answer-card:hover {
-    box-shadow: var(--shadow-lift);
+    border-color: color-mix(in srgb, var(--accent) 58%, var(--border-card));
   }
 
   @media (max-width: 767px) {

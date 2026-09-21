@@ -10,7 +10,9 @@ import {
 type CheckResult = { ok: true; message: string } | { ok: false; message: string };
 
 const INDEXABLE_ROUTES = getIndexablePublicRoutePaths();
-const NOINDEX_ROUTES = ['/login', '/register', '/profile', '/settings', '/offline'];
+// `/forum` is a placeholder: crawlable, but deliberately out of the index until it launches.
+// `/more` is the phone-only "More" screen: a redirect target on desktop, never a landing page.
+const NOINDEX_ROUTES = ['/login', '/register', '/profile', '/settings', '/forum', '/more'];
 
 function absolute(origin: string, path: string): string {
   return new URL(path, origin).toString();
@@ -78,7 +80,9 @@ async function validateSitemap(): Promise<CheckResult[]> {
     checks.push({ ok: false, message: 'generated sitemap URL set contains duplicates' });
   }
 
-  const expectedUrls = new Set<string>([absolute(origin, '/')]);
+  // Every indexable URL carries an explicit locale prefix, including the base
+  // locale — the sitemap never publishes a bare `/`.
+  const expectedUrls = new Set<string>();
   for (const locale of locales) {
     for (const routePath of INDEXABLE_ROUTES) {
       expectedUrls.add(absolute(origin, expectedLocalizedPath(locale, routePath)));
@@ -93,7 +97,10 @@ async function validateSitemap(): Promise<CheckResult[]> {
 
   for (const routePath of NOINDEX_ROUTES) {
     if (isRouteIndexable(routePath)) {
-      checks.push({ ok: false, message: `route marked noindex expected but currently indexable: ${routePath}` });
+      checks.push({
+        ok: false,
+        message: `route marked noindex expected but currently indexable: ${routePath}`
+      });
     }
 
     for (const locale of locales) {

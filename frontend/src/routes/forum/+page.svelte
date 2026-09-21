@@ -1,50 +1,97 @@
 <script lang="ts">
-  import { MessageSquare } from 'lucide-svelte';
+  import { Construction, MessagesSquare, Radio } from '@lucide/svelte';
+  import { localizedHref as href } from '$lib/i18n.svelte';
   import * as m from '$lib/paraglide/messages';
 </script>
 
-<main class="placeholder-page">
-  <header class="placeholder-header">
-    <div class="placeholder-icon" aria-hidden="true">
-      <MessageSquare size={48} />
-    </div>
+<svelte:head>
+  <title>{m.forum_title()} | OpenCW</title>
+</svelte:head>
+
+<div class="forum-page page-wide">
+  <header class="forum-hero">
+    <div class="eyebrow"><MessagesSquare size={16} /> {m.forum_eyebrow()}</div>
     <h1 class="page-title">{m.forum_title()}</h1>
+    <p class="body-text">{m.forum_under_development_body()}</p>
   </header>
-  <p class="body-text placeholder-message">{m.forum_wip()}</p>
-</main>
+
+  <section class="panel forum-state">
+    <Construction size={34} aria-hidden="true" />
+    <h2 class="state-title">{m.forum_under_development_title()}</h2>
+    <p class="body-text state-note">{m.forum_under_development_note()}</p>
+    <a class="btn-primary state-action" href={href('/morse/learn')}>
+      <Radio size={17} />
+      {m.nav_learn()}
+    </a>
+  </section>
+</div>
 
 <style>
-  .placeholder-page {
-    padding: 3rem 1rem;
+  /* The wide tier is reserved for the future thread list. While the page is a
+     placeholder, its content column is capped at the reading measure so the
+     hero and the panel share edges, instead of one sitting centred and the
+     other left-aligned across 80rem. */
+  .forum-hero,
+  .forum-state {
+    max-width: var(--max-width-narrow);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .forum-hero {
+    margin-bottom: var(--section-gap);
+  }
+
+  .eyebrow {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - 6rem);
-  }
-
-  .placeholder-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    text-align: center;
-  }
-
-  .placeholder-header :global(.page-title) {
-    margin: 0;
-  }
-
-  .placeholder-icon {
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
     color: var(--accent);
-    font-size: 3rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
-  .placeholder-message {
+  .forum-hero .page-title {
     margin: 0;
-    color: var(--text-secondary);
-    max-width: 400px;
+  }
+
+  .forum-hero .body-text {
+    margin: 0.45rem 0 0;
+  }
+
+  .forum-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 2.5rem 1.5rem;
     text-align: center;
+  }
+
+  .forum-state > :global(svg) {
+    color: var(--accent);
+  }
+
+  .state-title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+  }
+
+  .state-note {
+    max-width: 34rem;
+    margin: 0;
+  }
+
+  .state-action {
+    display: inline-flex;
+    width: auto;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    text-decoration: none;
   }
 </style>
