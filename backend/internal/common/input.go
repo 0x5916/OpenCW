@@ -1,8 +1,11 @@
 package common
 
 import (
-	"opencw/internal/models"
 	"time"
+
+	"opencw/internal/models"
+
+	"github.com/google/uuid"
 )
 
 type RegisterInput struct {
@@ -71,4 +74,25 @@ type ProgressInput struct {
 	EffWPM          int        `json:"eff_wpm"           binding:"required,min=5,max=50"`
 	Accuracy        *float64   `json:"accuracy"          binding:"required,min=0.0,max=1.0"`
 	ClientCreatedAt *time.Time `json:"client_created_at"`
+}
+
+// Forum categories are a fixed set: general, help, showcase, feedback.
+type CreateThreadInput struct {
+	Category string `json:"category" binding:"required,oneof=general help showcase feedback"`
+	Title    string `json:"title"    binding:"required,min=3,max=200"`
+	Body     string `json:"body"     binding:"required,min=1,max=10000"`
+}
+
+// CreateReplyInput's ParentID, when set, must reference a live reply in the
+// same thread, allowing nested replies.
+type CreateReplyInput struct {
+	Body     string     `json:"body"      binding:"required,min=1,max=10000"`
+	ParentID *uuid.UUID `json:"parent_id"`
+}
+
+// ListThreadsQuery is bound from query parameters of GET /v1/forum/threads.
+type ListThreadsQuery struct {
+	Category string `form:"category" binding:"omitempty,oneof=general help showcase feedback"`
+	Limit    int    `form:"limit"    binding:"omitempty,min=1,max=100"`
+	Cursor   string `form:"cursor"`
 }

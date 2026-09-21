@@ -37,12 +37,18 @@ func Connect() {
 		&models.CWSettings{},
 		&models.PageSettings{},
 		&models.Progress{},
+		&models.ForumThread{},
+		&models.ForumReply{},
 	); err != nil {
 		slog.Error("Failed to migrate database", "err", err)
 	}
 
 	if err := ensureUserEmailIndexes(db); err != nil {
 		slog.Error("Failed to migrate user email indexes", "err", err)
+	}
+
+	if err := ensureForumIndexes(db); err != nil {
+		slog.Error("Failed to migrate forum indexes", "err", err)
 	}
 
 	DB = db
@@ -66,6 +72,20 @@ func ensureUserEmailIndexes(db *gorm.DB) error {
 		`DROP INDEX IF EXISTS idx_users_email;`,
 		`CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_verified_email ON users (email) WHERE email_verified = true AND deleted_at IS NULL;`,
+	}
+
+	for _, stmt := range statements {
+		if err := db.Exec(stmt).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func ensureForumIndexes(db *gorm.DB) error {
+	statements := []string{
+		`CREATE INDEX IF NOT EXISTS idx_forum_threads_created_at_id ON forum_threads (created_at DESC, id DESC) WHERE deleted_at IS NULL;`,
 	}
 
 	for _, stmt := range statements {

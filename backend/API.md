@@ -1,6 +1,6 @@
 # API Documentation
 
-*Generated: March 24, 2026*
+*Generated: September 21, 2026*
 *Base URL: http://localhost:8080*
 *API Version: v1*
 
@@ -13,7 +13,8 @@
 4. [User Management](#user-management)
 5. [Settings Management](#settings-management)
 6. [Progress Tracking](#progress-tracking)
-7. [Error Handling](#error-handling)
+7. [Forum](#forum)
+8. [Error Handling](#error-handling)
 
 ---
 
@@ -39,6 +40,13 @@
 | POST   | /v1/settings/page              | Update Page settings                      | Yes           |
 | GET    | /v1/cw/progress                | Get all progress records                  | Yes           |
 | PUT    | /v1/cw/progress                | Add/Create new progress record            | Yes           |
+| GET    | /v1/forum/threads              | List forum threads (cursor paginated)     | No            |
+| GET    | /v1/forum/threads/:id          | Get a forum thread                        | No            |
+| GET    | /v1/forum/threads/:id/replies  | Get nested reply tree of a thread         | No            |
+| POST   | /v1/forum/threads              | Create a forum thread                     | Verified email |
+| POST   | /v1/forum/threads/:id/replies  | Create a reply (optionally nested)        | Verified email |
+| DELETE | /v1/forum/threads/:id          | Delete own thread                         | Author        |
+| DELETE | /v1/forum/replies/:id          | Delete own reply                          | Author        |
 | GET    | /v1/hello                      | Test authenticated endpoint               | Yes           |
 
 ---
@@ -661,6 +669,340 @@ curl -X PUT http://localhost:8080/v1/cw/progress \
 
 ---
 
+## Forum
+
+The forum is publicly readable. Creating a thread or reply requires an authenticated user with a **verified email** (`email_verified: true`); otherwise the API returns `403 EMAIL_NOT_VERIFIED`. Deleting requires an authenticated user who is the author of the thread/reply. Thread categories are a fixed set: `general`, `help`, `showcase`, `feedback`.
+
+### GET /v1/forum/threads
+**List forum threads, newest first (cursor paginated)**
+
+**Authentication**: None
+
+**Query Parameters**:
+| Name     | Type    | Default | Description                                                   |
+|----------|---------|---------|---------------------------------------------------------------|
+| limit    | integer | 20      | Page size, 1-100                                              |
+| cursor   | string  | -       | Opaque cursor taken from `next_cursor` of a previous response |
+| category | string  | -       | Filter by one of `general`, `help`, `showcase`, `feedback`    |
+
+**Response (200)**:
+```json
+{
+  "data": [
+    {
+      "id": "0198c9d2-7f5e-7b1a-9c3e-1f2a3b4c5d6e",
+      "category": "help",
+      "title": "How do I improve my copy speed?",
+      "author": {
+        "username": "johndoe",
+        "call_sign": "BG7ABC"
+      },
+      "reply_count": 3,
+      "created_at": "2026-09-20T10:30:00Z"
+    }
+  ],
+  "total": 137,
+  "limit": 20,
+  "next_cursor": "MjAyNi0wOS0yMFQxMDozMDowMFo..."
+}
+```
+
+**Pagination**: pass `next_cursor` back as the `cursor` query parameter to fetch the next page. `next_cursor` is `null` when there are no more threads. `total` is the total count of threads matching the filter and is provided for display purposes.
+
+**Error Responses**:
+| Status | Error Code                | Message                                   |
+|--------|---------------------------|-------------------------------------------|
+| 400    | `INVALID_QUERY_PARAMETER` | Invalid query parameters / Invalid cursor |
+| 500    | `FORUM_QUERY_FAILED`      | Failed to query forum threads             |
+
+**Example cURL**:
+```bash
+curl -X GET "http://localhost:8080/v1/forum/threads?limit=20"
+curl -X GET "http://localhost:8080/v1/forum/threads?limit=20&category=help"
+curl -X GET "http://localhost:8080/v1/forum/threads?limit=20&cursor=<next_cursor>"
+```
+
+---
+
+### GET /v1/forum/threads/:id
+**Get a single forum thread**
+
+**Authentication**: None
+
+**Path Parameters**:
+- `id`: Thread UUID
+
+**Response (200)**:
+```json
+{
+  "data": {
+    "id": "0198c9d2-7f5e-7b1a-9c3e-1f2a3b4c5d6e",
+    "category": "help",
+    "title": "How do I improve my copy speed?",
+    "body": "I can copy at 15 WPM but ...",
+    "author": {
+      "username": "johndoe",
+      "call_sign": "BG7ABC"
+    },
+    "reply_count": 3,
+    "created_at": "2026-09-20T10:30:00Z",
+    "updated_at": "2026-09-20T10:30:00Z"
+  }
+}
+```
+
+**Error Responses**:
+| Status | Error Code          | Message                      |
+|--------|---------------------|------------------------------|
+| 404    | `THREAD_NOT_FOUND`  | Thread not found             |
+| 500    | `FORUM_QUERY_FAILED` | Failed to query forum thread |
+
+**Example cURL**:
+```bash
+curl -X GET http://localhost:8080/v1/forum/threads/<thread_id>
+```
+
+---
+
+### GET /v1/forum/threads/:id/replies
+**Get the full nested reply tree of a thread**
+
+**Authentication**: None
+
+**Path Parameters**:
+- `id`: Thread UUID
+
+Replies are returned chronologically (oldest first) as a nested tree: each reply may contain `children`. A soft-deleted reply that still has visible descendants is returned as a tombstone (`is_deleted: true`, with `body` and `author` set to `null`) so the thread structure is preserved; deleted replies without visible descendants are omitted. `total` counts the non-deleted replies.
+
+**Response (200)**:
+```json
+{
+  "data": [
+    {
+      "id": "0198c9d2-aaaa-7b1a-9c3e-1f2a3b4c5d6e",
+      "parent_id": null,
+      "body": "Top-level reply",
+      "author": {
+        "username": "jane",
+        "call_sign": null
+      },
+      "is_deleted": false,
+      "created_at": "2026-09-20T11:00:00Z",
+      "children": [
+        {
+          "id": "0198c9d2-bbbb-7b1a-9c3e-1f2a3b4c5d6e",
+          "parent_id": "0198c9d2-aaaa-7b1a-9c3e-1f2a3b4c5d6e",
+          "body": "Nested reply",
+          "author": {
+            "username": "johndoe",
+            "call_sign": "BG7ABC"
+          },
+          "is_deleted": false,
+          "created_at": "2026-09-20T11:05:00Z",
+          "children": []
+        }
+      ]
+    }
+  ],
+  "total": 2
+}
+```
+
+**Error Responses**:
+| Status | Error Code           | Message                       |
+|--------|----------------------|-------------------------------|
+| 404    | `THREAD_NOT_FOUND`   | Thread not found              |
+| 500    | `FORUM_QUERY_FAILED` | Failed to query forum replies |
+
+**Example cURL**:
+```bash
+curl -X GET http://localhost:8080/v1/forum/threads/<thread_id>/replies
+```
+
+---
+
+### POST /v1/forum/threads
+**Create a new forum thread**
+
+**Authentication**: Bearer JWT (access token) + verified email
+
+**Request Body**:
+```json
+{
+  "category": "help",
+  "title": "How do I improve my copy speed?",
+  "body": "I can copy at 15 WPM but ..."
+}
+```
+
+**Validation Rules**:
+- `category`: Required, one of `general`, `help`, `showcase`, `feedback`
+- `title`: Required, 3-200 characters
+- `body`: Required, 1-10000 characters
+
+**Response (201)**:
+```json
+{
+  "data": {
+    "id": "0198c9d2-7f5e-7b1a-9c3e-1f2a3b4c5d6e",
+    "category": "help",
+    "title": "How do I improve my copy speed?",
+    "body": "I can copy at 15 WPM but ...",
+    "author": {
+      "username": "johndoe",
+      "call_sign": "BG7ABC"
+    },
+    "reply_count": 0,
+    "created_at": "2026-09-20T10:30:00Z",
+    "updated_at": "2026-09-20T10:30:00Z"
+  }
+}
+```
+
+**Error Responses**:
+| Status | Error Code              | Message                      |
+|--------|-------------------------|------------------------------|
+| 400    | `INVALID_REQUEST_BODY`  | Invalid request body         |
+| 401    | `AUTH_HEADER_REQUIRED`  | Missing or invalid token     |
+| 403    | `EMAIL_NOT_VERIFIED`    | Email verification required  |
+| 500    | `FORUM_CREATE_FAILED`   | Failed to create forum thread |
+
+**Example cURL**:
+```bash
+curl -X POST http://localhost:8080/v1/forum/threads \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category": "help",
+    "title": "How do I improve my copy speed?",
+    "body": "I can copy at 15 WPM but ..."
+  }'
+```
+
+---
+
+### POST /v1/forum/threads/:id/replies
+**Create a reply in a thread (optionally nested)**
+
+**Authentication**: Bearer JWT (access token) + verified email
+
+**Path Parameters**:
+- `id`: Thread UUID
+
+**Request Body**:
+```json
+{
+  "body": "Try the Koch method at a slower character speed.",
+  "parent_id": "0198c9d2-bbbb-7b1a-9c3e-1f2a3b4c5d6e"
+}
+```
+
+`parent_id` is optional; when provided it must reference a live reply in the same thread.
+
+**Validation Rules**:
+- `body`: Required, 1-10000 characters
+- `parent_id`: Optional reply UUID in the same thread
+
+**Response (201)**:
+```json
+{
+  "data": {
+    "id": "0198c9d2-cccc-7b1a-9c3e-1f2a3b4c5d6e",
+    "parent_id": "0198c9d2-bbbb-7b1a-9c3e-1f2a3b4c5d6e",
+    "body": "Try the Koch method at a slower character speed.",
+    "author": {
+      "username": "jane",
+      "call_sign": null
+    },
+    "is_deleted": false,
+    "created_at": "2026-09-20T11:05:00Z",
+    "children": []
+  }
+}
+```
+
+**Error Responses**:
+| Status | Error Code              | Message                               |
+|--------|-------------------------|---------------------------------------|
+| 400    | `INVALID_REQUEST_BODY`  | Invalid request body                  |
+| 400    | `REPLY_NOT_FOUND`       | Parent reply not found in this thread |
+| 401    | `AUTH_HEADER_REQUIRED`  | Missing or invalid token              |
+| 403    | `EMAIL_NOT_VERIFIED`    | Email verification required           |
+| 404    | `THREAD_NOT_FOUND`      | Thread not found                      |
+| 500    | `FORUM_CREATE_FAILED`   | Failed to create forum reply          |
+
+**Example cURL**:
+```bash
+curl -X POST http://localhost:8080/v1/forum/threads/<thread_id>/replies \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "body": "Try the Koch method at a slower character speed." }'
+```
+
+---
+
+### DELETE /v1/forum/threads/:id
+**Soft-delete a thread (author only)**
+
+**Authentication**: Bearer JWT (access token; must be the thread author)
+
+**Path Parameters**:
+- `id`: Thread UUID
+
+**Response (200)**:
+```json
+{
+  "message": "Thread deleted"
+}
+```
+
+**Error Responses**:
+| Status | Error Code             | Message                                |
+|--------|------------------------|----------------------------------------|
+| 401    | `AUTH_HEADER_REQUIRED` | Missing or invalid token               |
+| 403    | `NOT_AUTHOR`           | Only the author can delete this thread |
+| 404    | `THREAD_NOT_FOUND`     | Thread not found                       |
+| 500    | `FORUM_DELETE_FAILED`  | Failed to delete forum thread          |
+
+**Example cURL**:
+```bash
+curl -X DELETE http://localhost:8080/v1/forum/threads/<thread_id> \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+### DELETE /v1/forum/replies/:id
+**Soft-delete a reply (author only)**
+
+**Authentication**: Bearer JWT (access token; must be the reply author)
+
+**Path Parameters**:
+- `id`: Reply UUID
+
+**Response (200)**:
+```json
+{
+  "message": "Reply deleted"
+}
+```
+
+**Error Responses**:
+| Status | Error Code             | Message                              |
+|--------|------------------------|--------------------------------------|
+| 401    | `AUTH_HEADER_REQUIRED` | Missing or invalid token             |
+| 403    | `NOT_AUTHOR`           | Only the author can delete this reply |
+| 404    | `REPLY_NOT_FOUND`      | Reply not found                      |
+| 500    | `FORUM_DELETE_FAILED`  | Failed to delete forum reply         |
+
+**Example cURL**:
+```bash
+curl -X DELETE http://localhost:8080/v1/forum/replies/<reply_id> \
+  -H "Authorization: Bearer <access_token>"
+```
+
+---
+
 ## Error Handling
 
 ### Error Response Format
@@ -719,6 +1061,14 @@ All error responses follow this format:
 | `SETTINGS_UPDATE_FAILED`        | 500        | Failed to update settings                 |
 | `PROGRESS_QUERY_FAILED`         | 500        | Failed to query progress records          |
 | `PROGRESS_CREATE_FAILED`        | 500        | Failed to create progress record          |
+| `EMAIL_NOT_VERIFIED`            | 403        | Email verification required for posting   |
+| `INVALID_QUERY_PARAMETER`       | 400        | Invalid query parameter or cursor         |
+| `THREAD_NOT_FOUND`              | 404        | Forum thread does not exist               |
+| `REPLY_NOT_FOUND`               | 404        | Forum reply (or parent reply) not found   |
+| `NOT_AUTHOR`                    | 403        | Only the author may delete this content   |
+| `FORUM_QUERY_FAILED`            | 500        | Failed to query forum content             |
+| `FORUM_CREATE_FAILED`           | 500        | Failed to create forum content            |
+| `FORUM_DELETE_FAILED`           | 500        | Failed to delete forum content            |
 
 ### Authentication
 
