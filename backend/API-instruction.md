@@ -115,9 +115,11 @@ curl -X POST http://localhost:8080/api/v1/users \
 [... repeat pattern for each endpoint ...]
 
 ## Pagination Pattern
-All list endpoints support:
-- `?page=1&limit=20` (default: page 1, limit 20)
-- Response includes `{"data": [...], "total": 150, "page": 1, "pages": 8}`
+Forum list endpoints support two modes:
+- Legacy offset pagination: `?page=1&limit=20`, returning `data`, `total`, `page`, and `limit`.
+- Cursor pagination: `?cursor=first&limit=20`, followed by `?cursor=<next_cursor>&limit=20`, returning `data`, `limit`, `has_more`, and `next_cursor`.
+
+Cursor pagination is preferred for feeds and must not be combined with `page`.
 ```
 
 **EXECUTE NOW**:
