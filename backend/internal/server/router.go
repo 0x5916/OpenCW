@@ -64,15 +64,20 @@ func RouterV1Setup(engine *gin.Engine) {
 	cwProgress.PUT("/progress", progressHandler.AddProgress)
 
 	forumHandler := handlers.ForumHandler{DB: databases.DB}
-	forum := v1.Group("/forum")
-	forum.GET("/categories", forumHandler.GetCategories)
-	forum.GET("/categories/:categoryID/threads", forumHandler.GetThreadsByCategory)
-	forum.GET("/threads/:threadID", forumHandler.GetThread)
-	forum.GET("/threads/:threadID/posts", forumHandler.GetPostsByThread)
 
+	// Forum reads are public.
+	forum := v1.Group("/forum")
+	forum.GET("/threads", forumHandler.ListThreads)
+	forum.GET("/threads/:id", forumHandler.GetThread)
+	forum.GET("/threads/:id/replies", forumHandler.GetThreadReplies)
+
+	// Creating forum content requires a verified email; deleting requires
+	// ownership (checked in the handlers).
 	forumProtected := protected.Group("/forum")
-	forumProtected.POST("/threads", forumHandler.CreateThread)
-	forumProtected.POST("/threads/:threadID/posts", forumHandler.CreatePost)
+	forumProtected.POST("/threads", middlewares.VerifiedRequired(), forumHandler.CreateThread)
+	forumProtected.POST("/threads/:id/replies", middlewares.VerifiedRequired(), forumHandler.CreateReply)
+	forumProtected.DELETE("/threads/:id", forumHandler.DeleteThread)
+	forumProtected.DELETE("/replies/:id", forumHandler.DeleteReply)
 
 	protected.GET("/hello", func(c *gin.Context) {
 		user := c.MustGet("user").(models.User)

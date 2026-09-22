@@ -1,38 +1,37 @@
 package models
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+)
 
-type ForumCategory struct {
-	Base
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-func (ForumCategory) TableName() string {
-	return "forum_category"
-}
-
+// ForumThread is a top-level forum post. Only users with a verified email
+// address can create threads; reading the forum is public.
 type ForumThread struct {
 	Base
-	CategoryID uuid.UUID `json:"category_id" gorm:"not null;index:idx_forum_threads_category_sort,priority:1"`
-	AuthorID   uuid.UUID `json:"author_id" gorm:"not null;index"`
-	Title      string    `json:"title" gorm:"not null"`
-	IsPinned   bool      `json:"is_pinned" gorm:"not null;index:idx_forum_threads_category_sort,priority:2,sort:desc"`
-	IsLocked   bool      `json:"is_locked" gorm:"not null"`
+	UserID   uuid.UUID `gorm:"type:uuid;index;not null"`
+	User     *User     `gorm:"constraint:OnDelete:CASCADE;"`
+	Category string    `gorm:"index;not null"`
+	Title    string    `gorm:"not null"`
+	Body     string    `gorm:"type:text;not null"`
 }
 
 func (ForumThread) TableName() string {
-	return "forum_thread"
+	return "forum_threads"
 }
 
-type ForumPost struct {
+// ForumReply is a reply within a thread. ParentID is optional and points to
+// another reply in the same thread, allowing nested discussions.
+type ForumReply struct {
 	Base
-	ThreadID uuid.UUID  `json:"thread_id" gorm:"not null;index:idx_forum_posts_thread_sort,priority:1"`
-	AuthorID uuid.UUID  `json:"author_id" gorm:"not null;index"`
-	Body     string     `json:"body" gorm:"not null"`
-	ParentID *uuid.UUID `json:"parent_id" gorm:"index"` // for reply threading
+	ThreadID uuid.UUID    `gorm:"type:uuid;index;not null"`
+	Thread   *ForumThread `gorm:"constraint:OnDelete:CASCADE;"`
+	UserID   uuid.UUID    `gorm:"type:uuid;index;not null"`
+	User     *User        `gorm:"constraint:OnDelete:CASCADE;"`
+	ParentID *uuid.UUID   `gorm:"type:uuid;index"`
+	Parent   *ForumReply  `gorm:"foreignKey:ParentID;constraint:OnDelete:SET NULL;"`
+	Body     string       `gorm:"type:text;not null"`
 }
 
-func (ForumPost) TableName() string {
-	return "forum_post"
+func (ForumReply) TableName() string {
+	return "forum_replies"
 }

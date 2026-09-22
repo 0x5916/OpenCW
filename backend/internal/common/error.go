@@ -32,12 +32,14 @@ const (
 	ErrorCodeVerificationSendFailed  = "VERIFICATION_SEND_FAILED"
 	ErrorCodeVerificationRateLimited = "VERIFICATION_RATE_LIMITED"
 	ErrorCodeCallSignAlreadyInUse    = "CALL_SIGN_ALREADY_IN_USE"
-	ErrorCodeForumCategoryNotFound   = "FORUM_CATEGORY_NOT_FOUND"
-	ErrorCodeForumThreadNotFound     = "FORUM_THREAD_NOT_FOUND"
-	ErrorCodeForumThreadLocked       = "FORUM_THREAD_LOCKED"
-	ErrorCodeForumParentPostInvalid  = "FORUM_PARENT_POST_INVALID"
+	ErrorCodeEmailNotVerified        = "EMAIL_NOT_VERIFIED"
+	ErrorCodeThreadNotFound          = "THREAD_NOT_FOUND"
+	ErrorCodeReplyNotFound           = "REPLY_NOT_FOUND"
+	ErrorCodeNotAuthor               = "NOT_AUTHOR"
+	ErrorCodeInvalidQueryParameter   = "INVALID_QUERY_PARAMETER"
 	ErrorCodeForumQueryFailed        = "FORUM_QUERY_FAILED"
 	ErrorCodeForumCreateFailed       = "FORUM_CREATE_FAILED"
+	ErrorCodeForumDeleteFailed       = "FORUM_DELETE_FAILED"
 )
 
 func NewErrorResponse(code string, message string) ErrorResponse {

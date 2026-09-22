@@ -57,36 +57,52 @@ type HttpErrorResponse struct {
 	Err    string
 }
 
-type ForumCategoryResponse struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+type ForumAuthorResponse struct {
+	Username string  `json:"username"`
+	CallSign *string `json:"call_sign"`
+}
+
+type ForumThreadSummaryResponse struct {
+	ID         uuid.UUID            `json:"id"`
+	Category   string               `json:"category"`
+	Title      string               `json:"title"`
+	Author     *ForumAuthorResponse `json:"author"`
+	ReplyCount int64                `json:"reply_count"`
+	CreatedAt  time.Time            `json:"created_at"`
 }
 
 type ForumThreadResponse struct {
-	ID         uuid.UUID `json:"id"`
-	CategoryID uuid.UUID `json:"category_id"`
-	AuthorID   uuid.UUID `json:"author_id"`
-	Title      string    `json:"title"`
-	IsPinned   bool      `json:"is_pinned"`
-	IsLocked   bool      `json:"is_locked"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID         uuid.UUID            `json:"id"`
+	Category   string               `json:"category"`
+	Title      string               `json:"title"`
+	Body       string               `json:"body"`
+	Author     *ForumAuthorResponse `json:"author"`
+	ReplyCount int64                `json:"reply_count"`
+	CreatedAt  time.Time            `json:"created_at"`
+	UpdatedAt  time.Time            `json:"updated_at"`
 }
 
-type ForumThreadCreatedResponse struct {
-	Thread    ForumThreadResponse `json:"thread"`
-	FirstPost ForumPostResponse   `json:"first_post"`
+type ForumThreadListResponse struct {
+	Data       []ForumThreadSummaryResponse `json:"data"`
+	Total      int64                        `json:"total"`
+	Limit      int                          `json:"limit"`
+	NextCursor *string                      `json:"next_cursor"`
 }
 
-type ForumPostResponse struct {
-	ID        uuid.UUID  `json:"id"`
-	ThreadID  uuid.UUID  `json:"thread_id"`
-	AuthorID  uuid.UUID  `json:"author_id"`
-	Body      string     `json:"body"`
-	ParentID  *uuid.UUID `json:"parent_id"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+// ForumReplyResponse is one node of the nested reply tree. Soft-deleted replies
+// with visible descendants are returned as tombstones: is_deleted=true with
+// null body/author.
+type ForumReplyResponse struct {
+	ID        uuid.UUID            `json:"id"`
+	ParentID  *uuid.UUID           `json:"parent_id"`
+	Body      *string              `json:"body"`
+	Author    *ForumAuthorResponse `json:"author"`
+	IsDeleted bool                 `json:"is_deleted"`
+	CreatedAt time.Time            `json:"created_at"`
+	Children  []ForumReplyResponse `json:"children"`
+}
+
+type ForumReplyListResponse struct {
+	Data  []ForumReplyResponse `json:"data"`
+	Total int64                `json:"total"`
 }

@@ -2,459 +2,502 @@ package handlers
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
+	"time"
+
 	"opencw/internal/common"
 	"opencw/internal/models"
 	"opencw/internal/utils"
-	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
+
+const defaultForumThreadLimit = 20
 
 type ForumHandler struct {
 	DB *gorm.DB
 }
 
-const (
-	forumDefaultPage   = 1
-	forumDefaultLimit  = 20
-	forumMaxLimit      = 100
-	forumMaxPage       = 1_000_000
-	forumCursorVersion = 1
-)
+// ListThreads returns forum threads ordered newest first, using cursor-based
+// pagination. It is a public endpoint.
+func (h ForumHandler) ListThreads(c *gin.Context) {
+	var params common.ListThreadsQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidQueryParameter, "Invalid query parameters"))
+		return
+	}
 
-type forumCursor struct {
-	Version   int       `json:"v"`
-	Scope     string    `json:"scope"`
-	ParentID  uuid.UUID `json:"parent_id"`
-	IsPinned  bool      `json:"is_pinned"`
-	Timestamp time.Time `json:"timestamp"`
-	ItemID    uuid.UUID `json:"item_id"`
-}
+	limit := defaultForumThreadLimit
+	if params.Limit > 0 {
+		limit = params.Limit
+	}
 
-func parseForumPagination(c *gin.Context, scope string, parentID uuid.UUID) (int, int, *forumCursor, error) {
-	page := forumDefaultPage
-	limit := forumDefaultLimit
-	cursorValue, hasCursor := c.GetQuery("cursor")
-	_, hasPage := c.GetQuery("page")
-
+	var cursorTime time.Time
+	var cursorID uuid.UUID
+	hasCursor := params.Cursor != ""
 	if hasCursor {
-		if hasPage || cursorValue == "" {
-			return 0, 0, nil, errors.New("cursor cannot be combined with page and must not be empty")
-		}
-
-		if limitStr, hasLimit := c.GetQuery("limit"); hasLimit {
-			parsed, err := strconv.Atoi(limitStr)
-			if err != nil || parsed <= 0 {
-				return 0, 0, nil, errors.New("limit must be a positive integer")
-			}
-			limit = min(forumMaxLimit, parsed)
-		}
-		if cursorValue == "first" {
-			return 0, limit, &forumCursor{Version: forumCursorVersion, Scope: scope, ParentID: parentID}, nil
-		}
-
-		cursor, err := decodeForumCursor(cursorValue, scope, parentID)
+		t, id, err := decodeThreadCursor(params.Cursor)
 		if err != nil {
-			return 0, 0, nil, err
-		}
-		return 0, limit, &cursor, nil
-	}
-
-	if pageStr := c.Query("page"); pageStr != "" {
-		if parsed, err := strconv.Atoi(pageStr); err == nil && parsed > 0 && parsed <= forumMaxPage {
-			page = parsed
-		}
-	}
-
-	if limitStr := c.Query("limit"); limitStr != "" {
-		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 {
-			limit = min(forumMaxLimit, parsed)
-		}
-	}
-
-	return page, limit, nil, nil
-}
-
-func encodeForumCursor(cursor forumCursor) (string, error) {
-	payload, err := json.Marshal(cursor)
-	if err != nil {
-		return "", err
-	}
-	return base64.RawURLEncoding.EncodeToString(payload), nil
-}
-
-func decodeForumCursor(value, scope string, parentID uuid.UUID) (forumCursor, error) {
-	payload, err := base64.RawURLEncoding.DecodeString(value)
-	if err != nil {
-		return forumCursor{}, errors.New("invalid cursor")
-	}
-
-	var cursor forumCursor
-	if err := json.Unmarshal(payload, &cursor); err != nil || cursor.Version != forumCursorVersion || cursor.Scope != scope || cursor.ParentID != parentID || cursor.ItemID == uuid.Nil || cursor.Timestamp.IsZero() {
-		return forumCursor{}, errors.New("invalid cursor")
-	}
-	return cursor, nil
-}
-
-func (h ForumHandler) GetCategories(c *gin.Context) {
-	var categories []models.ForumCategory
-	if err := h.DB.Order("name ASC").Find(&categories).Error; err != nil {
-		slog.Error("Failed to query forum categories", "err", err)
-		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum categories"))
-		return
-	}
-
-	responses := make([]common.ForumCategoryResponse, 0, len(categories))
-	for _, category := range categories {
-		responses = append(responses, common.ForumCategoryResponse{
-			ID:          category.ID,
-			Name:        category.Name,
-			Description: category.Description,
-			CreatedAt:   category.CreatedAt,
-			UpdatedAt:   category.UpdatedAt,
-		})
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": responses})
-}
-
-func (h ForumHandler) GetThreadsByCategory(c *gin.Context) {
-	categoryID, err := uuid.Parse(c.Param("categoryID"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid category id"))
-		return
-	}
-
-	var category models.ForumCategory
-	if err := h.DB.Select("id").Take(&category, "id = ?", categoryID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, common.NewErrorResponse(common.ErrorCodeForumCategoryNotFound, "Forum category not found"))
+			c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidQueryParameter, "Invalid cursor"))
 			return
 		}
-
-		slog.Error("Failed to query forum category", "category_id", categoryID, "err", err)
-		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum category"))
-		return
+		cursorTime, cursorID = t, id
 	}
 
-	page, limit, cursor, err := parseForumPagination(c, "threads", categoryID)
+	total, err := h.countThreads(params.Category)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, err.Error()))
-		return
-	}
-
-	var threads []models.ForumThread
-	query := h.DB.Where("category_id = ?", categoryID)
-	if cursor != nil && cursor.ItemID != uuid.Nil {
-		query = query.Where("is_pinned < ? OR (is_pinned = ? AND (updated_at < ? OR (updated_at = ? AND id < ?)))", cursor.IsPinned, cursor.IsPinned, cursor.Timestamp, cursor.Timestamp, cursor.ItemID)
-	} else {
-		query = query.Offset((page - 1) * limit)
-	}
-	if err := query.Order("is_pinned DESC").Order("updated_at DESC").Order("id DESC").Limit(limit + 1).Find(&threads).Error; err != nil {
-		slog.Error("Failed to query forum threads", "category_id", categoryID, "err", err)
+		slog.Error("Failed to count forum threads", "category", params.Category, "err", err)
 		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum threads"))
 		return
 	}
-	hasMore := len(threads) > limit
-	if hasMore {
+
+	threads, err := h.listThreadPage(params.Category, hasCursor, cursorTime, cursorID, limit+1)
+	if err != nil {
+		slog.Error("Failed to query forum threads", "category", params.Category, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum threads"))
+		return
+	}
+
+	var nextCursor *string
+	if len(threads) > limit {
 		threads = threads[:limit]
+		cursor := encodeThreadCursor(threads[len(threads)-1].CreatedAt, threads[len(threads)-1].ID)
+		nextCursor = &cursor
 	}
 
-	responses := make([]common.ForumThreadResponse, 0, len(threads))
-	for _, thread := range threads {
-		responses = append(responses, common.ForumThreadResponse{
-			ID:         thread.ID,
-			CategoryID: thread.CategoryID,
-			AuthorID:   thread.AuthorID,
-			Title:      thread.Title,
-			IsPinned:   thread.IsPinned,
-			IsLocked:   thread.IsLocked,
-			CreatedAt:  thread.CreatedAt,
-			UpdatedAt:  thread.UpdatedAt,
-		})
-	}
-
-	if cursor != nil {
-		response := gin.H{"data": responses, "limit": limit, "has_more": hasMore, "next_cursor": ""}
-		if hasMore {
-			last := threads[len(threads)-1]
-			response["next_cursor"], err = encodeForumCursor(forumCursor{forumCursorVersion, "threads", categoryID, last.IsPinned, last.UpdatedAt, last.ID})
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to encode forum cursor"))
-				return
-			}
-		}
-		c.JSON(http.StatusOK, response)
-		return
-	}
-
-	var total int64
-	if err := h.DB.Model(&models.ForumThread{}).Where("category_id = ?", categoryID).Count(&total).Error; err != nil {
-		slog.Error("Failed to count forum threads", "category_id", categoryID, "err", err)
+	replyCounts, err := h.replyCounts(threads)
+	if err != nil {
+		slog.Error("Failed to query forum reply counts", "err", err)
 		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum threads"))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": responses, "page": page, "limit": limit, "total": total})
-}
 
-func (h ForumHandler) GetPostsByThread(c *gin.Context) {
-	threadID, err := uuid.Parse(c.Param("threadID"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid thread id"))
-		return
-	}
-
-	var thread models.ForumThread
-	if err := h.DB.Select("id").Take(&thread, "id = ?", threadID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, common.NewErrorResponse(common.ErrorCodeForumThreadNotFound, "Forum thread not found"))
-			return
-		}
-
-		slog.Error("Failed to query forum thread", "thread_id", threadID, "err", err)
-		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum thread"))
-		return
-	}
-
-	page, limit, cursor, err := parseForumPagination(c, "posts", threadID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, err.Error()))
-		return
-	}
-
-	var posts []models.ForumPost
-	query := h.DB.Where("thread_id = ?", threadID)
-	if cursor != nil && cursor.ItemID != uuid.Nil {
-		query = query.Where("created_at > ? OR (created_at = ? AND id > ?)", cursor.Timestamp, cursor.Timestamp, cursor.ItemID)
-	} else {
-		query = query.Offset((page - 1) * limit)
-	}
-	if err := query.Order("created_at ASC").Order("id ASC").Limit(limit + 1).Find(&posts).Error; err != nil {
-		slog.Error("Failed to query forum posts", "thread_id", threadID, "err", err)
-		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum posts"))
-		return
-	}
-	hasMore := len(posts) > limit
-	if hasMore {
-		posts = posts[:limit]
-	}
-
-	responses := make([]common.ForumPostResponse, 0, len(posts))
-	for _, post := range posts {
-		responses = append(responses, common.ForumPostResponse{
-			ID:        post.ID,
-			ThreadID:  post.ThreadID,
-			AuthorID:  post.AuthorID,
-			Body:      post.Body,
-			ParentID:  post.ParentID,
-			CreatedAt: post.CreatedAt,
-			UpdatedAt: post.UpdatedAt,
+	summaries := make([]common.ForumThreadSummaryResponse, 0, len(threads))
+	for i := range threads {
+		thread := &threads[i]
+		summaries = append(summaries, common.ForumThreadSummaryResponse{
+			ID:         thread.ID,
+			Category:   thread.Category,
+			Title:      thread.Title,
+			Author:     forumAuthorResponse(thread.User),
+			ReplyCount: replyCounts[thread.ID],
+			CreatedAt:  thread.CreatedAt,
 		})
 	}
 
-	if cursor != nil {
-		response := gin.H{"data": responses, "limit": limit, "has_more": hasMore, "next_cursor": ""}
-		if hasMore {
-			last := posts[len(posts)-1]
-			response["next_cursor"], err = encodeForumCursor(forumCursor{forumCursorVersion, "posts", threadID, false, last.CreatedAt, last.ID})
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to encode forum cursor"))
-				return
-			}
-		}
-		c.JSON(http.StatusOK, response)
-		return
-	}
-
-	var total int64
-	if err := h.DB.Model(&models.ForumPost{}).Where("thread_id = ?", threadID).Count(&total).Error; err != nil {
-		slog.Error("Failed to count forum posts", "thread_id", threadID, "err", err)
-		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum posts"))
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"data": responses, "page": page, "limit": limit, "total": total})
+	c.JSON(http.StatusOK, common.ForumThreadListResponse{
+		Data:       summaries,
+		Total:      total,
+		Limit:      limit,
+		NextCursor: nextCursor,
+	})
 }
 
+// GetThread returns a single thread. It is a public endpoint.
 func (h ForumHandler) GetThread(c *gin.Context) {
-	threadID, err := uuid.Parse(c.Param("threadID"))
+	thread, ok := h.lookupThread(c)
+	if !ok {
+		return
+	}
+
+	replyCount, err := h.countReplies(thread.ID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid thread id"))
+		slog.Error("Failed to count forum replies", "thread_id", thread.ID, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum replies"))
 		return
 	}
 
-	var thread models.ForumThread
-	if err := h.DB.First(&thread, "id = ?", threadID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, common.NewErrorResponse(common.ErrorCodeForumThreadNotFound, "Forum thread not found"))
-			return
-		}
-
-		slog.Error("Failed to query forum thread", "thread_id", threadID, "err", err)
-		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum thread"))
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": forumThreadResponse(thread)})
+	c.JSON(http.StatusOK, gin.H{"data": forumThreadDetail(thread, replyCount)})
 }
 
+// GetThreadReplies returns the full nested reply tree of a thread. Soft-deleted
+// replies are kept as tombstones when they still have visible descendants, so
+// the tree structure stays intact. It is a public endpoint.
+func (h ForumHandler) GetThreadReplies(c *gin.Context) {
+	thread, ok := h.lookupThread(c)
+	if !ok {
+		return
+	}
+
+	var replies []models.ForumReply
+	if err := h.DB.Unscoped().
+		Preload("User").
+		Where("thread_id = ?", thread.ID).
+		Order("created_at ASC").
+		Find(&replies).Error; err != nil {
+		slog.Error("Failed to query forum replies", "thread_id", thread.ID, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum replies"))
+		return
+	}
+
+	tree, total := buildForumReplyTree(replies)
+	c.JSON(http.StatusOK, common.ForumReplyListResponse{Data: tree, Total: total})
+}
+
+// CreateThread creates a new thread. Only users with a verified email can
+// reach this handler (VerifiedRequired middleware).
 func (h ForumHandler) CreateThread(c *gin.Context) {
 	user := utils.MustGetUser(c)
 
-	var input common.CreateForumThreadInput
+	var input common.CreateThreadInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid request body"))
 		return
 	}
 
-	var category models.ForumCategory
-	if err := h.DB.Select("id").First(&category, "id = ?", input.CategoryID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, common.NewErrorResponse(common.ErrorCodeForumCategoryNotFound, "Forum category not found"))
-			return
-		}
-
-		slog.Error("Failed to query forum category", "category_id", input.CategoryID, "err", err)
-		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum category"))
-		return
+	thread := models.ForumThread{
+		UserID:   user.ID,
+		Category: input.Category,
+		Title:    input.Title,
+		Body:     input.Body,
 	}
-
-	var thread models.ForumThread
-	var post models.ForumPost
-	err := h.DB.Transaction(func(tx *gorm.DB) error {
-		thread = models.ForumThread{
-			CategoryID: input.CategoryID,
-			AuthorID:   user.ID,
-			Title:      input.Title,
-		}
-		if err := tx.Create(&thread).Error; err != nil {
-			return err
-		}
-
-		post = models.ForumPost{
-			ThreadID: thread.ID,
-			AuthorID: user.ID,
-			Body:     input.Body,
-		}
-		return tx.Create(&post).Error
-	})
-	if err != nil {
-		slog.Error("Failed to create forum thread", "category_id", input.CategoryID, "author_id", user.ID, "err", err)
+	if err := h.DB.Create(&thread).Error; err != nil {
+		slog.Error("Failed to create forum thread", "user_id", user.ID, "err", err)
 		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumCreateFailed, "Failed to create forum thread"))
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"data": common.ForumThreadCreatedResponse{
-		Thread:    forumThreadResponse(thread),
-		FirstPost: forumPostResponse(post),
-	}})
-
+	thread.User = user
+	c.JSON(http.StatusCreated, gin.H{"data": forumThreadDetail(&thread, 0)})
 }
 
-func (h ForumHandler) CreatePost(c *gin.Context) {
+// CreateReply creates a reply in a thread. Only users with a verified email can
+// reach this handler (VerifiedRequired middleware). An optional parent_id must
+// reference a live reply in the same thread.
+func (h ForumHandler) CreateReply(c *gin.Context) {
 	user := utils.MustGetUser(c)
 
-	threadID, err := uuid.Parse(c.Param("threadID"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid thread id"))
+	thread, ok := h.lookupThread(c)
+	if !ok {
 		return
 	}
 
-	var input common.CreateForumPostInput
+	var input common.CreateReplyInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeInvalidRequestBody, "Invalid request body"))
 		return
 	}
 
-	var thread models.ForumThread
-	if err := h.DB.First(&thread, "id = ?", threadID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, common.NewErrorResponse(common.ErrorCodeForumThreadNotFound, "Forum thread not found"))
-			return
-		}
-
-		slog.Error("Failed to query forum thread", "thread_id", threadID, "err", err)
-		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum thread"))
-		return
-	}
-	if thread.IsLocked {
-		c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeForumThreadLocked, "Forum thread is locked"))
-		return
-	}
-
-	var post models.ForumPost
-	err = h.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&thread, "id = ?", threadID).Error; err != nil {
-			return err
-		}
-		if thread.IsLocked {
-			return gorm.ErrInvalidData
-		}
-
-		if input.ParentID != nil {
-			var parent models.ForumPost
-			if err := tx.Select("id", "thread_id").First(&parent, "id = ? AND thread_id = ?", *input.ParentID, threadID).Error; err != nil {
-				return err
+	if input.ParentID != nil {
+		var parent models.ForumReply
+		if err := h.DB.Where("id = ? AND thread_id = ?", *input.ParentID, thread.ID).Take(&parent).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeReplyNotFound, "Parent reply not found in this thread"))
+			} else {
+				slog.Error("Failed to query parent reply", "thread_id", thread.ID, "parent_id", *input.ParentID, "err", err)
+				c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query parent reply"))
 			}
-		}
-
-		post = models.ForumPost{
-			ThreadID: threadID,
-			AuthorID: user.ID,
-			Body:     input.Body,
-			ParentID: input.ParentID,
-		}
-		if err := tx.Create(&post).Error; err != nil {
-			return err
-		}
-		return tx.Model(&thread).Update("updated_at", time.Now().UTC()).Error
-	})
-	if err != nil {
-		if errors.Is(err, gorm.ErrInvalidData) {
-			c.JSON(http.StatusConflict, common.NewErrorResponse(common.ErrorCodeForumThreadLocked, "Forum thread is locked"))
 			return
 		}
-		if errors.Is(err, gorm.ErrRecordNotFound) && input.ParentID != nil {
-			c.JSON(http.StatusBadRequest, common.NewErrorResponse(common.ErrorCodeForumParentPostInvalid, "Parent post does not belong to this thread"))
-			return
-		}
+	}
 
-		slog.Error("Failed to create forum post", "thread_id", threadID, "author_id", user.ID, "err", err)
-		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumCreateFailed, "Failed to create forum post"))
+	reply := models.ForumReply{
+		ThreadID: thread.ID,
+		UserID:   user.ID,
+		ParentID: input.ParentID,
+		Body:     input.Body,
+	}
+	if err := h.DB.Create(&reply).Error; err != nil {
+		slog.Error("Failed to create forum reply", "user_id", user.ID, "thread_id", thread.ID, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumCreateFailed, "Failed to create forum reply"))
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"data": forumPostResponse(post)})
+	reply.User = user
+	c.JSON(http.StatusCreated, gin.H{"data": forumReplyDetail(&reply)})
 }
 
-func forumThreadResponse(thread models.ForumThread) common.ForumThreadResponse {
+// DeleteThread soft-deletes a thread. Any authenticated user may delete their
+// own threads.
+func (h ForumHandler) DeleteThread(c *gin.Context) {
+	user := utils.MustGetUser(c)
+
+	thread, ok := h.lookupThread(c)
+	if !ok {
+		return
+	}
+
+	if thread.UserID != user.ID {
+		c.JSON(http.StatusForbidden, common.NewErrorResponse(common.ErrorCodeNotAuthor, "Only the author can delete this thread"))
+		return
+	}
+
+	if err := h.DB.Delete(thread).Error; err != nil {
+		slog.Error("Failed to delete forum thread", "thread_id", thread.ID, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumDeleteFailed, "Failed to delete forum thread"))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.MessageResponse{Message: "Thread deleted"})
+}
+
+// DeleteReply soft-deletes a reply. Any authenticated user may delete their own
+// replies.
+func (h ForumHandler) DeleteReply(c *gin.Context) {
+	user := utils.MustGetUser(c)
+
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, common.NewErrorResponse(common.ErrorCodeReplyNotFound, "Reply not found"))
+		return
+	}
+
+	var reply models.ForumReply
+	if err := h.DB.Take(&reply, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, common.NewErrorResponse(common.ErrorCodeReplyNotFound, "Reply not found"))
+		} else {
+			slog.Error("Failed to query forum reply", "reply_id", id, "err", err)
+			c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum reply"))
+		}
+		return
+	}
+
+	if reply.UserID != user.ID {
+		c.JSON(http.StatusForbidden, common.NewErrorResponse(common.ErrorCodeNotAuthor, "Only the author can delete this reply"))
+		return
+	}
+
+	if err := h.DB.Delete(&reply).Error; err != nil {
+		slog.Error("Failed to delete forum reply", "reply_id", reply.ID, "err", err)
+		c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumDeleteFailed, "Failed to delete forum reply"))
+		return
+	}
+
+	c.JSON(http.StatusOK, common.MessageResponse{Message: "Reply deleted"})
+}
+
+// lookupThread resolves the :id path parameter to a live thread, writing the
+// error response itself when it fails.
+func (h ForumHandler) lookupThread(c *gin.Context) (*models.ForumThread, bool) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, common.NewErrorResponse(common.ErrorCodeThreadNotFound, "Thread not found"))
+		return nil, false
+	}
+
+	var thread models.ForumThread
+	if err := h.DB.Preload("User").Take(&thread, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, common.NewErrorResponse(common.ErrorCodeThreadNotFound, "Thread not found"))
+		} else {
+			slog.Error("Failed to query forum thread", "thread_id", id, "err", err)
+			c.JSON(http.StatusInternalServerError, common.NewErrorResponse(common.ErrorCodeForumQueryFailed, "Failed to query forum thread"))
+		}
+		return nil, false
+	}
+
+	return &thread, true
+}
+
+func (h ForumHandler) countThreads(category string) (int64, error) {
+	query := h.DB.Model(&models.ForumThread{})
+	if category != "" {
+		query = query.Where("category = ?", category)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return 0, err
+	}
+	return total, nil
+}
+
+func (h ForumHandler) listThreadPage(category string, hasCursor bool, cursorTime time.Time, cursorID uuid.UUID, limit int) ([]models.ForumThread, error) {
+	query := h.DB.Model(&models.ForumThread{})
+	if category != "" {
+		query = query.Where("category = ?", category)
+	}
+	if hasCursor {
+		query = query.Where("(created_at, id) < (?, ?)", cursorTime, cursorID)
+	}
+
+	var threads []models.ForumThread
+	if err := query.Preload("User").
+		Order("created_at DESC, id DESC").
+		Limit(limit).
+		Find(&threads).Error; err != nil {
+		return nil, err
+	}
+	return threads, nil
+}
+
+func (h ForumHandler) countReplies(threadID uuid.UUID) (int64, error) {
+	var count int64
+	if err := h.DB.Model(&models.ForumReply{}).
+		Where("thread_id = ?", threadID).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (h ForumHandler) replyCounts(threads []models.ForumThread) (map[uuid.UUID]int64, error) {
+	counts := make(map[uuid.UUID]int64, len(threads))
+	if len(threads) == 0 {
+		return counts, nil
+	}
+
+	ids := make([]uuid.UUID, 0, len(threads))
+	for i := range threads {
+		ids = append(ids, threads[i].ID)
+	}
+
+	type replyCountRow struct {
+		ThreadID uuid.UUID
+		Count    int64
+	}
+
+	var rows []replyCountRow
+	if err := h.DB.Model(&models.ForumReply{}).
+		Select("thread_id, COUNT(*) AS count").
+		Where("thread_id IN ? AND deleted_at IS NULL", ids).
+		Group("thread_id").
+		Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	for _, row := range rows {
+		counts[row.ThreadID] = row.Count
+	}
+	return counts, nil
+}
+
+func forumAuthorResponse(user *models.User) *common.ForumAuthorResponse {
+	if user == nil {
+		return nil
+	}
+
+	return &common.ForumAuthorResponse{
+		Username: user.Username,
+		CallSign: user.CallSign,
+	}
+}
+
+func forumThreadDetail(thread *models.ForumThread, replyCount int64) common.ForumThreadResponse {
 	return common.ForumThreadResponse{
 		ID:         thread.ID,
-		CategoryID: thread.CategoryID,
-		AuthorID:   thread.AuthorID,
+		Category:   thread.Category,
 		Title:      thread.Title,
-		IsPinned:   thread.IsPinned,
-		IsLocked:   thread.IsLocked,
+		Body:       thread.Body,
+		Author:     forumAuthorResponse(thread.User),
+		ReplyCount: replyCount,
 		CreatedAt:  thread.CreatedAt,
 		UpdatedAt:  thread.UpdatedAt,
 	}
 }
 
-func forumPostResponse(post models.ForumPost) common.ForumPostResponse {
-	return common.ForumPostResponse{
-		ID:        post.ID,
-		ThreadID:  post.ThreadID,
-		AuthorID:  post.AuthorID,
-		Body:      post.Body,
-		ParentID:  post.ParentID,
-		CreatedAt: post.CreatedAt,
-		UpdatedAt: post.UpdatedAt,
+func forumReplyDetail(reply *models.ForumReply) common.ForumReplyResponse {
+	body := reply.Body
+	return common.ForumReplyResponse{
+		ID:        reply.ID,
+		ParentID:  reply.ParentID,
+		Body:      &body,
+		Author:    forumAuthorResponse(reply.User),
+		CreatedAt: reply.CreatedAt,
+		Children:  []common.ForumReplyResponse{},
 	}
+}
+
+type forumReplyNode struct {
+	reply    models.ForumReply
+	children []*forumReplyNode
+}
+
+func buildForumReplyTree(replies []models.ForumReply) ([]common.ForumReplyResponse, int64) {
+	nodes := make(map[uuid.UUID]*forumReplyNode, len(replies))
+	var total int64
+	for i := range replies {
+		nodes[replies[i].ID] = &forumReplyNode{reply: replies[i]}
+		if !replies[i].DeletedAt.Valid {
+			total++
+		}
+	}
+
+	roots := make([]*forumReplyNode, 0, len(replies))
+	for i := range replies {
+		node := nodes[replies[i].ID]
+		parentID := replies[i].ParentID
+		if parentID != nil {
+			if parent, ok := nodes[*parentID]; ok {
+				parent.children = append(parent.children, node)
+				continue
+			}
+		}
+		roots = append(roots, node)
+	}
+
+	tree := make([]common.ForumReplyResponse, 0, len(roots))
+	for _, root := range roots {
+		if item, ok := buildForumReplyNode(root); ok {
+			tree = append(tree, item)
+		}
+	}
+	return tree, total
+}
+
+// buildForumReplyNode converts a node into its response form. Soft-deleted
+// nodes are kept as tombstones when their subtree still contains visible
+// replies, so the thread structure is preserved; otherwise they are pruned.
+func buildForumReplyNode(node *forumReplyNode) (common.ForumReplyResponse, bool) {
+	children := make([]common.ForumReplyResponse, 0, len(node.children))
+	for _, child := range node.children {
+		if item, ok := buildForumReplyNode(child); ok {
+			children = append(children, item)
+		}
+	}
+
+	deleted := node.reply.DeletedAt.Valid
+	if deleted && len(children) == 0 {
+		return common.ForumReplyResponse{}, false
+	}
+
+	item := common.ForumReplyResponse{
+		ID:        node.reply.ID,
+		ParentID:  node.reply.ParentID,
+		IsDeleted: deleted,
+		CreatedAt: node.reply.CreatedAt,
+		Children:  children,
+	}
+	if !deleted {
+		body := node.reply.Body
+		item.Body = &body
+		item.Author = forumAuthorResponse(node.reply.User)
+	}
+	return item, true
+}
+
+// encodeThreadCursor builds an opaque cursor from the last thread of a page.
+func encodeThreadCursor(createdAt time.Time, id uuid.UUID) string {
+	raw := createdAt.UTC().Format(time.RFC3339Nano) + "|" + id.String()
+	return base64.RawURLEncoding.EncodeToString([]byte(raw))
+}
+
+func decodeThreadCursor(cursor string) (time.Time, uuid.UUID, error) {
+	raw, err := base64.RawURLEncoding.DecodeString(cursor)
+	if err != nil {
+		return time.Time{}, uuid.Nil, err
+	}
+
+	parts := strings.SplitN(string(raw), "|", 2)
+	if len(parts) != 2 {
+		return time.Time{}, uuid.Nil, errors.New("malformed cursor")
+	}
+
+	createdAt, err := time.Parse(time.RFC3339Nano, parts[0])
+	if err != nil {
+		return time.Time{}, uuid.Nil, err
+	}
+
+	id, err := uuid.Parse(parts[1])
+	if err != nil {
+		return time.Time{}, uuid.Nil, err
+	}
+
+	return createdAt, id, nil
 }
