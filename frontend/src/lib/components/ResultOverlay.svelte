@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Trophy, TrendingUp, X, RefreshCw } from '@lucide/svelte';
+  import { X } from '@lucide/svelte';
   import { scoreGrade, type DiffToken } from '$lib/score';
   import * as m from '$lib/paraglide/messages';
   import { onMount } from 'svelte';
@@ -7,9 +7,12 @@
   interface Props {
     result: number;
     diffTokens: DiffToken[];
+    /** Lesson the result belongs to (shown in the panel header area). */
+    lessonNum: number;
+    /** The passage that was sent — the reference for the diff and the copy. */
+    sourceText: string;
     hasNextLesson: boolean;
     hasPrevLesson: boolean;
-    shouldRegenerate: boolean;
     nextLessonNum: number;
     prevLessonNum: number;
     onClose: () => void;
@@ -21,9 +24,10 @@
   let {
     result,
     diffTokens,
+    lessonNum,
+    sourceText,
     hasNextLesson,
     hasPrevLesson,
-    shouldRegenerate,
     nextLessonNum,
     prevLessonNum,
     onClose,
@@ -33,7 +37,6 @@
   }: Props = $props();
 
   let grade = $derived(scoreGrade(result));
-  let ScoreIcon = $derived(grade === 'good' ? Trophy : TrendingUp);
   let scoreText = $derived(
     grade === 'good'
       ? m.trainer_score_great()
@@ -41,57 +44,99 @@
         ? m.trainer_score_good()
         : m.trainer_score_bad()
   );
-  let colorClass = $derived(`overlay-${grade}`);
   let pct = $derived(Math.round(result * 100) + '%');
 
-  let panelRef: HTMLDivElement;
+  let panelRef = $state<HTMLDivElement | null>(null);
+  let restoreFocusTo: HTMLElement | null = null;
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      e.preventDefault();
+  function focusable(): HTMLElement[] {
+    if (!panelRef) return [];
+    return Array.from(
+      panelRef.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((el) => !el.hasAttribute('disabled'));
+  }
+
+  /**
+   * Keep Tab inside the panel and close on Escape, returning focus to whatever
+   * opened it. The background stays inert to keyboard users without `inert`
+   * support games: nothing else is reachable while the loop below is active.
+   */
+  function onPanelKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
       onClose();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+
+    const items = focusable();
+    if (items.length === 0) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    const active = document.activeElement;
+
+    if (event.shiftKey && active === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
     }
   }
 
   function handleBackdropClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
+    if (e.target === e.currentTarget) onClose();
   }
 
   onMount(() => {
-    // Focus the close button when modal opens
-    const closeBtn = panelRef?.querySelector('.overlay-close') as HTMLButtonElement;
-    if (closeBtn) closeBtn.focus();
+    restoreFocusTo = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    // Focus the heading region's first control so screen readers announce the
+    // dialog name, then leave focus on the panel for arrow/Tab navigation.
+    panelRef?.focus();
+    return () => restoreFocusTo?.focus();
   });
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 <div class="overlay-backdrop" onclick={handleBackdropClick} role="presentation">
-  <div class="overlay-panel" bind:this={panelRef} role="dialog" aria-modal="true">
-    <!-- Close -->
-    <button class="overlay-close" onclick={onClose} aria-label={m.overlay_close()}
-      ><X size={20} /></button
-    >
-
-    <!-- Score hero -->
-    <header class="overlay-hero {colorClass}">
-      <ScoreIcon size={40} class="overlay-score-icon" />
-      <p class="overlay-pct">{pct}</p>
-      <p class="overlay-score-text">{scoreText}</p>
+  <div
+    class="overlay-panel"
+    bind:this={panelRef}
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="overlay-title"
+    tabindex="-1"
+    onkeydown={onPanelKeydown}
+  >
+    <header class="overlay-head">
+      <h2 id="overlay-title" class="overlay-title">{m.trainer_result_title()}</h2>
+      <button
+        class="overlay-close btn-icon"
+        type="button"
+        onclick={onClose}
+        aria-label={m.overlay_close()}
+      >
+        <X size={16} />
+      </button>
     </header>
 
-    <!-- Diff -->
+    <div class="overlay-score overlay-{grade}">
+      <p class="overlay-pct">{pct}</p>
+      <div class="overlay-score-body">
+        <p class="overlay-grade">{scoreText}</p>
+        <p class="overlay-rule">{m.trainer_result_lesson({ lesson: String(lessonNum) })}</p>
+      </div>
+    </div>
+
+    <section class="overlay-source">
+      <p class="panel-label">{m.trainer_source_label()}</p>
+      <p class="overlay-source-text">{sourceText}</p>
+    </section>
+
     <section class="overlay-diff-section">
       <div class="overlay-diff-header">
-        <h2 class="card-title">{m.trainer_diff_title()}</h2>
-        <div class="diff-legend">
-          <span class="diff-token diff-correct">{m.trainer_diff_legend_correct()}</span>
-          <span class="diff-token diff-sub">{m.trainer_diff_legend_sub()}</span>
-          <span class="diff-token diff-missing">{m.trainer_diff_legend_missing()}</span>
-          <span class="diff-token diff-extra">{m.trainer_diff_legend_extra()}</span>
-        </div>
+        <h3 class="card-title">{m.trainer_diff_title()}</h3>
       </div>
       <div class="diff-tokens overlay-diff-tokens">
         {#each diffTokens as tok, i (i)}
@@ -102,34 +147,32 @@
               >{tok.inp}<span class="diff-expected"> ({tok.ref})</span></span
             >
           {:else if tok.type === 'missing'}
-            <span class="diff-token diff-missing">{tok.ref}</span>
+            <span class="diff-token diff-missing" title={m.overlay_diff_expected({ char: tok.ref })}
+              >{tok.ref}</span
+            >
           {:else if tok.type === 'extra'}
             <span class="diff-token diff-extra">{tok.inp}</span>
           {/if}
         {/each}
       </div>
+      <div class="diff-legend">
+        <span class="diff-token diff-correct">{m.trainer_diff_legend_correct()}</span>
+        <span class="diff-token diff-sub">{m.trainer_diff_legend_sub()}</span>
+        <span class="diff-token diff-missing">{m.trainer_diff_legend_missing()}</span>
+        <span class="diff-token diff-extra">{m.trainer_diff_legend_extra()}</span>
+      </div>
     </section>
 
-    <!-- Actions -->
     <footer class="overlay-actions">
-      {#if hasPrevLesson}
-        <button class="btn-prev-lesson" onclick={onPrev}>
-          {m.trainer_prev_lesson({ lesson: String(prevLessonNum) })}
-        </button>
-      {/if}
-      {#if shouldRegenerate}
-        <button class="btn-prev-lesson" onclick={onRegenerate}>
-          <RefreshCw size={16} />{m.trainer_try_again()}
-        </button>
-      {/if}
       {#if hasNextLesson}
-        <button class="btn-next-lesson" onclick={onNext}>
+        <button class="btn-primary" onclick={onNext}>
           {m.trainer_next_lesson({ lesson: String(nextLessonNum) })}
         </button>
       {/if}
-      {#if !hasNextLesson && !hasPrevLesson && !shouldRegenerate}
-        <button class="btn-regen" onclick={onClose}>
-          <RefreshCw size={16} />{m.trainer_try_again()}
+      <button class="btn-ghost" onclick={onRegenerate}>{m.trainer_try_again()}</button>
+      {#if hasPrevLesson}
+        <button class="btn-ghost" onclick={onPrev}>
+          {m.trainer_prev_lesson({ lesson: String(prevLessonNum) })}
         </button>
       {/if}
     </footer>
@@ -137,137 +180,163 @@
 </div>
 
 <style>
+  /* A compact panel, not a takeover: the practice surface stays visible around
+     it and the scrim is flat (no blur, no glow). */
   .overlay-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background: color-mix(in srgb, var(--bg-base) 70%, transparent);
     z-index: 200;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    padding: var(--space-4);
   }
+
   .overlay-panel {
     background: var(--bg-surface);
     border: 1px solid var(--border);
-    border-radius: 1rem;
+    border-radius: var(--radius-lg);
     width: 100%;
-    max-width: 680px;
-    max-height: 90vh;
+    max-width: 32rem;
+    max-height: 85vh;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    position: relative;
     box-shadow: var(--shadow-overlay);
   }
-  .overlay-close {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 0.35rem;
-    border-radius: 0.4rem;
-    display: flex;
-    align-items: center;
-    z-index: 1;
-    transition:
-      color 0.15s,
-      background 0.15s;
-  }
-  .overlay-close:hover {
-    color: var(--text-primary);
-    background: var(--bg-inset);
+
+  .overlay-panel:focus {
+    outline: none;
   }
 
-  /* Score hero */
-  .overlay-hero {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    padding: 2.5rem 2rem 2rem;
-    border-radius: 1rem 1rem 0 0;
-  }
-  .overlay-good {
-    background: var(--status-good-tint);
-  }
-  .overlay-ok {
-    background: var(--status-ok-tint);
-  }
-  .overlay-bad {
-    background: var(--status-bad-tint);
-  }
-  :global(.overlay-score-icon) {
-    opacity: 0.85;
-  }
-  .overlay-good :global(.overlay-score-icon) {
-    color: var(--status-good);
-  }
-  .overlay-ok :global(.overlay-score-icon) {
-    color: var(--status-ok);
-  }
-  .overlay-bad :global(.overlay-score-icon) {
-    color: var(--status-bad);
-  }
-  .overlay-pct {
-    font-size: 3.5rem;
-    font-weight: 900;
-    line-height: 1;
-    margin: 0;
-  }
-  .overlay-good .overlay-pct {
-    color: var(--status-good);
-  }
-  .overlay-ok .overlay-pct {
-    color: var(--status-ok);
-  }
-  .overlay-bad .overlay-pct {
-    color: var(--status-bad);
-  }
-  .overlay-score-text {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    margin: 0;
-  }
-
-  /* Diff section */
-  .overlay-diff-section {
-    padding: 1.25rem 1.5rem;
-    border-top: 1px solid var(--border);
-  }
-  .overlay-diff-header {
+  .overlay-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 0.875rem;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+    border-bottom: 1px solid var(--border);
   }
+
+  .overlay-title {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* Score strip: a readout, not a hero. */
+  .overlay-score {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .overlay-good {
+    background: var(--result-good-bg);
+  }
+
+  .overlay-ok {
+    background: var(--status-ok-tint);
+  }
+
+  .overlay-bad {
+    background: var(--result-bad-bg);
+  }
+
+  .overlay-pct {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 2.25rem;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .overlay-good .overlay-pct {
+    color: var(--status-good);
+  }
+
+  .overlay-ok .overlay-pct {
+    color: var(--status-ok);
+  }
+
+  .overlay-bad .overlay-pct {
+    color: var(--status-bad);
+  }
+
+  .overlay-score-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  .overlay-grade {
+    margin: 0;
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .overlay-rule {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+  }
+
+  /* Reference transcript: the source the copy is compared against. */
+  .overlay-source {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--border);
+  }
+
+  .overlay-source-text {
+    margin: 0;
+    padding-left: var(--space-3);
+    border-left: 2px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.7;
+    letter-spacing: 0.12em;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+  }
+
+  .overlay-diff-section {
+    padding: var(--space-4) var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
   .overlay-diff-header :global(.card-title) {
-    margin-bottom: 0;
+    margin: 0;
   }
+
   .overlay-diff-tokens {
-    max-height: 40vh;
+    max-height: 34vh;
     overflow-y: auto;
   }
 
-  /* Actions */
   .overlay-actions {
     display: flex;
-    gap: 0.75rem;
     flex-wrap: wrap;
-    padding: 1rem 1.5rem 1.5rem;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5) var(--space-5);
     border-top: 1px solid var(--border);
   }
-  .overlay-actions > * {
-    flex: 1;
-    min-width: 150px;
-    justify-content: center;
-    margin-top: 0;
+
+  @media (max-width: 640px) {
+    .overlay-actions > * {
+      flex: 1 1 auto;
+    }
   }
 </style>

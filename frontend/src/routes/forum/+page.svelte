@@ -17,11 +17,12 @@
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
   import GuestNotice from '$lib/components/GuestNotice.svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
-  import { MessageSquare, MessagesSquare, Plus } from '@lucide/svelte';
+  import { Plus } from '@lucide/svelte';
   import * as m from '$lib/paraglide/messages';
 
   let threads = $state<ForumThreadSummary[]>([]);
   let nextCursor = $state<string | null>(null);
+  let totalCount = $state<number | null>(null);
   let loading = $state(true);
   let loadingMore = $state(false);
   let loadFailed = $state('');
@@ -43,6 +44,9 @@
   let filter = $state<ForumCategoryValue | null>(null);
   let filterInitialized = $state(false);
 
+  /** Placeholder rows shown while the first page loads. */
+  const SKELETON_ROWS = [0, 1, 2, 3];
+
   function categoryFromUrl(value: string | null): ForumCategoryValue | null {
     return isForumCategory(value) ? value : null;
   }
@@ -52,6 +56,16 @@
     const next = categoryFromUrl(new URLSearchParams(window.location.search).get('category'));
     filterInitialized = true;
     if (next !== filter) filter = next;
+  }
+
+  // Filtering is navigation, so the controls are real links: they are
+  // shareable, crawlable, and the back button behaves like a browser.
+  function categoryHref(category: ForumCategoryValue): string {
+    return `?category=${category}`;
+  }
+
+  function replyLabel(count: number): string {
+    return count === 1 ? m.forum_reply_one() : m.forum_reply_many({ count: String(count) });
   }
 
   onMount(syncFilterFromUrl);
@@ -87,9 +101,11 @@
       if (token !== loadToken) return;
       threads = result.data;
       nextCursor = result.next_cursor;
+      totalCount = result.total;
     } catch (error) {
       if (token !== loadToken) return;
       threads = [];
+      totalCount = null;
       loadFailed = localizeApiError(error, () => m.api_error_forum_query_failed());
     } finally {
       if (token === loadToken) loading = false;
@@ -181,45 +197,49 @@
 </svelte:head>
 
 <div class="forum-page page-wide">
-  <header class="forum-hero">
-    <div class="eyebrow"><MessagesSquare size={16} /> {m.forum_eyebrow()}</div>
-    <h1 class="page-title">{m.forum_title()}</h1>
-    <p class="body-text">{m.forum_intro()}</p>
-  </header>
-
-  <div class="forum-toolbar">
-    <nav class="category-tabs">
+  <header class="forum-masthead">
+    <p class="eyebrow">{m.forum_eyebrow()}</p>
+    <div class="masthead-row">
+      <div class="masthead-text">
+        <h1 class="page-title">{m.forum_title()}</h1>
+        <p class="body-text forum-intro">{m.forum_intro()}</p>
+      </div>
       <button
         type="button"
-        class="tab"
-        class:is-active={filter === null}
-        aria-pressed={filter === null}
-        onclick={() => selectCategory(null)}
+        class="btn-primary"
+        aria-expanded={composerOpen}
+        onclick={() => (composerOpen ? closeComposer() : (composerOpen = true))}
       >
-        {m.forum_category_all()}
+        <Plus size={16} aria-hidden="true" />
+        {m.forum_new_thread()}
       </button>
-      {#each FORUM_CATEGORIES as category (category)}
-        <button
-          type="button"
-          class="tab"
-          class:is-active={filter === category}
-          aria-pressed={filter === category}
-          onclick={() => selectCategory(category)}
-        >
-          {forumCategoryLabel(category)}
-        </button>
-      {/each}
-    </nav>
-    <button
-      type="button"
-      class="btn-primary new-thread-btn"
-      aria-expanded={composerOpen}
-      onclick={() => (composerOpen ? closeComposer() : (composerOpen = true))}
+    </div>
+  </header>
+
+  <nav class="forum-filters" aria-label={m.forum_category_all()}>
+    <a
+      class="filter-link"
+      class:is-active={filter === null}
+      aria-current={filter === null ? 'page' : undefined}
+      href="?">{m.forum_category_all()}</a
     >
-      <Plus size={16} aria-hidden="true" />
-      {m.forum_new_thread()}
-    </button>
-  </div>
+    {#each FORUM_CATEGORIES as category (category)}
+      <a
+        class="filter-link"
+        class:is-active={filter === category}
+        aria-current={filter === category ? 'page' : undefined}
+        href={categoryHref(category)}>{forumCategoryLabel(category)}</a
+      >
+    {/each}
+    {#if totalCount !== null && !loading}
+      <span class="filter-count"
+        >{m.forum_threads_count({
+          shown: String(threads.length),
+          total: String(totalCount)
+        })}</span
+      >
+    {/if}
+  </nav>
 
   {#if composerOpen}
     <section class="panel composer">
@@ -293,43 +313,57 @@
   {/if}
 
   {#if loading}
-    <LoadingSpinner />
+    <div class="thread-skeleton">
+      {#each SKELETON_ROWS as row (row)}
+        <div class="skeleton-row">
+          <span class="skeleton skeleton-title"></span>
+          <span class="skeleton skeleton-meta"></span>
+        </div>
+      {/each}
+    </div>
+    <p class="sr-only" role="status">{m.common_loading()}</p>
   {:else if loadFailed}
     <div class="forum-error">
       <ErrorAlert message={loadFailed} />
-      <button type="button" class="btn-ghost retry-btn" onclick={() => loadFirstPage(filter)}>
+      <button type="button" class="btn-ghost" onclick={() => loadFirstPage(filter)}>
         {m.forum_retry()}
       </button>
     </div>
   {:else if threads.length === 0}
-    <section class="panel forum-empty">
-      <MessagesSquare size={34} aria-hidden="true" />
-      <h2 class="empty-title">{m.forum_threads_empty_title()}</h2>
-      <p class="body-text empty-note">{m.forum_threads_empty_body()}</p>
+    <section class="forum-empty">
+      <h2 class="empty-title">
+        {filter
+          ? m.forum_threads_empty_filtered_title({ category: forumCategoryLabel(filter) })
+          : m.forum_threads_empty_title()}
+      </h2>
+      <p class="body-text empty-note">
+        {filter ? m.forum_threads_empty_filtered_body() : m.forum_threads_empty_body()}
+      </p>
+      {#if filter}
+        <a class="link" href="?">{m.forum_category_all()}</a>
+      {/if}
     </section>
   {:else}
-    <div class="thread-list">
+    <ul class="row-list thread-list">
       {#each threads as thread (thread.id)}
-        <a class="card card--interactive thread-card" href={href(`/forum/${thread.id}`)}>
-          <div class="thread-card-top">
-            <span class="category-badge">{forumCategoryLabel(thread.category)}</span>
+        <li>
+          <a class="row-link thread-row" href={href(`/forum/${thread.id}`)}>
             <h3 class="thread-title">{thread.title}</h3>
-          </div>
-          <div class="thread-meta">
-            <span>{authorLabel(thread.author)}</span>
-            {#if thread.author.call_sign}
-              <span class="callsign">{thread.author.call_sign}</span>
-            {/if}
-            <span>{formatDate(thread.created_at)}</span>
-            <span class="thread-replies">
-              <MessageSquare size={14} aria-hidden="true" />
-              {thread.reply_count}
-              <span class="sr-only">{m.forum_replies_label()}</span>
-            </span>
-          </div>
-        </a>
+            <p class="thread-meta">
+              <span class="thread-cat"
+                ><span class="chip-dot"></span>{forumCategoryLabel(thread.category)}</span
+              >
+              <span>{authorLabel(thread.author)}</span>
+              {#if thread.author.call_sign}
+                <span class="callsign">{thread.author.call_sign}</span>
+              {/if}
+              <span>{formatDate(thread.created_at)}</span>
+              <span class="thread-replies">{replyLabel(thread.reply_count)}</span>
+            </p>
+          </a>
+        </li>
       {/each}
-    </div>
+    </ul>
 
     {#if loadMoreError}
       <ErrorAlert message={loadMoreError} />
@@ -337,13 +371,8 @@
 
     {#if nextCursor}
       <div class="load-more-row">
-        <button
-          type="button"
-          class="btn-ghost load-more-btn"
-          disabled={loadingMore}
-          onclick={loadMore}
-        >
-          {m.forum_threads_load_more()}
+        <button type="button" class="btn-ghost" disabled={loadingMore} onclick={loadMore}>
+          {loadingMore ? m.common_loading() : m.forum_threads_load_more()}
         </button>
       </div>
     {/if}
@@ -351,97 +380,83 @@
 </div>
 
 <style>
-  .forum-hero {
-    margin-bottom: var(--section-gap);
-  }
-
-  .eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin-bottom: 0.6rem;
-    color: var(--accent);
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  .forum-hero .page-title {
-    margin: 0;
-  }
-
-  .forum-hero .body-text {
-    margin: 0.45rem 0 0;
-    max-width: var(--max-width-narrow);
-  }
-
-  .forum-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
+  .forum-masthead {
     margin-bottom: var(--block-gap);
   }
 
-  .category-tabs {
+  .masthead-row {
     display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
     flex-wrap: wrap;
-    gap: 0.5rem;
+  }
+
+  .masthead-text {
     min-width: 0;
   }
 
-  .tab {
-    padding: 0.4rem 0.85rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    border-radius: 999px;
-    border: 1px solid var(--border-subtle);
-    background: transparent;
+  .forum-intro {
+    margin: var(--space-2) 0 0;
+    max-width: var(--max-width-narrow);
+  }
+
+  /* Filters are links on a hairline: navigation, not a row of chips. */
+  .forum-filters {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    padding-bottom: var(--space-3);
+    margin-bottom: var(--space-5);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .filter-link {
+    position: relative;
+    padding-bottom: 0.35rem;
     color: var(--text-secondary);
-    cursor: pointer;
-    transition:
-      border-color var(--transition-fast),
-      color var(--transition-fast),
-      background-color var(--transition-fast);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-decoration: none;
   }
 
-  .tab:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+  .filter-link:hover {
+    color: var(--text-primary);
   }
 
-  .tab.is-active {
-    border-color: var(--accent);
-    background-color: color-mix(in srgb, var(--accent) 12%, transparent);
-    color: var(--accent);
+  .filter-link.is-active {
+    color: var(--text-primary);
     font-weight: 600;
+    /* Inset rule rather than a positioned pseudo-element: it stays attached to
+       its own link when the filter row wraps on narrow screens. */
+    box-shadow: inset 0 -2px 0 var(--accent);
   }
 
-  .new-thread-btn {
-    width: auto;
-    padding: 0.6rem 1rem;
-    font-size: 0.9rem;
+  .filter-count {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
   }
 
   .composer {
     display: flex;
     flex-direction: column;
-    gap: var(--block-gap);
+    gap: var(--space-4);
     margin-bottom: var(--block-gap);
   }
 
   .composer-title {
     margin: 0;
-    font-size: 1.15rem;
-    font-weight: 700;
+    font-size: var(--text-lg);
+    font-weight: 600;
   }
 
   .composer-form {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-4);
   }
 
   .composer-field {
@@ -451,20 +466,15 @@
   }
 
   .composer-textarea {
-    min-height: 8rem;
-    font-family: inherit;
+    min-height: 9rem;
+    font-family: var(--font-ui);
     resize: vertical;
   }
 
   .composer-actions {
     display: flex;
-    gap: 0.75rem;
+    gap: var(--space-2);
     align-items: center;
-  }
-
-  .composer-actions .btn-primary,
-  .composer-actions .btn-ghost {
-    flex: 1 1 0;
   }
 
   .gate-notice {
@@ -485,120 +495,99 @@
     align-items: flex-start;
   }
 
-  .retry-btn {
-    width: auto;
-  }
-
+  /* Empty and error states read as text, not as illustration. */
   .forum-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 2.5rem 1.5rem;
-    text-align: center;
-  }
-
-  .forum-empty > :global(svg) {
-    color: var(--accent);
+    padding: var(--space-8) 0;
+    max-width: var(--max-width-narrow);
   }
 
   .empty-title {
-    margin: 0;
-    font-size: 1.35rem;
-    font-weight: 700;
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-lg);
+    font-weight: 600;
   }
 
   .empty-note {
-    max-width: 34rem;
-    margin: 0;
+    margin: 0 0 var(--space-3);
   }
 
   .thread-list {
+    margin-bottom: var(--block-gap);
+  }
+
+  .thread-row {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .thread-card {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 1rem 1.25rem;
-  }
-
-  .thread-card-top {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-  }
-
-  .category-badge {
-    padding: 0.15rem 0.6rem;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    border-radius: var(--radius-sm);
-    border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
-    color: var(--accent);
+    gap: var(--space-2);
   }
 
   .thread-title {
     margin: 0;
-    font-size: 1.05rem;
+    font-size: var(--text-base);
     font-weight: 600;
-    line-height: 1.35;
+    line-height: var(--leading-snug);
     color: var(--text-primary);
   }
 
   .thread-meta {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
     flex-wrap: wrap;
+    gap: 0.4rem 0.9rem;
+    margin: 0;
+    font-size: var(--text-xs);
     color: var(--text-muted);
-    font-size: 0.82rem;
+  }
+
+  /* Category label: small caps with a dot, the same treatment as the trainer
+     and the thread page. */
+  .thread-cat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .thread-cat .chip-dot {
+    background: var(--accent);
   }
 
   .callsign {
-    padding: 0.1rem 0.4rem;
-    font-family:
-      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-      monospace;
-    font-size: 0.75rem;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
-    color: var(--accent);
-  }
-
-  .thread-replies {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
   }
 
   .load-more-row {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     margin-top: var(--block-gap);
   }
 
-  .load-more-btn {
-    width: auto;
-    padding: 0.6rem 1.25rem;
+  /* Loading: rows with reserved height, so the list does not jump when the
+     threads arrive. */
+  .thread-skeleton {
+    border-top: 1px solid var(--border);
   }
 
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+  .skeleton-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: var(--space-4) var(--space-2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .skeleton-title {
+    height: 1rem;
+    width: min(28rem, 80%);
+  }
+
+  .skeleton-meta {
+    height: 0.75rem;
+    width: min(18rem, 60%);
   }
 </style>

@@ -43,15 +43,15 @@
 
   /** Desktop link cluster. Home is the brand logo, so it is not repeated here. */
   const PRIMARY_NAV = [
-    { path: '/morse/learn', label: m.nav_learn, icon: Radio },
+    { path: '/morse/learn', label: m.nav_train, icon: Radio },
     { path: '/forum', label: m.nav_forum, icon: MessageSquare },
     { path: '/about', label: m.nav_about, icon: Info }
   ];
 
   /** Pinned phone tab bar. All four slots are real destinations. */
   const TAB_NAV = [
-    { path: '/morse/learn', label: m.nav_learn, icon: Radio },
-    { path: '/profile', label: m.nav_profile, icon: LayoutDashboard },
+    { path: '/morse/learn', label: m.nav_train, icon: Radio },
+    { path: '/profile', label: m.nav_progress, icon: LayoutDashboard },
     { path: '/forum', label: m.nav_forum, icon: MessageSquare },
     { path: '/more', label: m.nav_more, icon: Ellipsis }
   ];
@@ -60,6 +60,11 @@
 
   let theme = $state<Theme>('auto');
   let ThemeIcon = $derived(themeIconFor(theme));
+  // The visible label and the accessible name must match (WCAG 2.5.3), so the
+  // button announces the same word it shows.
+  let themeLabel = $derived(
+    theme === 'auto' ? m.theme_auto() : theme === 'light' ? m.theme_light() : m.theme_dark()
+  );
   let reconciledSettingsForUser = $state<string | null>(null);
 
   const structuredDataScripts = $derived(
@@ -139,8 +144,14 @@
     return path.replace(/\/+$/, '') || '/';
   }
 
+  // Active state matches the route and everything beneath it, so a thread
+  // (/forum/<id>) keeps the Forum entry lit. The root path stays exact-match so
+  // the brand link is not flagged as current on every page.
   function isActive(path: string): boolean {
-    return stripTrailingSlash(page.url.pathname) === stripTrailingSlash(href(path));
+    const current = stripTrailingSlash(page.url.pathname);
+    const target = stripTrailingSlash(href(path));
+    if (path === '/') return current === target;
+    return current === target || current.startsWith(`${target}/`);
   }
 
   function themeIconFor(currentTheme: Theme) {
@@ -213,6 +224,7 @@
 </svelte:head>
 
 <div class="page-wrapper">
+  <a class="skip-link" href="#main-content">{m.nav_skip_to_content()}</a>
   <nav class="navbar">
     <div class="navbar-inner">
       <!-- Brand -->
@@ -224,7 +236,13 @@
         aria-current={isActive('/') ? 'page' : undefined}
       >
         <!-- The wordmark next to it already names the link. -->
-        <img src="/favicon.svg" alt="" />
+        <span class="navbar-mark" aria-hidden="true">
+          <svg width="24" height="10" viewBox="0 0 24 10" fill="none">
+            <circle cx="2" cy="5" r="2" fill="currentColor" />
+            <rect x="7.5" y="3" width="6.5" height="4" rx="1" fill="currentColor" />
+            <circle cx="20" cy="5" r="2" fill="currentColor" />
+          </svg>
+        </span>
         OpenCW
       </a>
 
@@ -240,7 +258,7 @@
         {/each}
         <div class="navbar-divider"></div>
         {#if $user}
-          <Dropdown id="user-menu">
+          <Dropdown id="user-menu" label={$user.username}>
             {#snippet trigger()}
               <User class="nav-icon" aria-hidden="true" />
               {$user.username}
@@ -262,7 +280,7 @@
             {/snippet}
           </Dropdown>
         {:else}
-          <Dropdown id="guest-menu">
+          <Dropdown id="guest-menu" label={m.nav_guest()}>
             {#snippet trigger()}
               <User class="nav-icon" aria-hidden="true" />
               {m.nav_guest()}
@@ -288,18 +306,14 @@
           onclick={cycleTheme}
           class="theme-icon-btn"
           title={m.nav_theme_cycle()}
-          aria-label={m.nav_theme_cycle()}
+          aria-label={m.nav_theme_current({ theme: themeLabel })}
         >
           <span class="nav-label-icon">
             <ThemeIcon class="nav-icon" aria-hidden="true" />
-            {theme === 'auto'
-              ? m.theme_auto()
-              : theme === 'light'
-                ? m.theme_light()
-                : m.theme_dark()}
+            {themeLabel}
           </span>
         </button>
-        <Dropdown id="lang-menu" label={m.settings_language_label()}>
+        <Dropdown id="lang-menu" label={`${m.settings_language_label()}: ${langLabel(lang.value)}`}>
           {#snippet trigger()}
             <Languages class="nav-icon" aria-hidden="true" />
             {langLabel(lang.value)}
@@ -321,7 +335,7 @@
     </div>
   </nav>
 
-  <main class="page-content">
+  <main class="page-content" id="main-content" tabindex="-1">
     {#key lang.value}
       {@render children()}
     {/key}

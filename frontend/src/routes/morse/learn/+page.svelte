@@ -1,13 +1,13 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { generateTimedLesson, LESSONS } from '$lib/morse';
+  import { calculateDuration, generateTimedLesson, LESSONS, MORSE } from '$lib/morse';
   import MorsePlayer from '$lib/components/MorsePlayer.svelte';
   import ResultOverlay from '$lib/components/ResultOverlay.svelte';
   import GuestNotice from '$lib/components/GuestNotice.svelte';
-  import { untrack, onDestroy } from 'svelte';
-  import { ClipboardCheck } from '@lucide/svelte';
+  import { tick, untrack, onDestroy } from 'svelte';
+  import { ChevronLeft, ChevronRight } from '@lucide/svelte';
   import { CW_STORAGE_KEYS, UI_STORAGE_KEYS } from '$lib/storageKeys';
-  import { langPreference } from '$lib/i18n.svelte';
+  import { langPreference, localizedHref as href } from '$lib/i18n.svelte';
   import { SCORE_GOOD, SCORE_OK, score, diffWords } from '$lib/score';
   import type { DiffToken } from '$lib/score';
   import { user } from '$lib/auth';
@@ -32,13 +32,49 @@
   let showOverlay = $state(false);
   let diffTokens = $state<DiffToken[]>([]);
   let showQuickStart = $state(false);
-  let showQuickTips = $state(false);
   let charWpm = $state(20);
   let effWpm = $state(10);
   let freq = $state(600);
   let volume = $state(1);
   let startDelay = $state(0.5);
   let autoSyncTimeout: ReturnType<typeof setTimeout> | null = null;
+  // Attempts for this visit only: the durable record lives in the progress
+  // queue and on the profile page. The strip exists so a practice session has a
+  // visible shape without touching any stored data.
+  let attempts = $state<{ accuracy: number; lesson: number }[]>([]);
+  let playing = $state(false);
+
+  // Two distinct practices share this page: drilling a single character and
+  // copying a timed passage. Only the active mode's controls are rendered, and
+  // the learner's choice is remembered between visits. A lesson the learner has
+  // not started here yet leads with the drill, so the newly introduced
+  // character is practised by ear before it turns up in a passage.
+  let mode = $state<'passage' | 'drill'>('drill');
+  let introLesson = $state<number | null>(null);
+  let modePassageEl = $state<HTMLInputElement | null>(null);
+
+  // The passage stays hidden for the whole attempt and is only shown once the
+  // copy has been checked — the listening exercise depends on not reading it.
+  let sessionStarted = $state(false);
+  let answerEl = $state<HTMLTextAreaElement | null>(null);
+  // Two-step guard: an unfinished copy is never discarded by one stray click.
+  let newExerciseArmed = $state(false);
+  let newExerciseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Character drill: familiarisation with one character. The character and its
+  // pattern stay on screen, playback plays that character, and the selector
+  // changes both.
+  let drillPlayer = $state<{
+    playNow: () => Promise<void>;
+    stopNow: () => Promise<void>;
+    isStarted: () => boolean;
+  } | null>(null);
+  let drillPlaying = $state(false);
+  let drillPlayed = $state(false);
+
+  // Character set popover.
+  let charsetOpen = $state(false);
+  let charsetEl = $state<HTMLDetailsElement | null>(null);
 
   $effect(() => {
     if (!browser) return;
@@ -56,17 +92,8 @@
 
   function dismissQuickStart() {
     showQuickStart = false;
-    showQuickTips = false;
     if (!browser) return;
     localStorage.setItem(UI_STORAGE_KEYS.quickstartDismissed, '1');
-  }
-
-  function openQuickTips() {
-    showQuickTips = true;
-  }
-
-  function closeQuickTips() {
-    showQuickTips = false;
   }
 
   $effect(() => {
@@ -84,15 +111,28 @@
       });
   });
 
-  // Restore the last used lesson. This is a `pre` effect so it runs before the
-  // persistence effect below can overwrite the stored value with the default.
+  // Restore the last used lesson and practice mode. This is a `pre` effect so it
+  // runs before the persistence effects below can overwrite the stored values
+  // with their defaults. It reads no reactive state: a lesson change later in
+  // the session must never be stamped back to the stored one.
   $effect.pre(() => {
     if (!browser) return;
 
     const stored = localStorage.getItem(CW_STORAGE_KEYS.lesson);
     const parsed = Number.parseInt(stored ?? '', 10);
-    if (Number.isFinite(parsed)) {
-      chosenLesson = normalizeLesson(parsed, LESSONS.length);
+    const lesson = Number.isFinite(parsed) ? normalizeLesson(parsed, LESSONS.length) : 1;
+    chosenLesson = lesson;
+
+    // Coming back to a lesson that already ran the introduction restores the
+    // mode the learner left, instead of walking them through it again.
+    const storedMode = localStorage.getItem(UI_STORAGE_KEYS.trainerMode);
+    const storedIntro = Number.parseInt(
+      localStorage.getItem(UI_STORAGE_KEYS.trainerIntroLesson) ?? '',
+      10
+    );
+    if (Number.isFinite(storedIntro)) introLesson = storedIntro;
+    if ((storedMode === 'passage' || storedMode === 'drill') && storedIntro === lesson) {
+      mode = storedMode;
     }
   });
 
@@ -101,16 +141,39 @@
     localStorage.setItem(CW_STORAGE_KEYS.lesson, val);
   });
 
+  // The mode switch is a preference, not a per-session choice.
+  $effect(() => {
+    if (!browser) return;
+    localStorage.setItem(UI_STORAGE_KEYS.trainerMode, mode);
+  });
+
+  // The drill leads until the introduction has been seen for this lesson. The
+  // learner can still switch at any time — this only decides where a lesson
+  // starts, and it never runs twice for the same one.
+  $effect(() => {
+    if (!browser) return;
+    const lesson = normalizeLesson(chosenLesson, LESSONS.length);
+    if (introLesson === lesson) return;
+    introLesson = lesson;
+    localStorage.setItem(UI_STORAGE_KEYS.trainerIntroLesson, String(lesson));
+    mode = 'drill';
+  });
+
   let lessonText = $derived(generateTimedLesson(chosenLesson, 60, charWpm, effWpm));
   let currentLessonWord = $derived(LESSONS.slice(0, chosenLesson).join(''));
   let currentLessonChars = $derived(currentLessonWord.split('').filter(Boolean));
-  let selectedLessonChar = $state(LESSONS[0]?.[0] ?? '');
+  // Drill target: the newest character the lesson introduces. Lesson 1's
+  // sequence ends with M, so that is where the default lands; the lesson effect
+  // below keeps it right for every other lesson.
+  let selectedLessonChar = $state((LESSONS[0] ?? '').slice(-1));
   let fullLessonPlayer = $state<{
     playNow: () => Promise<void>;
     stopNow: () => Promise<void>;
     isStarted: () => boolean;
   } | null>(null);
   function regenerate() {
+    // A fresh passage never plays under the previous one.
+    if (playing) void stopPlayback();
     lessonText = generateTimedLesson(chosenLesson, 60, charWpm, effWpm);
     resetResultState({ clearInput: true });
   }
@@ -119,6 +182,13 @@
     result = score(lessonText, inputText);
     diffTokens = diffWords(lessonText, inputText);
     showOverlay = true;
+    // Checking ends the attempt: stop the audio so the transport matches the
+    // "Checked" state instead of running on behind the result.
+    if (playing) void stopPlayback();
+    // A pending discard stops being pending once the copy has been checked.
+    newExerciseArmed = false;
+    if (newExerciseTimer) clearTimeout(newExerciseTimer);
+    attempts = [...attempts, { accuracy: result, lesson: chosenLesson }].slice(-20);
     if (result > 0) {
       saveProgressOfflineFirst({
         lesson: chosenLesson,
@@ -131,7 +201,112 @@
 
   let hasNextLesson = $derived(result >= SCORE_GOOD && chosenLesson < LESSONS.length);
   let hasPrevLesson = $derived(result < SCORE_OK && chosenLesson > 1);
-  let shouldRegenerate = $derived(result >= SCORE_OK && result < SCORE_GOOD);
+
+  let attemptCount = $derived(attempts.length);
+  let bestAttempt = $derived(attempts.reduce((best, a) => Math.max(best, a.accuracy), 0));
+  let averageAttempt = $derived(
+    attempts.length === 0 ? 0 : attempts.reduce((sum, a) => sum + a.accuracy, 0) / attempts.length
+  );
+  // Set composition, used by the lesson card and the character-set popover.
+  const isLetter = (char: string) => /[A-Z]/.test(char);
+  const isNumber = (char: string) => /[0-9]/.test(char);
+
+  let letterChars = $derived(currentLessonChars.filter(isLetter));
+  let numberChars = $derived(currentLessonChars.filter(isNumber));
+  let symbolChars = $derived(
+    currentLessonChars.filter((char) => !isLetter(char) && !isNumber(char))
+  );
+  // Fixed-height set preview: the first eight characters plus a remainder count,
+  // so the lesson card is the same height at lesson 1 and lesson 39.
+  let latestChars = $derived(currentLessonChars.slice(-7));
+  let learnedLabel = $derived(
+    currentLessonChars.length === 1
+      ? m.trainer_set_learned_one()
+      : m.trainer_set_learned({ count: String(currentLessonChars.length) })
+  );
+  let lessonKindLabel = $derived(
+    numberChars.length + symbolChars.length > 0
+      ? m.trainer_lesson_mixed()
+      : m.trainer_lesson_letters()
+  );
+  let drillMorse = $derived(
+    (MORSE[selectedLessonChar] ?? '')
+      .split('')
+      .map((symbol) => (symbol === '.' ? '·' : '−'))
+      .join('')
+  );
+
+  // The five steps of a copy session, with the current one marked.
+  let flowSteps = $derived([
+    { index: 0, label: m.trainer_flow_start },
+    { index: 1, label: m.trainer_flow_listen },
+    { index: 2, label: m.trainer_flow_type },
+    { index: 3, label: m.trainer_flow_check },
+    { index: 4, label: m.trainer_flow_review }
+  ]);
+  let flowIndex = $derived(
+    !sessionStarted ? 0 : playing ? 1 : result >= 0 ? 4 : inputText.trim() === '' ? 2 : 3
+  );
+
+  // The send time the player will actually run for: the generator's 60 s target
+  // is only approximate, so the header quotes the same clock the transport does.
+  // Floored, not rounded, so both readouts agree to the second.
+  let sendSeconds = $derived(Math.floor(calculateDuration(lessonText, charWpm, effWpm)));
+
+  function clock(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    const rest = (seconds % 60).toString().padStart(2, '0');
+    return `${minutes}:${rest}`;
+  }
+
+  // One line per state, naming what to do next.
+  let sessionStateText = $derived(
+    result >= 0
+      ? m.trainer_state_checked()
+      : playing
+        ? m.trainer_state_listening()
+        : !sessionStarted
+          ? m.trainer_state_ready()
+          : inputText.trim() !== ''
+            ? m.trainer_state_ready_check()
+            : m.trainer_state_idle()
+  );
+
+  let newExerciseLabel = $derived(
+    newExerciseArmed ? m.trainer_new_exercise_confirm() : m.trainer_try_again()
+  );
+
+  /**
+   * New exercise is destructive once a copy has been typed: the first click
+   * arms it, the second one discards. With an empty box it acts immediately.
+   */
+  function requestNewExercise() {
+    // Unfinished work — a typed copy, or a session already under way — asks
+    // first. A fresh, untouched exercise is replaced straight away.
+    const unfinished = result < 0 && (inputText.trim() !== '' || sessionStarted);
+    if (newExerciseTimer) clearTimeout(newExerciseTimer);
+
+    if (!newExerciseArmed && !unfinished) {
+      regenerate();
+      return;
+    }
+
+    if (newExerciseArmed) {
+      newExerciseArmed = false;
+      regenerate();
+      return;
+    }
+
+    newExerciseArmed = true;
+    newExerciseTimer = setTimeout(() => (newExerciseArmed = false), 4000);
+  }
+  // Only the action that is next uses the amber fill: while the audio runs the
+  // transport owns it, then the check does — until the copy has been checked.
+  let isCheckPrimary = $derived(inputText.trim() !== '' && !playing && result < 0);
+
+  function pct(value: number): string {
+    return `${Math.round(value * 100)}%`;
+  }
 
   function prevLesson() {
     chosenLesson -= 1;
@@ -153,6 +328,8 @@
     result = -1;
     diffTokens = [];
     showOverlay = false;
+    // A new exercise starts hidden again: no transcript, locked answer box.
+    sessionStarted = false;
   }
 
   function onLessonSelectChange() {
@@ -184,183 +361,504 @@
     }
   }
 
+  // The lesson decides the default target: the newest character it introduces.
+  // Changing lesson updates it and stops whatever was playing.
   $effect(() => {
-    const char = LESSONS[chosenLesson - 1] ?? '';
     const chars = currentLessonChars;
     untrack(() => {
-      if (char) selectedLessonChar = char;
-      if (chars.length === 0) {
-        selectedLessonChar = '';
-      } else if (!chars.includes(selectedLessonChar)) {
-        selectedLessonChar = chars[0];
-      }
+      selectedLessonChar = chars.length === 0 ? '' : chars[chars.length - 1];
+      // A new target starts fresh: back to "Play" from "Replay".
+      drillPlayed = false;
+      if (drillPlaying) void stopDrill();
     });
   });
 
-  function onSelectedCharChange(event: Event) {
-    selectedLessonChar = (event.currentTarget as HTMLSelectElement).value;
-  }
+  // The character-set popover behaves like the app's other floating panels:
+  // Escape and outside clicks close it, and focus returns to its trigger.
+  $effect(() => {
+    if (!charsetOpen) return;
 
-  async function onAnswerInput(event: Event) {
-    const value = (event.currentTarget as HTMLTextAreaElement).value;
-
-    // Intercept a lone space to start the player
-    if (value === ' ' && !fullLessonPlayer?.isStarted()) {
-      inputText = '';
-      (event.currentTarget as HTMLTextAreaElement).value = '';
-      await fullLessonPlayer?.playNow();
-      return;
+    function onDocumentClick(event: MouseEvent) {
+      const target = event.target;
+      if (charsetEl && target instanceof Node && !charsetEl.contains(target)) {
+        charsetOpen = false;
+      }
     }
 
+    function onDocumentKeydown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      charsetOpen = false;
+      charsetEl?.querySelector('summary')?.focus();
+    }
+
+    document.addEventListener('click', onDocumentClick);
+    document.addEventListener('keydown', onDocumentKeydown);
+    return () => {
+      document.removeEventListener('click', onDocumentClick);
+      document.removeEventListener('keydown', onDocumentKeydown);
+    };
+  });
+
+  function onAnswerInput(event: Event) {
+    const value = (event.currentTarget as HTMLTextAreaElement).value;
     inputText = value.toUpperCase();
   }
 
-  async function onAnswerKeydown(event: KeyboardEvent) {
-    if (event.code !== 'Space' || inputText.trim() !== '' || fullLessonPlayer?.isStarted()) return;
-    event.preventDefault();
-    await fullLessonPlayer?.playNow();
+  /** Playback started, whichever control started it (button, Space, replay). */
+  function onSessionStart() {
+    sessionStarted = true;
+    playing = true;
   }
+
+  async function playSession() {
+    if (!fullLessonPlayer || fullLessonPlayer.isStarted()) return;
+    await fullLessonPlayer.playNow();
+    // The flow is start → listen → type, so the cursor lands where the next step
+    // happens once the audio is running.
+    answerEl?.focus();
+  }
+
+  async function stopPlayback() {
+    await fullLessonPlayer?.stopNow();
+    playing = false;
+  }
+
+  // ---- Character drill ------------------------------------------------------
+
+  /** Playback started from any trigger; the label flips to Replay afterwards. */
+  function onDrillStart() {
+    drillPlaying = true;
+    drillPlayed = true;
+  }
+
+  async function playDrill() {
+    if (!drillPlayer || drillPlayer.isStarted()) return;
+    await drillPlayer.playNow();
+  }
+
+  async function stopDrill() {
+    await drillPlayer?.stopNow();
+    drillPlaying = false;
+  }
+
+  /** Another character is a new target: the old audio stops, the display follows. */
+  function onDrillTargetChange(event: Event) {
+    const target = (event.currentTarget as HTMLSelectElement).value;
+    if (drillPlaying) void stopDrill();
+    selectedLessonChar = target;
+    drillPlayed = false;
+  }
+
+  /** The drill is an introduction: it hands over to the real copying exercise. */
+  async function goToPassage() {
+    mode = 'passage';
+    // Focus follows the switch, so keyboard users land on the new mode.
+    await tick();
+    modePassageEl?.focus();
+  }
+
+  function onAnswerKeydown(event: KeyboardEvent) {
+    // Enter checks the copy. Shift+Enter keeps the line-break behaviour for
+    // anyone who formats their answer across lines. Space is deliberately left
+    // alone here: in this field it types a space, and the start/replay shortcut
+    // is the page-level one that runs while focus is outside a control.
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      if (inputText.trim() !== '') checkResult();
+    }
+  }
+
+  // Session shortcuts, live only while focus is outside a control: Space starts
+  // the transmission, Escape stops it. Inside the answer box the textarea's own
+  // handlers take precedence, so typing is never intercepted.
+  $effect(() => {
+    if (!browser) return;
+
+    function onKeydown(event: KeyboardEvent) {
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        target.closest('input, textarea, select, button, summary, a')
+      ) {
+        return;
+      }
+      if (event.code === 'Space') {
+        event.preventDefault();
+        if (mode === 'drill') void playDrill();
+        else void playSession();
+      } else if (event.key === 'Escape') {
+        if (mode === 'drill') {
+          if (drillPlaying) void stopDrill();
+        } else if (playing) {
+          void stopPlayback();
+        }
+      }
+    }
+
+    document.addEventListener('keydown', onKeydown);
+    return () => document.removeEventListener('keydown', onKeydown);
+  });
 
   onDestroy(() => {
     if (autoSyncTimeout) clearTimeout(autoSyncTimeout);
+    if (newExerciseTimer) clearTimeout(newExerciseTimer);
   });
 </script>
 
-<!-- Full-width heading -->
-<header class="learn-heading">
+<header class="workspace-heading">
+  <p class="eyebrow">{m.trainer_eyebrow()}</p>
   <h1 class="page-title">{m.trainer_title()}</h1>
 </header>
 
 {#if showQuickStart}
-  <section class="card-sm quickstart-card" aria-label={m.trainer_quickstart_aria()}>
-    <h2 class="quickstart-title">{m.trainer_quickstart_title()}</h2>
-    <ol class="quickstart-steps">
-      <li>{m.trainer_quickstart_step1()}</li>
-      <li>{m.trainer_quickstart_step2()}</li>
-      <li>{m.trainer_quickstart_step3()}</li>
-    </ol>
-    <div class="quickstart-actions">
-      <button type="button" class="btn-success quickstart-btn" onclick={dismissQuickStart}
-        >{m.trainer_quickstart_start()}</button
-      >
-      <button type="button" class="btn-ghost quickstart-btn" onclick={openQuickTips}
-        >{m.trainer_quickstart_tips()}</button
-      >
+  <section class="quickstart" aria-labelledby="quickstart-title">
+    <div class="quickstart-body">
+      <h2 id="quickstart-title" class="quickstart-title">{m.trainer_quickstart_title()}</h2>
+      <ol class="quickstart-steps">
+        <li>{m.trainer_quickstart_step1()}</li>
+        <li>{m.trainer_quickstart_step2()}</li>
+        <li>{m.trainer_quickstart_step3()}</li>
+      </ol>
+      <details class="quickstart-tips">
+        <summary>{m.trainer_quickstart_tips()}</summary>
+        <ul>
+          <li>{m.trainer_quickstart_tip1()}</li>
+          <li>{m.trainer_quickstart_tip2()}</li>
+          <li>{m.trainer_quickstart_tip3()}</li>
+        </ul>
+      </details>
     </div>
-
-    {#if showQuickTips}
-      <div class="quickstart-modal-backdrop" role="presentation" onclick={closeQuickTips}>
-        <div
-          class="quickstart-modal card-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-label={m.trainer_quickstart_tips_title()}
-          tabindex="-1"
-          onclick={(event) => event.stopPropagation()}
-          onkeydown={(event) => {
-            if (event.key === 'Escape') closeQuickTips();
-          }}
-        >
-          <h3 class="quickstart-modal-title">{m.trainer_quickstart_tips_title()}</h3>
-          <ul class="quickstart-modal-list">
-            <li>{m.trainer_quickstart_tip1()}</li>
-            <li>{m.trainer_quickstart_tip2()}</li>
-            <li>{m.trainer_quickstart_tip3()}</li>
-            {#if !$user}
-              <li><GuestNotice /></li>
-            {/if}
-          </ul>
-          <div class="quickstart-actions">
-            <button type="button" class="btn-ghost quickstart-btn" onclick={closeQuickTips}
-              >{m.trainer_quickstart_close()}</button
-            >
-          </div>
-        </div>
-      </div>
-    {/if}
+    <button type="button" class="btn-ghost" onclick={dismissQuickStart}
+      >{m.trainer_quickstart_start()}</button
+    >
   </section>
 {/if}
 
-<div class="learn-page">
-  <!-- Left column: one tool panel — lesson select, then character select. -->
-  <div class="learn-col-left">
-    <section
-      class="panel trainer-panel"
-      class:lesson-char-highlight={showQuickStart && chosenLesson === 1}
-    >
-      <h2 class="card-title">{m.trainer_label_lesson()}</h2>
-      <div class="lesson-row">
-        <p class="lesson-current-label">{m.trainer_current_lesson()}</p>
-        <select bind:value={chosenLesson} onchange={onLessonSelectChange} class="select">
+<div class="workspace">
+  <!-- Side: what is being practised and how this visit is going. One panel:
+       sections are separated by rules, not stacked cards. -->
+  <aside class="workspace-side">
+    <section class="panel side-panel" aria-labelledby="lesson-panel-title">
+      <h2 id="lesson-panel-title" class="card-title">{m.trainer_label_lesson()}</h2>
+      <div class="lesson-nav">
+        <button
+          type="button"
+          class="btn-icon"
+          onclick={prevLesson}
+          disabled={chosenLesson <= 1}
+          aria-label={m.trainer_lesson_prev()}
+          title={m.trainer_lesson_prev()}
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <select
+          bind:value={chosenLesson}
+          onchange={onLessonSelectChange}
+          class="select lesson-select"
+          aria-label={m.trainer_current_lesson()}
+        >
           {#each LESSONS as lesson, index (index)}
             <option value={index + 1}>{index + 1} — {lesson.split('').join(', ')}</option>
           {/each}
         </select>
-      </div>
-
-      <hr class="trainer-divider" />
-
-      <h2 class="card-title">{m.trainer_label_current_chars()}</h2>
-      <div class="lesson-char-row">
-        <p class="lesson-char-preview">{m.trainer_choose_letter()}</p>
-        <select
-          bind:value={selectedLessonChar}
-          onchange={onSelectedCharChange}
-          class="select lesson-char-select"
+        <button
+          type="button"
+          class="btn-icon"
+          onclick={nextLesson}
+          disabled={chosenLesson >= LESSONS.length}
+          aria-label={m.trainer_lesson_next()}
+          title={m.trainer_lesson_next()}
         >
-          {#each currentLessonChars as char (char)}
-            <option value={char}>{char}</option>
-          {/each}
-        </select>
+          <ChevronRight size={16} />
+        </button>
       </div>
-      <MorsePlayer
-        text={Array(5).fill(selectedLessonChar).join('')}
-        {charWpm}
-        {effWpm}
-        {freq}
-        {volume}
-        compact
-        showSettings
-        mediaStyle
-        onSettingsInput={onCwSettingInput}
-        playLabel={currentLessonChars.length > 1
-          ? m.trainer_play_char({ char: selectedLessonChar })
-          : m.trainer_play_letter()}
-      />
-    </section>
-  </div>
 
-  <!-- Right column: answer + result. Both columns are peer tool surfaces, so
-       they share one primitive and therefore one padding. -->
-  <div class="learn-col-right">
-    <div class="panel learn-answer-card">
-      <MorsePlayer
-        bind:this={fullLessonPlayer}
-        text={lessonText}
-        {charWpm}
-        {effWpm}
-        {freq}
-        {volume}
-        {startDelay}
-        showSettings
-        mediaStyle
-        onSettingsInput={onCwSettingInput}
-        label={m.player_label()}
-      />
-      <textarea
-        placeholder={`${m.trainer_answer_placeholder()}\n${m.trainer_answer_shortcut_tip()}`}
-        bind:value={inputText}
-        oninput={onAnswerInput}
-        onkeydown={onAnswerKeydown}
-        autocapitalize="characters"
-        autocomplete="off"
-        autocorrect="off"
-        spellcheck="false"
-        class="textarea learn-answer-textarea"></textarea>
-      <button onclick={checkResult} class="btn-primary"
-        ><ClipboardCheck size={16} />{m.trainer_check()}</button
-      >
-    </div>
+      <!-- Fixed-height set summary: one line per fact, so the card is the same
+           height at every lesson. The full set appears on request only. -->
+      <div class="lesson-summary">
+        <p class="lesson-summary-learned">{learnedLabel}</p>
+        <p class="lesson-summary-latest">
+          {m.trainer_set_latest({ chars: latestChars.join(', ') })}
+        </p>
+      </div>
+
+      <details class="charset" bind:this={charsetEl} bind:open={charsetOpen}>
+        <summary class="charset-toggle">{m.trainer_view_set()}</summary>
+        <div class="charset-popover">
+          <p class="panel-label">{m.trainer_set_title()}</p>
+          {#if letterChars.length > 0}
+            <div class="charset-group">
+              <span class="charset-group-label"
+                >{m.trainer_set_letters()} · {letterChars.length}</span
+              >
+              <span class="charset-group-value">{letterChars.join(' ')}</span>
+            </div>
+          {/if}
+          {#if numberChars.length > 0}
+            <div class="charset-group">
+              <span class="charset-group-label"
+                >{m.trainer_set_numbers()} · {numberChars.length}</span
+              >
+              <span class="charset-group-value">{numberChars.join(' ')}</span>
+            </div>
+          {/if}
+          {#if symbolChars.length > 0}
+            <div class="charset-group">
+              <span class="charset-group-label"
+                >{m.trainer_set_symbols()} · {symbolChars.length}</span
+              >
+              <span class="charset-group-value">{symbolChars.join(' ')}</span>
+            </div>
+          {/if}
+          <p class="charset-latest">{m.trainer_set_latest({ chars: latestChars.join(' ') })}</p>
+        </div>
+      </details>
+
+      <hr class="side-divider" />
+
+      <!-- Only the passage produces results, so the drill keeps this section
+           out of the way unless there is something to see from a copy. -->
+      {#if mode === 'passage' || attemptCount > 0}
+        <h3 class="panel-label">{m.trainer_session_title()}</h3>
+        {#if attemptCount === 0}
+          <p class="side-note">{m.trainer_session_empty()}</p>
+        {:else}
+          <div class="session-metrics">
+            <div class="metric">
+              <span class="metric-label">{m.trainer_metric_attempts()}</span>
+              <span class="metric-value">{attemptCount}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">{m.trainer_metric_best()}</span>
+              <span class="metric-value">{pct(bestAttempt)}</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">{m.trainer_metric_average()}</span>
+              <span class="metric-value">{pct(averageAttempt)}</span>
+            </div>
+          </div>
+        {/if}
+      {/if}
+      {#if !$user}
+        <GuestNotice class="side-note" />
+      {/if}
+      <a class="session-link" href={href('/profile')}>{m.trainer_session_link()}</a>
+    </section>
+  </aside>
+
+  <div class="workspace-main">
+    <section class="panel console">
+      <!-- Compact header: lesson and settings only. The character set lives in
+           the lesson card, never as raw metadata here. -->
+      <div class="console-head">
+        <p class="console-title">
+          {m.trainer_lesson_summary({
+            lesson: String(chosenLesson),
+            kind: lessonKindLabel
+          })}
+        </p>
+        <p class="console-meta">
+          {#if mode === 'passage'}
+            {m.trainer_summary_meta({
+              count: String(currentLessonChars.length),
+              speed: `${charWpm}/${effWpm}`,
+              hz: String(freq),
+              time: clock(sendSeconds)
+            })}
+          {:else}
+            {m.trainer_summary_meta_drill({
+              count: String(currentLessonChars.length),
+              speed: `${charWpm}/${effWpm}`,
+              hz: String(freq)
+            })}
+          {/if}
+        </p>
+      </div>
+
+      <!-- Mode switch: exactly one practice is on screen at a time. The drill
+           leads, because the newest character is practised by ear first. -->
+      <fieldset class="mode-switch">
+        <legend class="sr-only">{m.trainer_mode_legend()}</legend>
+        <label class="mode-option">
+          <input type="radio" name="practice-mode" value="drill" bind:group={mode} />
+          <span>{m.trainer_mode_drill()}</span>
+        </label>
+        <label class="mode-option">
+          <input
+            type="radio"
+            name="practice-mode"
+            value="passage"
+            bind:this={modePassageEl}
+            bind:group={mode}
+          />
+          <span>{m.trainer_mode_passage()}</span>
+        </label>
+      </fieldset>
+
+      {#if mode === 'passage'}
+        <ol class="flow" aria-label={m.trainer_flow_legend()}>
+          {#each flowSteps as step, index (step.index)}
+            <li
+              class="flow-step"
+              class:is-current={index === flowIndex}
+              class:is-done={index < flowIndex}
+              aria-current={index === flowIndex ? 'step' : undefined}
+            >
+              <span class="sr-only">{m.trainer_flow_step({ step: String(index + 1) })}:</span>
+              <span class="flow-dot" aria-hidden="true"></span>{step.label()}
+            </li>
+          {/each}
+        </ol>
+
+        <MorsePlayer
+          bind:this={fullLessonPlayer}
+          text={lessonText}
+          {charWpm}
+          {effWpm}
+          {freq}
+          {volume}
+          {startDelay}
+          showSettings
+          mediaStyle
+          playTone={sessionStarted && !playing ? 'quiet' : 'primary'}
+          showTransportExtras={playing}
+          onStart={onSessionStart}
+          onSettingsInput={onCwSettingInput}
+          onEnded={() => (playing = false)}
+          playLabel={sessionStarted ? m.trainer_replay() : m.player_play()}
+          label={m.player_label()}
+        />
+
+        <div class="answer-block">
+          <!-- The passage belongs to the review: it appears once the copy has
+               been checked, and never during copy practice. -->
+          {#if result >= 0}
+            <div class="transcript">
+              <p class="transcript-head">
+                <span class="panel-label">{m.trainer_source_label()}</span>
+              </p>
+              <p class="transcript-text">{lessonText}</p>
+            </div>
+          {/if}
+
+          <label class="field answer-field">
+            <span class="label-text">{m.trainer_answer_label()}</span>
+            <textarea
+              bind:this={answerEl}
+              placeholder={m.trainer_answer_placeholder()}
+              bind:value={inputText}
+              oninput={onAnswerInput}
+              onkeydown={onAnswerKeydown}
+              autocapitalize="characters"
+              autocomplete="off"
+              autocorrect="off"
+              spellcheck="false"
+              disabled={!sessionStarted}
+              class="textarea learn-answer-textarea"
+              class:is-active={sessionStarted}></textarea>
+          </label>
+
+          <p class="session-state" aria-live="polite">{sessionStateText}</p>
+
+          {#if !showOverlay && result >= 0}
+            <p class="result-line" aria-live="polite">
+              {m.trainer_result_last({ percent: pct(result) })}
+              <button
+                type="button"
+                class="quiet-btn quiet-btn--accent"
+                onclick={() => (showOverlay = true)}>{m.trainer_result_review()}</button
+              >
+            </p>
+          {/if}
+
+          <p class="key-hints">
+            {#if !sessionStarted}
+              <span class="key-hint"><kbd>Space</kbd> {m.trainer_hint_start()}</span>
+            {:else if !playing}
+              <span class="key-hint"><kbd>Space</kbd> {m.trainer_hint_play()}</span>
+            {/if}
+            <span class="key-hint"><kbd>Enter</kbd> {m.trainer_hint_check()}</span>
+            <span class="key-hint"><kbd>Esc</kbd> {m.trainer_hint_stop()}</span>
+          </p>
+
+          <div class="console-actions">
+            <button
+              class={isCheckPrimary ? 'btn-primary console-check' : 'btn-ghost console-check'}
+              onclick={checkResult}
+              disabled={inputText.trim() === ''}>{m.trainer_check()}</button
+            >
+            <button
+              class="btn-ghost console-new"
+              class:is-armed={newExerciseArmed}
+              onclick={requestNewExercise}>{newExerciseLabel}</button
+            >
+          </div>
+        </div>
+      {:else}
+        <div class="drill">
+          <p class="panel-label">{m.trainer_drill_label()}</p>
+
+          <!-- Familiarisation: the selected character is the reference, so it
+               stays on screen. Playback always plays it, and the selector
+               changes it. -->
+          <p class="drill-char">
+            <span class="drill-char-value">{selectedLessonChar}</span>
+            {#if drillMorse}
+              <span class="drill-morse"
+                ><span class="sr-only">{m.trainer_drill_morse()}: </span>{drillMorse}</span
+              >
+            {/if}
+          </p>
+
+          <!-- Secondary action: practise another character from this lesson. -->
+          <label class="field drill-picker-field">
+            <span class="label-text">{m.trainer_choose_letter()}</span>
+            <select
+              class="select drill-picker"
+              value={selectedLessonChar}
+              onchange={onDrillTargetChange}
+            >
+              {#each currentLessonChars as char (char)}
+                <option value={char}>{char}</option>
+              {/each}
+            </select>
+          </label>
+
+          <MorsePlayer
+            bind:this={drillPlayer}
+            text={Array(5).fill(selectedLessonChar).join('')}
+            {charWpm}
+            {effWpm}
+            {freq}
+            {volume}
+            {startDelay}
+            compact
+            showSettings
+            mediaStyle
+            showTransportExtras={false}
+            onStart={onDrillStart}
+            onSettingsInput={onCwSettingInput}
+            onEnded={() => (drillPlaying = false)}
+            playTone={drillPlayed && !drillPlaying ? 'quiet' : 'primary'}
+            playLabel={drillPlayed ? m.trainer_replay() : m.trainer_drill_play()}
+            label={m.trainer_drill_audio()}
+          />
+
+          <p class="drill-focus">{m.trainer_drill_focus()}</p>
+
+          <!-- The way into the real copying exercise. It is never a gate: the
+               mode switch above works at any time, and once the character has
+               been played this is the advised next step. -->
+          <div class="drill-actions">
+            <button
+              class={drillPlayed ? 'btn-primary drill-cta' : 'btn-ghost drill-cta'}
+              onclick={goToPassage}>{m.trainer_drill_cta()}</button
+            >
+          </div>
+        </div>
+      {/if}
+    </section>
   </div>
 </div>
 
@@ -368,9 +866,10 @@
   <ResultOverlay
     {result}
     {diffTokens}
+    lessonNum={chosenLesson}
+    sourceText={lessonText}
     {hasNextLesson}
     {hasPrevLesson}
-    {shouldRegenerate}
     nextLessonNum={chosenLesson + 1}
     prevLessonNum={chosenLesson - 1}
     onClose={() => (showOverlay = false)}
@@ -381,215 +880,589 @@
 {/if}
 
 <style>
-  .learn-page {
-    display: flex;
-    flex-direction: column;
-    gap: var(--block-gap);
-    min-width: 0;
-  }
-
-  .learn-col-left,
-  .learn-col-right {
-    display: flex;
-    flex-direction: column;
-    gap: var(--block-gap);
-    min-width: 0;
-  }
-
-  .learn-heading {
+  .workspace-heading {
     margin-bottom: var(--block-gap);
   }
 
-  .trainer-panel {
+  /* Workspace: side rail for what is being practised, console for the practice
+     itself. One column until there is room for both. */
+  .workspace {
     display: flex;
     flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
   }
 
-  .trainer-divider {
+  .workspace-side,
+  .workspace-main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  /* The rail is secondary by construction: no surface, no border — the practice
+     panel is the only raised card in the workspace. */
+  .side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  .side-panel :global(.card-title) {
+    margin: 0;
+  }
+
+  /* One label scale for both panels: the sidebar's section labels and the
+     practice panel's field labels read as the same voice. */
+  .panel-label {
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .side-divider {
     width: 100%;
     border: none;
     border-top: 1px solid var(--border);
-    margin: var(--block-gap) 0;
+    margin: 0;
   }
 
-  .learn-answer-card {
+  .console {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--space-4);
   }
 
-  .learn-answer-card :global(.card-title) {
-    margin-bottom: 0;
+  /* Header: lesson + settings summary over a hairline — instrument chrome. */
+  .console-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border);
   }
 
-  /* Onboarding hint: flat like every other surface, with an accent edge to mark
-     it as the transient one. Gradients are not part of the card system. */
-  .quickstart-card {
-    margin-bottom: var(--block-gap);
-    border-color: color-mix(in srgb, var(--accent) 32%, var(--border-card));
-  }
-
-  .quickstart-title {
+  .console-title {
     margin: 0;
-    color: var(--text-primary);
     font-size: var(--text-base);
-    line-height: var(--leading-snug);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .console-meta {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+  }
+
+  /* Mode switch: native radios dressed as two quiet options. The checked one is
+     amber, so the current mode reads without a filled control. */
+  .mode-switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  .mode-option input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  .mode-option span {
+    display: inline-flex;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border-control);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .mode-option input:checked + span {
+    border-color: var(--accent);
+    color: var(--accent);
     font-weight: 600;
   }
 
-  .quickstart-steps {
-    margin: 0.75rem 0 0;
-    padding-left: 1.25rem;
+  .mode-option input:focus-visible + span {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Flow: the five steps, current one in amber text (never a filled control). */
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+
+  /* Progress dots, not controls: filled = done, filled amber = current, ringed
+     = still to come. The labels stay plain text so nothing looks clickable. */
+  .flow-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .flow-step.is-done {
     color: var(--text-secondary);
+  }
+
+  .flow-step.is-current {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .flow-dot {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border: 1px solid var(--border-control);
+    border-radius: 50%;
+  }
+
+  .flow-step.is-done .flow-dot {
+    background: var(--text-muted);
+    border-color: var(--text-muted);
+  }
+
+  .flow-step.is-current .flow-dot {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .console-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .console-check {
+    flex: 1 1 12rem;
+  }
+
+  /* Armed state of the two-step New exercise control. */
+  .console-new.is-armed {
+    border-color: color-mix(in srgb, var(--danger) 55%, var(--border-control));
+    color: var(--danger);
+  }
+
+  .answer-field {
+    gap: var(--space-2);
+  }
+
+  .learn-answer-textarea {
+    min-height: 4.5rem;
+    font-size: var(--text-base);
+    letter-spacing: 0.08em;
+    line-height: 1.5;
+  }
+
+  /* The box grows with the exercise: small until there is something to type. */
+  .learn-answer-textarea.is-active {
+    min-height: 10rem;
+  }
+
+  /* Before the session starts the box is visibly a later step, not a broken one. */
+  .learn-answer-textarea:disabled {
+    background-color: var(--bg-inset);
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  /* Session state: the one line that says what to do next. */
+  .session-state {
+    margin: 0;
+    min-height: 1.35rem;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+
+  /* Shortcuts are reference material: the quietest text on the panel. */
+  .key-hints {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    margin: 0;
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+  }
+
+  .key-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .key-hints kbd {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    padding: 0.05rem 0.3rem;
+    border: 1px solid var(--border-subtle);
+    border-bottom-width: 2px;
+    border-radius: var(--radius-xs);
+    color: var(--text-secondary);
+    background: var(--bg-inset);
+  }
+
+  /* Only rendered when there is a result to report: the card ends at its
+     action row, not at an empty placeholder. */
+  .result-line {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+
+  .answer-block {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: var(--space-3);
+    min-width: 0;
   }
 
-  .quickstart-actions {
-    margin-top: 0.9rem;
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .quickstart-btn {
-    flex: 0 0 auto;
-    width: auto;
-    padding-inline: 1rem;
-  }
-
-  .quickstart-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    display: grid;
-    place-items: center;
-    padding: 1rem;
-    background: rgba(3, 7, 18, 0.62);
-    backdrop-filter: blur(2px);
-  }
-
-  .quickstart-modal {
-    width: min(26rem, calc(100vw - 2rem));
-    border-color: color-mix(in srgb, var(--accent) 26%, var(--border-card));
-    box-shadow: var(--shadow-overlay);
-  }
-
-  .quickstart-modal-title {
-    margin: 0;
-    color: var(--accent);
-    font-size: 0.95rem;
-  }
-
-  .quickstart-modal-list {
-    margin: 0.65rem 0 0;
-    padding-left: 1.1rem;
-    color: var(--text-secondary);
+  .transcript {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
   }
 
-  .lesson-row {
+  .transcript-head {
     display: flex;
-    align-items: center;
     flex-wrap: wrap;
-    gap: 0.6rem;
+    align-items: baseline;
+    gap: 0.35rem var(--space-3);
+    margin: 0;
   }
 
-  .lesson-current-label {
+  /* The passage, once the copy has been checked. A quote rule, not a nested
+     box. */
+  .transcript-text {
     margin: 0;
-    color: var(--text-secondary);
-    font-weight: 600;
+    padding-left: var(--space-3);
+    border-left: 2px solid var(--border);
+    font-family: var(--font-mono);
     font-size: var(--text-sm);
-    line-height: var(--leading-snug);
-    white-space: nowrap;
+    line-height: 1.7;
+    letter-spacing: 0.12em;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
   }
 
-  /* Both selects use the shared control vocabulary (`.select`); the row and the
-     grid below supply the flex/grid sizing they need to share a line. */
-  .lesson-row .select {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .lesson-char-row {
+  .lesson-nav {
     display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    column-gap: 0.65rem;
-    row-gap: 0.45rem;
-    margin-bottom: 0.65rem;
+    gap: var(--space-2);
   }
 
-  .lesson-char-preview {
-    color: var(--text-secondary);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    margin: 0;
-    line-height: var(--leading-snug);
-    white-space: nowrap;
-  }
-
-  .lesson-char-select {
+  .lesson-select {
     min-width: 0;
   }
 
-  /* Transient onboarding emphasis: an accent edge, no shadow. Static surfaces
-     are flat; elevation is reserved for things that stack above the page. */
-  .lesson-char-highlight {
-    border-color: color-mix(in srgb, var(--accent) 58%, var(--border-card));
+  /* Quiet inline action: review. Amber belongs to the next action, so these
+     stay secondary until hovered. */
+  .quiet-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
   }
 
-  @media (max-width: 767px) {
-    .quickstart-actions {
-      flex-wrap: wrap;
-    }
-
-    .quickstart-btn {
-      flex: 1 1 auto;
-      justify-content: center;
-    }
-
-    .learn-col-right .learn-answer-textarea {
-      min-height: 11rem;
-    }
+  .quiet-btn:hover {
+    color: var(--accent);
   }
 
-  @media (min-width: 768px) {
-    .learn-page {
+  /* The one quiet action that is the next step carries the amber. */
+  .quiet-btn--accent {
+    color: var(--accent);
+  }
+
+  /* Fixed-height set summary: the lesson card does not grow as the set does. */
+  .lesson-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .lesson-summary-learned {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .lesson-summary-latest {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+  }
+
+  /* The full character set opens on request, absolutely positioned so the
+     trainer layout never moves. */
+  .charset {
+    position: relative;
+  }
+
+  .charset-toggle {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
+  .charset-toggle:hover {
+    color: var(--accent);
+  }
+
+  .charset-toggle::-webkit-details-marker {
+    display: none;
+  }
+
+  .charset-popover {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 0.4rem);
+    z-index: 30;
+    width: min(17rem, calc(100vw - 2rem));
+    max-height: min(20rem, 60vh);
+    overflow-y: auto;
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-surface);
+    box-shadow: var(--shadow-menu);
+  }
+
+  .charset-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .charset-group-label {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+
+  .charset-group-value {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+  }
+
+  .charset-latest {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+  }
+
+  .side-note {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+
+  /* Panels never let their contents spill into a neighbouring column. */
+  .side-panel,
+  .console {
+    min-width: 0;
+  }
+
+  .session-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+
+  .session-link {
+    align-self: flex-start;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+
+  .session-link:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  /* Onboarding strip: inline and dismissible, never a modal over practice. */
+  .quickstart {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    margin-bottom: var(--block-gap);
+    border: 1px solid var(--border-card);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+  }
+
+  .quickstart-title {
+    margin: 0;
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .quickstart-steps {
+    margin: var(--space-2) 0 0;
+    padding-left: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+
+  .quickstart-tips {
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+
+  .quickstart-tips summary {
+    cursor: pointer;
+    color: var(--accent);
+  }
+
+  .quickstart-tips ul {
+    margin: var(--space-2) 0 0;
+    padding-left: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  /* Drill: one character, one player, one way onward. */
+  .drill {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  /* Compact selector: this lesson's characters, nothing else. */
+  .drill-picker-field {
+    max-width: 12rem;
+    gap: var(--space-2);
+  }
+
+  .drill-picker {
+    min-width: 0;
+  }
+
+  .drill-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  /* The character being practised: big, always visible, with its pattern. */
+  .drill-char {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-4);
+    margin: 0;
+  }
+
+  .drill-char-value {
+    font-family: var(--font-mono);
+    font-size: 2.75rem;
+    line-height: 1;
+    color: var(--text-primary);
+  }
+
+  .drill-morse {
+    font-family: var(--font-mono);
+    font-size: var(--text-lg);
+    letter-spacing: 0.18em;
+    color: var(--text-secondary);
+  }
+
+  .drill-focus {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+
+  /* The console gets the width it needs before the rail appears. */
+  @media (min-width: 900px) {
+    .workspace {
       display: grid;
-      grid-template-columns: 5fr 7fr;
-      column-gap: 1rem;
-      row-gap: 1rem;
+      grid-template-columns: 17rem minmax(0, 1fr);
+      align-items: start;
     }
 
-    .learn-col-right > .learn-answer-card {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .learn-col-right .learn-answer-textarea {
-      flex: 1 1 0;
-      min-height: 6rem;
-      field-sizing: fixed;
+    .workspace-side {
+      position: sticky;
+      top: 4.5rem;
     }
   }
 
-  @media (max-width: 640px) {
-    .lesson-char-row {
-      grid-template-columns: max-content minmax(0, 1fr);
-      align-items: center;
-      column-gap: 0.45rem;
+  @media (max-width: 639px) {
+    /* Phones: the two passage actions stack instead of wrapping a full-width
+       button beside a narrow one. One width for both, primary first, and no
+       flex growth (the base `flex-basis` would stretch a stacked button). */
+    .console-actions {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--space-2);
     }
 
-    .lesson-char-select {
-      max-width: none;
+    .console-actions > button {
+      flex: 0 0 auto;
+      width: 100%;
     }
 
-    .lesson-char-preview {
-      font-size: 0.78rem;
+    .learn-answer-textarea {
+      min-height: 4rem;
+    }
+
+    .learn-answer-textarea.is-active {
+      min-height: 8rem;
+    }
+
+    .drill-char-value {
+      font-size: 2.25rem;
     }
   }
 </style>

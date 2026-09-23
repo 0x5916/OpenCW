@@ -5,7 +5,7 @@
   import type { ProgressRecord } from '$lib/api';
   import { readClientCwSettings } from '$lib/cwSync';
   import { getLocalProgressRecords } from '$lib/progressSync';
-  import { User, Calendar, Activity, Check, X } from '@lucide/svelte';
+  import { Calendar, Check, X } from '@lucide/svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
   import GuestNotice from '$lib/components/GuestNotice.svelte';
@@ -364,8 +364,10 @@
 
     <!-- Header: identity block, not a card. -->
     <header class="profile-header">
-      <div class="profile-avatar">
-        <User size={48} />
+      <!-- Call-sign plate: the one piece of radio identity, in monospace. -->
+      <div class="profile-plate">
+        <span class="profile-plate-value">{callSign ?? m.profile_call_sign_none()}</span>
+        <span class="profile-plate-label">{m.profile_call_sign_label()}</span>
       </div>
       <div class="profile-header-info">
         <h1 class="profile-username">{username}</h1>
@@ -373,10 +375,6 @@
           <p class="profile-email">{email}</p>
         {/if}
         <div class="profile-meta-row">
-          <p class="profile-meta-item">
-            <span class="profile-meta-label">{m.profile_call_sign_label()}:</span>
-            <span>{callSign ?? m.profile_call_sign_none()}</span>
-          </p>
           {#if !isGuest}
             <p class="profile-meta-item">
               {#if emailVerified}
@@ -410,7 +408,6 @@
     <section class="panel profile-heatmap-card">
       <div class="profile-section-header profile-section-header--split">
         <div class="profile-section-title-wrap">
-          <Activity size={16} />
           <h2 class="card-title">
             {yearTotalSessions === 1
               ? m.profile_sessions_in_year_one({ year: String(selectedYear) })
@@ -422,7 +419,7 @@
         </div>
         <div
           class="profile-heatmap-year-picker"
-          role="tablist"
+          role="group"
           aria-label={m.profile_heatmap_year_aria()}
         >
           {#each availableYears as year (year)}
@@ -542,7 +539,7 @@
       {#if recentRecords.length === 0}
         <p class="body-text profile-empty">
           {m.profile_history_empty()}
-          <a href={localizedHref('/morse/learn')} class="link">{m.nav_learn()}</a>
+          <a href={localizedHref('/morse/learn')} class="link">{m.nav_train()}</a>
         </p>
       {:else}
         <div class="profile-table-wrap">
@@ -590,17 +587,32 @@
     padding-bottom: 1.25rem;
     border-bottom: 1px solid var(--border);
   }
-  .profile-avatar {
-    width: 5rem;
-    height: 5rem;
-    border-radius: 50%;
-    background-color: var(--bg-inset);
-    border: 2px solid var(--border);
+  .profile-plate {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: var(--accent);
+    gap: 0.15rem;
+    min-width: 6rem;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-inset);
     flex-shrink: 0;
+  }
+  .profile-plate-value {
+    font-family: var(--font-mono);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+  .profile-plate-label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
   }
   .profile-header-info {
     display: flex;
@@ -610,7 +622,8 @@
   .profile-username {
     font-size: var(--text-2xl);
     line-height: var(--leading-tight);
-    font-weight: 800;
+    font-weight: 600;
+    letter-spacing: -0.015em;
     color: var(--text-primary);
     margin: 0;
   }
@@ -676,12 +689,13 @@
   }
   .profile-heatmap-year-btn {
     border: 1px solid var(--border);
-    background: var(--bg-inset);
+    background: transparent;
     color: var(--text-muted);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
     padding: 0.2rem 0.5rem;
-    font-size: 0.72rem;
-    font-weight: 600;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: 500;
     cursor: pointer;
     transition:
       background-color 0.15s ease,
@@ -690,12 +704,12 @@
   }
   .profile-heatmap-year-btn:hover {
     color: var(--text-primary);
-    border-color: color-mix(in srgb, var(--accent), var(--border) 45%);
+    border-color: var(--border-subtle);
   }
   .profile-heatmap-year-btn.is-active {
-    background: color-mix(in srgb, var(--accent), transparent 88%);
+    background: color-mix(in srgb, var(--accent), transparent 90%);
     color: var(--accent);
-    border-color: color-mix(in srgb, var(--accent), transparent 55%);
+    border-color: var(--accent);
   }
   .profile-heatmap-scroll {
     overflow-x: auto;
@@ -752,7 +766,7 @@
   .profile-heatmap-cell {
     width: 0.72rem;
     height: 0.72rem;
-    border-radius: 0.16rem;
+    border-radius: var(--radius-xs);
     border: 1px solid color-mix(in srgb, var(--border), transparent 45%);
     background: color-mix(in srgb, var(--bg-inset), black 12%);
     display: inline-block;
@@ -824,12 +838,14 @@
     flex-direction: column;
     gap: 0.15rem;
     padding: 0.75rem 0.9rem;
-    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     background-color: var(--bg-inset);
   }
   .profile-cw-val {
-    font-size: 1.25rem;
-    font-weight: 700;
+    font-family: var(--font-mono);
+    font-size: var(--text-lg);
+    font-weight: 500;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
   }
@@ -860,7 +876,7 @@
   }
   .profile-table td {
     padding: 0.6rem 0.75rem;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border);
     color: var(--text-secondary);
   }
   .profile-table tbody tr:last-child td {
@@ -870,29 +886,37 @@
     background-color: var(--bg-inset);
   }
   .profile-lesson-cell {
-    font-family: monospace;
-    font-size: 1rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
     color: var(--text-primary) !important;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.12em;
   }
+  /* Accuracy reads as a value with a status dot, not as a coloured pill. */
   .profile-acc {
-    display: inline-block;
-    padding: 0.15rem 0.5rem;
-    border-radius: 999px;
-    font-weight: 700;
-    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  .profile-acc::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--acc-color, var(--text-muted));
+    flex-shrink: 0;
   }
   .acc-good {
-    background: var(--status-good-tint);
-    color: var(--status-good);
+    --acc-color: var(--status-good);
   }
   .acc-ok {
-    background: var(--status-ok-tint);
-    color: var(--status-ok);
+    --acc-color: var(--status-ok);
   }
   .acc-bad {
-    background: var(--status-bad-tint);
-    color: var(--status-bad);
+    --acc-color: var(--status-bad);
   }
   .profile-wpm-cell {
     font-variant-numeric: tabular-nums;

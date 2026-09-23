@@ -29,7 +29,6 @@
     saveClientCwSettings
   } from '$lib/cwSync';
   import { localizeApiError } from '$lib/errorLocalization';
-  import { Settings } from '@lucide/svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
   import GuestNotice from '$lib/components/GuestNotice.svelte';
@@ -396,10 +395,10 @@
 </script>
 
 <div class="page-narrow settings-page">
-  <div class="settings-heading">
-    <Settings class="settings-page-icon" aria-hidden="true" />
+  <header class="settings-heading">
+    <p class="eyebrow">{m.settings_eyebrow()}</p>
     <h1 class="page-title">{m.settings_title()}</h1>
-  </div>
+  </header>
 
   {#if loading}
     <LoadingSpinner variant="spinner" padded />
@@ -635,16 +634,15 @@
 
 <style>
   .settings-heading {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: var(--block-gap);
   }
-  :global(.settings-page-icon) {
-    color: var(--accent);
-    width: 2rem;
-    height: 2rem;
-    flex-shrink: 0;
+  /* Settings reads as one ledger: hairline-separated sections, not four cards. */
+  .settings-page :global(.panel) {
+    border: none;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    padding: var(--space-6) 0 0;
+    background: transparent;
   }
   .settings-form {
     display: flex;
