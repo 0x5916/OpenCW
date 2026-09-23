@@ -1,6 +1,7 @@
 {
   "nav_home": "Startseite",
-  "nav_learn": "Lernen",
+  "nav_train": "Üben",
+  "nav_progress": "Fortschritt",
   "nav_forum": "Forum",
   "nav_about": "Über",
   "nav_settings": "Einstellungen",
@@ -12,6 +13,9 @@
   "nav_more": "Mehr",
   "nav_guest": "Gast",
   "nav_theme_cycle": "Design wechseln",
+  "nav_theme_current": "Design: {theme}",
+  "nav_skip_to_content": "Zum Inhalt springen",
+  "common_loading": "Lädt…",
 
   "error_title": "Diese Seite gibt es nicht",
   "error_body": "Vielleicht ist der Link veraltet oder die Seite wurde verschoben.",
@@ -169,7 +173,6 @@
   "trainer_label_current_chars": "Einzelzeichen-Player",
   "trainer_choose_letter": "Buchstabe wählen:",
   "trainer_play_letter": "Abspielen",
-  "trainer_play_char": "„{char}“ abspielen",
   "trainer_answer_shortcut_tip": "Tipp: Drücke die Leertaste in einem leeren Antwortfeld, um die vollständige Sitzung zu starten.",
   "trainer_answer_placeholder": "Tippe hier, was du gehört hast...",
   "trainer_check": "Ergebnis prüfen",

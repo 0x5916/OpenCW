@@ -14,5 +14,7 @@ export const CW_STORAGE_KEYS = {
 
 export const UI_STORAGE_KEYS = {
   theme: 'theme',
-  quickstartDismissed: 'learn.quickstart.dismissed'
+  quickstartDismissed: 'learn.quickstart.dismissed',
+  trainerMode: 'learn.practice_mode',
+  trainerIntroLesson: 'learn.intro.lesson'
 } as const;

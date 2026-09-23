@@ -1,6 +1,7 @@
 {
   "nav_home": "首页",
-  "nav_learn": "学习",
+  "nav_train": "练习",
+  "nav_progress": "进度",
   "nav_forum": "论坛",
   "nav_about": "关于",
   "nav_settings": "设置",
@@ -12,6 +13,9 @@
   "nav_more": "更多",
   "nav_guest": "访客",
   "nav_theme_cycle": "切换主题",
+  "nav_theme_current": "主题：{theme}",
+  "nav_skip_to_content": "跳到内容",
+  "common_loading": "加载中…",
 
   "error_title": "此页面不存在",
   "error_body": "链接可能已失效，或者页面已被移动。",
@@ -169,7 +173,6 @@
   "trainer_label_current_chars": "单字符播放器",
   "trainer_choose_letter": "选择字母：",
   "trainer_play_letter": "播放",
-  "trainer_play_char": "播放「{char}」",
   "trainer_answer_shortcut_tip": "提示：在空白答案框中按空格键可开始完整训练。",
   "trainer_answer_placeholder": "在此输入你听到的内容...",
   "trainer_check": "检查结果",

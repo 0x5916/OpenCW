@@ -2,44 +2,52 @@
 @import './lib/styles/layout.css';
 
 :root {
-  --bg-base: #030712;
-  --bg-surface: #111827;
-  --bg-inset: #1f2937;
+  color-scheme: dark;
 
-  --border: #334155;
-  --border-subtle: #475569;
+  --bg-base: #17140f;
+  --bg-surface: #1f1b14;
+  --bg-inset: #272218;
+
+  --border: #37312a;
+  --border-subtle: #463e33;
   /* Edge of a card/panel surface. Separate from `--border` so flat cards stay
      legible in light mode without strengthening inputs, navbar or footer. */
-  --border-card: #334155;
+  --border-card: #35302a;
+  /* Form-control edges need 3:1 against the surface they sit on (WCAG 1.4.11),
+     so controls get a stronger rule than decorative hairlines. */
+  --border-control: #7d7365;
 
-  --text-primary: #f9fafb;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --text-label: #cbd5e1;
+  --text-primary: #f2ede3;
+  --text-secondary: #cdc4b4;
+  --text-muted: #a2988a;
+  --text-label: #bfb6a5;
 
-  --accent: #4ade80;
-  --accent-hover: #86efac;
-  --accent-cta: #22c55e;
-  --accent-cta-h: #4ade80;
-  --danger: #b91c1c;
-  --danger-h: #991b1b;
-  /* Filled accent surfaces carry a dark-on-green label: white on the brand
-     green reaches only ~2:1 in dark mode and ~3.4:1 in light. */
-  --on-accent: #052e16;
-  --on-danger: #ffffff;
+  /* Signal amber. One accent for the whole product: interactive surfaces, the
+     playhead, the active lesson, focus. Status colours below stay semantic —
+     green means correct, never "brand". */
+  --accent: #f2a33c;
+  --accent-hover: #f7b860;
+  --accent-cta: #e8952f;
+  --accent-cta-h: #f2a33c;
+  --danger: #e0705c;
+  --danger-h: #c75a48;
+  /* Filled accent surfaces carry a dark-on-amber label; white on #e8952f only
+     reaches ~2.2:1. */
+  --on-accent: #211603;
+  --on-danger: #2a0f0a;
 
-  --result-good-bg: #052e16;
-  --result-good-bd: #15803d;
-  --result-bad-bg: #1a0000;
-  --result-bad-bd: #991b1b;
+  --result-good-bg: #14251a;
+  --result-good-bd: #2f6b45;
+  --result-bad-bg: #2a1410;
+  --result-bad-bd: #7a3a2e;
 
   /* Semantic status roles. The result diff, verified/accuracy states and inline
      banners all read from these; components must not hard-code status hexes.
-     The light theme re-tunes them for contrast on a white surface. */
-  --status-good: #22c55e;
-  --status-ok: #ca8a04;
-  --status-bad: #ef4444;
-  --status-extra: #a855f7;
+     The light theme re-tunes them for contrast on paper. */
+  --status-good: #63c08d;
+  --status-ok: #d9a216;
+  --status-bad: #e0705c;
+  --status-extra: #8fb0e8;
   /* Matching washes for pills, banners and the score hero. */
   --status-good-tint: color-mix(in srgb, var(--status-good) 15%, transparent);
   --status-ok-tint: color-mix(in srgb, var(--status-ok) 15%, transparent);
@@ -51,20 +59,35 @@
   --diff-bad: var(--status-bad);
   --diff-extra: var(--status-extra);
 
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
+  /* Mostly rectangular surfaces: 2px chips, 3px controls, 5px panels, 6px the
+     largest sheets. Pills are reserved for dots. */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 6px;
 
   /* Elevation is reserved for surfaces that actually stack above the page.
      Static cards and panels are flat (see `.card` / `.panel` below). */
-  --shadow-menu: 0 8px 16px rgba(0, 0, 0, 0.3);
-  --shadow-overlay: 0 24px 60px rgba(0, 0, 0, 0.4);
+  --shadow-menu: 0 2px 10px rgba(0, 0, 0, 0.45);
+  --shadow-overlay: 0 12px 32px rgba(0, 0, 0, 0.5);
 
-  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+  --focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent);
 
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
+  /* 4px rhythm. `--space-sm/md/lg` are kept as aliases so existing rules keep
+     reading naturally while new work uses the numbered scale. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-sm: var(--space-2);
+  --space-md: var(--space-4);
+  --space-lg: var(--space-6);
 
   --transition-fast: 150ms;
   --transition-base: 200ms;
@@ -74,6 +97,8 @@
   --max-width-container: 64rem;
   --max-width-narrow: 42rem;
   --max-width-wide: 80rem;
+  /* Trainer workspace: sidebar + console need a little more than the chrome. */
+  --max-width-workspace: 72rem;
 
   /* Page rhythm. `.page-content` owns the gap above the first content block and
      below the last one; pages must not set their own vertical padding, or the
@@ -94,75 +119,96 @@
   --bottom-nav-clearance: 4.25rem;
 
   /* Type scale: size + unitless leading pairs. Unitless so the ratio survives
-     the responsive size changes (rem leading broke when a heading resized). */
+     the responsive size changes (rem leading broke when a heading resized).
+     Sizes are rem-based so the whole page still scales with the user's browser
+     font size. */
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans',
+    sans-serif;
+  /* Morse text, timers, WPM/Hz readouts, lesson numbers, call signs. */
+  --font-mono:
+    ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+
   --text-xs: 0.75rem; /* meta, eyebrows, control labels */
   --text-sm: 0.875rem; /* UI text, secondary copy */
   --text-base: 1rem; /* body prose */
   --text-lg: 1.125rem;
-  --text-xl: 1.5rem; /* .section-title */
-  --text-2xl: 1.875rem; /* .page-title */
-  --text-3xl: 2.25rem; /* home hero */
-  --text-4xl: 3rem; /* home hero, wide */
-  --leading-tight: 1.2;
-  --leading-snug: 1.45;
-  --leading-normal: 1.65;
-  --leading-relaxed: 1.75;
+  --text-xl: 1.375rem; /* .section-title */
+  --text-2xl: 1.75rem; /* .page-title */
+  --text-3xl: 2.125rem; /* display: masthead only */
+  --leading-tight: 1.15;
+  --leading-snug: 1.35;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.72;
 }
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme='dark']) {
-    --bg-base: #f9fafb;
-    --bg-surface: #ffffff;
-    --bg-inset: #f3f4f6;
-    --border: #e5e7eb;
-    --border-subtle: #d1d5db;
-    --border-card: #d1d5db;
-    --text-primary: #111827;
-    --text-secondary: #374151;
-    --text-muted: #6b7280;
-    --text-label: #4b5563;
-    --accent: #15803d;
-    --accent-hover: #166534;
-    --accent-cta: #16a34a;
-    --accent-cta-h: #15803d;
-    --danger: #dc2626;
-    --danger-h: #b91c1c;
-    --status-good: #15803d;
-    --status-ok: #a16207;
-    --status-bad: #dc2626;
-    --status-extra: #7c3aed;
-    --result-good-bg: #f0fdf4;
-    --result-good-bd: #86efac;
-    --result-bad-bg: #fff1f2;
-    --result-bad-bd: #fca5a5;
+    color-scheme: light;
+    --bg-base: #f5f1e8;
+    --bg-surface: #fbf9f3;
+    --bg-inset: #ede8dc;
+    --border: #dcd5c6;
+    --border-subtle: #cfc7b5;
+    --border-card: #d8d1c1;
+    --border-control: #8f8570;
+    --text-primary: #201d18;
+    --text-secondary: #4c463c;
+    --text-muted: #6e6557;
+    --text-label: #57503f;
+    --accent: #a94c08;
+    --accent-hover: #8f4107;
+    --accent-cta: #a24a08;
+    --accent-cta-h: #8f4107;
+    --danger: #b42318;
+    --danger-h: #911b12;
+    --on-accent: #fff8ef;
+    --on-danger: #ffffff;
+    --status-good: #1e7a46;
+    --status-ok: #8a5a00;
+    --status-bad: #b42318;
+    --status-extra: #3f5e9c;
+    --result-good-bg: #edf3e7;
+    --result-good-bd: #b9d2b4;
+    --result-bad-bg: #f8eae3;
+    --result-bad-bd: #dfb3a5;
+    --shadow-menu: 0 2px 10px rgba(32, 25, 14, 0.12);
+    --shadow-overlay: 0 12px 32px rgba(32, 25, 14, 0.18);
   }
 }
 
 [data-theme='light'] {
-  --bg-base: #f9fafb;
-  --bg-surface: #ffffff;
-  --bg-inset: #f3f4f6;
-  --border: #e5e7eb;
-  --border-subtle: #d1d5db;
-  --border-card: #d1d5db;
-  --text-primary: #111827;
-  --text-secondary: #374151;
-  --text-muted: #6b7280;
-  --text-label: #4b5563;
-  --accent: #15803d;
-  --accent-hover: #166534;
-  --accent-cta: #16a34a;
-  --accent-cta-h: #15803d;
-  --danger: #dc2626;
-  --danger-h: #b91c1c;
-  --status-good: #15803d;
-  --status-ok: #a16207;
-  --status-bad: #dc2626;
-  --status-extra: #7c3aed;
-  --result-good-bg: #f0fdf4;
-  --result-good-bd: #86efac;
-  --result-bad-bg: #fff1f2;
-  --result-bad-bd: #fca5a5;
+  color-scheme: light;
+  --bg-base: #f5f1e8;
+  --bg-surface: #fbf9f3;
+  --bg-inset: #ede8dc;
+  --border: #dcd5c6;
+  --border-subtle: #cfc7b5;
+  --border-card: #d8d1c1;
+  --border-control: #8f8570;
+  --text-primary: #201d18;
+  --text-secondary: #4c463c;
+  --text-muted: #6e6557;
+  --text-label: #57503f;
+  --accent: #a94c08;
+  --accent-hover: #8f4107;
+  --accent-cta: #a24a08;
+  --accent-cta-h: #8f4107;
+  --danger: #b42318;
+  --danger-h: #911b12;
+  --on-accent: #fff8ef;
+  --on-danger: #ffffff;
+  --status-good: #1e7a46;
+  --status-ok: #8a5a00;
+  --status-bad: #b42318;
+  --status-extra: #3f5e9c;
+  --result-good-bg: #edf3e7;
+  --result-good-bd: #b9d2b4;
+  --result-bad-bg: #f8eae3;
+  --result-bad-bd: #dfb3a5;
+  --shadow-menu: 0 2px 10px rgba(32, 25, 14, 0.12);
+  --shadow-overlay: 0 12px 32px rgba(32, 25, 14, 0.18);
 }
 
 /* No `[data-theme='dark']` block is needed: the `:root` values above are the dark
@@ -185,23 +231,11 @@ body {
   overflow-x: clip;
   background-color: var(--bg-base);
   color: var(--text-primary);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    'Helvetica Neue',
-    Arial,
-    'Noto Sans',
-    'Apple Color Emoji',
-    'Segoe UI Emoji',
-    'Segoe UI Symbol';
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  line-height: 1.6;
+  line-height: var(--leading-normal);
   transition:
     background-color var(--transition-base),
     color var(--transition-base);
@@ -209,18 +243,19 @@ body {
 
 /* One visual primitive, two semantic names:
    - `.card`  — a browsable, independent unit that belongs to a peer group
-                (home feature trio, a link card, the auth form).
+                (a link card, the auth form).
    - `.panel` — a standalone container for sequential or dense content
                 (trainer tool panels, data visualisations, settings groups).
    Both are flat: surface + hairline border. Elevation belongs only to things
    that stack above the page (`--shadow-menu` / `--shadow-overlay`), so a
-   static card must never react to hover — that would be a false affordance. */
+   static card must never react to hover — that would be a false affordance.
+   Prefer `.row-list` over a field of cards whenever the content is a list. */
 .card,
 .card-sm,
 .panel {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-card);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   min-width: 0;
   transition:
     background-color var(--transition-base),
@@ -229,11 +264,11 @@ body {
 
 .card,
 .panel {
-  padding: var(--space-lg);
+  padding: var(--space-6);
 }
 
 .card-sm {
-  padding: 1.25rem;
+  padding: var(--space-4);
 }
 
 /* The whole surface is a link or button. */
@@ -245,14 +280,13 @@ body {
 }
 
 .card--interactive:hover {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-card));
-  background-color: color-mix(in srgb, var(--accent) 4%, var(--bg-surface));
+  border-color: var(--border-subtle);
+  background-color: var(--bg-inset);
 }
 
 .card--interactive:focus-visible {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: var(--focus-ring);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* Heading for a card/panel's own content. `.card-label` stays the eyebrow/meta
@@ -269,9 +303,10 @@ body {
   color: var(--text-muted);
   font-size: var(--text-xs);
   line-height: var(--leading-snug);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 1rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.75rem;
 }
 
 /* Peer cards laid out as an auto-fitting grid (feature trio, stat tiles). */
@@ -317,10 +352,12 @@ body {
   flex-shrink: 0;
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: 50%;
-  background-color: var(--accent);
-  color: var(--on-accent);
-  font-weight: 700;
+  border-radius: var(--radius-xs);
+  background-color: var(--bg-inset);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: 500;
   font-size: 0.85rem;
   display: flex;
   align-items: center;
@@ -336,14 +373,37 @@ body {
 }
 
 /* Headings carry no margin: the page or the container owns the rhythm, so a
-   heading can move between contexts without bringing spacing with it. */
+   heading can move between contexts without bringing spacing with it.
+   `.page-title` stays neutral ink — page identity comes from the eyebrow above
+   it and the rule under the masthead, not from colouring the heading. */
 .page-title {
-  color: var(--accent);
+  color: var(--text-primary);
   font-size: var(--text-2xl);
   line-height: var(--leading-tight);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: -0.015em;
   margin: 0;
+}
+
+/* Small label above a page/section title. The 2px rule is the timing-line
+   motif that runs through the trainer and the forum mastheads. */
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 1.25rem;
+  height: 2px;
+  background: var(--accent);
 }
 
 /* Section headings stay neutral: the accent marks the page identity and the
@@ -352,9 +412,9 @@ body {
   color: var(--text-primary);
   font-size: var(--text-xl);
   line-height: var(--leading-snug);
-  font-weight: 700;
-  letter-spacing: -0.015em;
-  margin: 0 0 0.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--space-4);
 }
 
 .sub-title {
@@ -395,40 +455,45 @@ body {
   text-decoration: underline;
 }
 
+/* Buttons are inline by default: the action decides its own width. Use
+   `.btn-block` inside forms and the trainer console where the action is the
+   whole point of the row. Hover is a colour step only — no lift, no glow. */
 .btn-primary {
-  width: 100%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
-  padding: 0.75rem var(--space-md);
-  font-weight: 700;
-  border-radius: var(--radius-md);
-  border: none;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
   background-color: var(--accent-cta);
   color: var(--on-accent);
   cursor: pointer;
-  transition:
-    background-color var(--transition-fast),
-    transform var(--transition-fast);
+  transition: background-color var(--transition-fast);
 }
 
 .btn-primary:hover {
   background-color: var(--accent-cta-h);
-  transform: translateY(-1px);
 }
 
-.btn-primary:active {
-  transform: translateY(0);
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-block {
+  width: 100%;
 }
 
 /* Compact variant used by the settings save/verification buttons (auto width
    on desktop, full width on phones). */
 .settings-btn-compact {
-  padding: var(--space-sm) 0.9rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  min-height: calc(1.25rem + (var(--space-sm) * 2) + 2px);
+  min-height: 2.25rem;
+  padding: 0 0.9rem;
+  font-size: var(--text-sm);
   width: auto;
   white-space: nowrap;
 }
@@ -440,127 +505,113 @@ body {
 }
 
 .btn-danger {
-  flex: 1 1 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: var(--space-sm) var(--space-md);
-  font-weight: 700;
-  border-radius: var(--radius-md);
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background-color: var(--danger);
   color: var(--on-danger);
   cursor: pointer;
-  transition:
-    background-color var(--transition-fast),
-    transform var(--transition-fast);
+  transition: background-color var(--transition-fast);
 }
 
 .btn-danger:hover {
   background-color: var(--danger-h);
-  transform: translateY(-1px);
-}
-
-.btn-danger:active {
-  transform: translateY(0);
 }
 
 .btn-success {
-  flex: 1 1 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: var(--space-sm) var(--space-md);
-  font-weight: 700;
-  border-radius: var(--radius-md);
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background-color: var(--accent-cta);
   color: var(--on-accent);
   cursor: pointer;
-  transition:
-    background-color var(--transition-fast),
-    transform var(--transition-fast);
+  transition: background-color var(--transition-fast);
 }
 
 .btn-success:hover {
   background-color: var(--accent-cta-h);
-  transform: translateY(-1px);
 }
 
-.btn-success:active {
-  transform: translateY(0);
-}
-
+/* Secondary: the default quiet action. */
 .btn-ghost {
-  flex: 1 1 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: var(--space-sm) var(--space-md);
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
   font-weight: 500;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  background: transparent;
-  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-control);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
   cursor: pointer;
   transition:
     border-color var(--transition-fast),
-    color var(--transition-fast),
     background-color var(--transition-fast);
 }
 
 .btn-ghost:disabled {
-  opacity: 0.3;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .btn-ghost:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
-  background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+  border-color: var(--border-subtle);
+  background-color: var(--bg-inset);
 }
 
 .btn-regen {
-  width: 100%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  padding: 0.5rem 1rem;
-  margin-top: 0.75rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  min-height: 2.25rem;
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
   font-weight: 500;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  background: transparent;
-  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
   cursor: pointer;
   transition:
     border-color 0.15s,
-    color 0.15s,
-    background 0.15s;
+    background-color 0.15s;
 }
 
 .btn-regen:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--border-subtle);
+  background-color: var(--bg-inset);
 }
 
+/* Large primary action (mastheads and end-of-article CTAs). */
 .btn-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  padding: 0.75rem 2rem;
-  font-size: 1.125rem;
-  line-height: 1.75rem;
-  font-weight: 700;
-  border-radius: var(--radius-md);
-  border: none;
+  gap: 0.5rem;
+  min-height: 2.875rem;
+  padding: 0 1.75rem;
+  font-size: var(--text-base);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
   background-color: var(--accent-cta);
   color: var(--on-accent);
   cursor: pointer;
@@ -576,11 +627,11 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.5rem 1.25rem;
-  margin-top: 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  border-radius: var(--radius-md);
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition:
     background-color 0.15s,
@@ -589,7 +640,7 @@ body {
 }
 
 .btn-next-lesson {
-  border: none;
+  border: 1px solid transparent;
   background-color: var(--accent-cta);
   color: var(--on-accent);
 }
@@ -599,49 +650,47 @@ body {
 }
 
 .btn-prev-lesson {
-  border: 1px solid var(--border-subtle);
-  background-color: transparent;
-  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
 }
 
 .btn-prev-lesson:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--border-subtle);
+  background-color: var(--bg-inset);
 }
 
 .input,
 .select,
 .textarea {
   width: 100%;
-  padding: var(--space-sm) 0.75rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  background-color: var(--bg-inset);
+  min-height: 2.5rem;
+  padding: var(--space-2) 0.7rem;
+  font-size: var(--text-sm);
+  line-height: 1.35rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-control);
+  background-color: var(--bg-surface);
   color: var(--text-primary);
   transition:
     background-color var(--transition-base),
     border-color var(--transition-base),
-    color var(--transition-base),
-    box-shadow var(--transition-fast);
+    color var(--transition-base);
 }
 
 .select {
-  padding: var(--space-sm) 0.75rem;
+  padding: var(--space-2) 0.7rem;
 }
 
 .textarea {
   resize: none;
-  font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-    monospace;
+  font-family: var(--font-mono);
 }
 
 .input:hover,
 .select:hover,
 .textarea:hover {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-subtle));
+  border-color: var(--border-subtle);
 }
 
 .input:focus,
@@ -649,12 +698,24 @@ body {
 .textarea:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+/* The halo is for keyboard focus only: clicking a field should not flash a ring. */
+.input:focus-visible,
+.select:focus-visible,
+.textarea:focus-visible {
   box-shadow: var(--focus-ring);
 }
 
+.input:disabled,
+.select:disabled,
+.textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .textarea::placeholder {
-  color: var(--text-secondary);
-  opacity: 0.7;
+  color: var(--text-muted);
 }
 
 select.input,
@@ -683,11 +744,15 @@ select.lesson-select {
   gap: 1rem;
 }
 
+/* Form field: an always-visible label above its control, optional hint below.
+   Prefer `.field`; `.settings-field` is the legacy name, kept while the older
+   call sites migrate. */
+.field,
 .settings-field {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 0.25rem;
+  justify-content: flex-start;
+  gap: 0.3rem;
 }
 
 .diff-legend {
@@ -700,15 +765,15 @@ select.lesson-select {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 1rem;
   line-height: 1.8;
 }
 
 .diff-token {
   display: inline-block;
-  padding: 0.1rem 0.4rem;
-  border-radius: 0.3rem;
+  padding: 0.08rem 0.35rem;
+  border-radius: var(--radius-xs);
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -742,11 +807,10 @@ select.lesson-select {
 
 button:focus-visible,
 a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 @media print {
@@ -792,5 +856,198 @@ textarea:focus-visible {
   .btn-success,
   .btn-danger {
     border: 2px solid currentColor;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Signal Workshop primitives
+   --------------------------------------------------------------------------- */
+
+/* Visually hidden, still announced. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Chip: compact rectangular label (category, call sign, status word). */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.08rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.chip--mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+
+.chip--accent {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
+}
+
+.chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* Metric: label + monospace value readout (profile stats, session strip). */
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.metric-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.metric-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-lg);
+  color: var(--text-primary);
+}
+
+/* Row list: hairline-separated rows. The default structure for forum topics,
+   session history and link lists — a list is not a grid of cards. */
+.row-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+
+.row-list > li {
+  border-bottom: 1px solid var(--border);
+}
+
+.row-list a.row-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.row-link {
+  display: block;
+  padding: var(--space-4) var(--space-2);
+  transition: background-color var(--transition-fast);
+}
+
+.row-link:hover {
+  background-color: var(--bg-inset);
+}
+
+.row-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Skeleton: reserved space for loading lists so nothing shifts when data lands.
+   Sized by the consumer; the pulse is neutralised by prefers-reduced-motion. */
+.skeleton {
+  background-color: var(--bg-inset);
+  border-radius: var(--radius-xs);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Skip link: the first tab stop, hidden until it takes focus. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--bg-surface);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 0 0 var(--radius-sm) 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* Icon button: square, hairline, for transport and toolbar controls. */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.btn-icon:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+  background-color: var(--bg-inset);
+}
+
+.btn-icon:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Touch devices get 44px controls regardless of the visual size tier. */
+@media (pointer: coarse) {
+  .btn-primary,
+  .btn-ghost,
+  .btn-danger,
+  .btn-success,
+  .btn-cta,
+  .input,
+  .select {
+    min-height: 2.75rem;
+  }
+
+  .btn-icon {
+    width: 2.75rem;
+    height: 2.75rem;
   }
 }

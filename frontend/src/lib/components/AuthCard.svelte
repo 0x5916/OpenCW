@@ -25,10 +25,10 @@
 
 <style>
   .auth-card {
-    max-width: 38rem;
+    max-width: 26rem;
     margin-left: auto;
     margin-right: auto;
-    padding: 1.75rem;
+    padding: var(--space-6);
   }
 
   /* `.page-title` already carries the h1 scale; the card only owns the gap. */
@@ -47,7 +47,7 @@
 
   @media (max-width: 639px) {
     .auth-card {
-      padding: 1.25rem;
+      padding: var(--space-4);
     }
   }
 </style>

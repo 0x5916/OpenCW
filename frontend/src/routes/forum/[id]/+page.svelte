@@ -21,7 +21,7 @@
   import GuestNotice from '$lib/components/GuestNotice.svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ForumReplyItem from './ForumReplyItem.svelte';
-  import { ArrowLeft, MessageSquare } from '@lucide/svelte';
+  import { ArrowLeft } from '@lucide/svelte';
   import * as m from '$lib/paraglide/messages';
 
   const threadId = $derived(page.params.id);
@@ -47,6 +47,16 @@
 
   const isThreadAuthor = $derived(
     thread !== null && $user !== null && thread.author.username === $user.username
+  );
+
+  // Replies arrive as a nested tree; the visible count is the number of nodes.
+  function countReplies(list: ForumReply[]): number {
+    return list.reduce((sum, reply) => sum + 1 + countReplies(reply.children ?? []), 0);
+  }
+
+  let replyCount = $derived(countReplies(replies));
+  let replyCountLabel = $derived(
+    replyCount === 1 ? m.forum_reply_one() : m.forum_reply_many({ count: String(replyCount) })
   );
 
   $effect(() => {
@@ -189,40 +199,47 @@
   <title>{thread ? `${thread.title} | OpenCW` : `${m.forum_title()} | OpenCW`}</title>
 </svelte:head>
 
-<div class="thread-page page-wide">
-  <a class="back-link" href={href('/forum')}>
-    <ArrowLeft size={16} aria-hidden="true" />
-    {m.forum_back_to_threads()}
-  </a>
+<div class="thread-page page-narrow">
+  <nav class="thread-crumbs" aria-label={m.forum_title()}>
+    <a class="crumb" href={href('/forum')}>
+      <ArrowLeft size={14} aria-hidden="true" />
+      {m.forum_back_to_threads()}
+    </a>
+  </nav>
 
   {#if loading}
-    <LoadingSpinner />
+    <div class="thread-skeleton">
+      <span class="skeleton skeleton-title"></span>
+      <span class="skeleton skeleton-line"></span>
+      <span class="skeleton skeleton-line short"></span>
+    </div>
+    <p class="sr-only" role="status">{m.common_loading()}</p>
   {:else if notFound}
-    <section class="panel state-panel">
+    <section class="state-block">
       <h1 class="state-title">{m.forum_thread_not_found_title()}</h1>
       <p class="body-text state-note">{m.forum_thread_not_found_body()}</p>
-      <a class="btn-primary state-action" href={href('/forum')}>{m.forum_back_to_threads()}</a>
+      <a class="btn-primary" href={href('/forum')}>{m.forum_back_to_threads()}</a>
     </section>
   {:else if loadFailed}
     <div class="thread-error">
       <ErrorAlert message={loadFailed} />
-      <button type="button" class="btn-ghost retry-btn" onclick={retryLoad}>
-        {m.forum_retry()}
-      </button>
+      <button type="button" class="btn-ghost" onclick={retryLoad}>{m.forum_retry()}</button>
     </div>
   {:else if thread}
-    <article class="panel thread-main">
-      <div class="thread-head">
-        <span class="category-badge">{forumCategoryLabel(thread.category)}</span>
+    <article class="thread-main">
+      <header class="thread-head">
+        <p class="thread-cat">
+          <span class="chip-dot"></span>{forumCategoryLabel(thread.category)}
+        </p>
         <h1 class="thread-title">{thread.title}</h1>
-        <div class="thread-meta">
-          <span>{authorLabel(thread.author)}</span>
+        <p class="thread-meta">
+          <span class="thread-author">{authorLabel(thread.author)}</span>
           {#if thread.author.call_sign}
             <span class="callsign">{thread.author.call_sign}</span>
           {/if}
           <span>{formatDate(thread.created_at)}</span>
-        </div>
-      </div>
+        </p>
+      </header>
       <p class="thread-body">{thread.body}</p>
 
       {#if isThreadAuthor}
@@ -233,18 +250,14 @@
           <div class="delete-row">
             <button
               type="button"
-              class="btn-danger delete-btn"
+              class="btn-danger"
               disabled={deletingThread}
               onclick={deleteThread}
             >
               {threadDeleteArmed ? m.forum_delete_confirm() : m.forum_delete_thread()}
             </button>
             {#if threadDeleteArmed}
-              <button
-                type="button"
-                class="btn-ghost cancel-delete-btn"
-                onclick={() => (threadDeleteArmed = false)}
-              >
+              <button type="button" class="btn-ghost" onclick={() => (threadDeleteArmed = false)}>
                 {m.forum_cancel()}
               </button>
             {/if}
@@ -253,11 +266,8 @@
       {/if}
     </article>
 
-    <section class="replies-section">
-      <h2 class="replies-title">
-        <MessageSquare size={18} aria-hidden="true" />
-        {m.forum_replies_label()}
-      </h2>
+    <section class="replies-section" aria-labelledby="replies-title">
+      <h2 id="replies-title" class="replies-title">{replyCountLabel}</h2>
 
       {#if repliesError}
         <ErrorAlert message={repliesError} />
@@ -271,6 +281,7 @@
             <ForumReplyItem
               {reply}
               currentUsername={$user?.username ?? null}
+              threadAuthor={thread.author?.username ?? null}
               onReply={setReplyTarget}
               onDelete={onDeleteReply}
             />
@@ -279,11 +290,11 @@
       {/if}
     </section>
 
-    <section class="panel reply-composer">
+    <section class="reply-composer">
       {#if replyTarget}
         <div class="reply-target">
           <span>{m.forum_replying_to({ username: replyTarget.username })}</span>
-          <button type="button" class="action-btn" onclick={() => (replyTarget = null)}>
+          <button type="button" class="quiet-btn" onclick={() => (replyTarget = null)}>
             {m.forum_cancel()}
           </button>
         </div>
@@ -298,19 +309,24 @@
         </div>
       {:else if postingStatus === 'ready'}
         <form class="composer-form" onsubmit={submitReply}>
-          <textarea
-            class="input composer-textarea"
-            maxlength="10000"
-            placeholder={m.forum_reply_placeholder()}
-            bind:value={replyBody}></textarea>
+          <label class="field">
+            <span class="label-text">{m.forum_reply_label()}</span>
+            <textarea
+              class="textarea composer-textarea"
+              maxlength="10000"
+              placeholder={m.forum_reply_placeholder()}
+              bind:value={replyBody}></textarea>
+          </label>
 
           {#if replyError}
             <ErrorAlert message={replyError} />
           {/if}
 
-          <button type="submit" class="btn-primary" disabled={replySubmitting}>
-            {replySubmitting ? m.settings_saving() : m.forum_reply_submit()}
-          </button>
+          <div class="delete-row">
+            <button type="submit" class="btn-primary" disabled={replySubmitting}>
+              {replySubmitting ? m.settings_saving() : m.forum_reply_submit()}
+            </button>
+          </div>
         </form>
       {:else}
         <LoadingSpinner />
@@ -320,117 +336,131 @@
 </div>
 
 <style>
-  .back-link {
+  .thread-crumbs {
+    margin-bottom: var(--block-gap);
+  }
+
+  .crumb {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    margin-bottom: var(--block-gap);
     color: var(--text-secondary);
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     text-decoration: none;
     transition: color var(--transition-fast);
   }
 
-  .back-link:hover {
+  .crumb:hover {
     color: var(--accent);
   }
 
-  .state-panel {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 2.5rem 1.5rem;
-    text-align: center;
+  .state-block {
+    padding: var(--space-8) 0;
   }
 
   .state-title {
-    margin: 0;
-    font-size: 1.35rem;
-    font-weight: 700;
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-lg);
+    font-weight: 600;
   }
 
   .state-note {
-    max-width: 34rem;
-    margin: 0;
-  }
-
-  .state-action {
-    display: inline-flex;
-    width: auto;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-    text-decoration: none;
+    margin: 0 0 var(--space-4);
   }
 
   .thread-error {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--space-3);
     align-items: flex-start;
   }
 
-  .retry-btn {
-    width: auto;
+  .thread-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .skeleton-title {
+    height: 1.25rem;
+    width: min(26rem, 85%);
+  }
+
+  .skeleton-line {
+    height: 0.8rem;
+    width: 100%;
+  }
+
+  .skeleton-line.short {
+    width: 60%;
   }
 
   .thread-main {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-4);
   }
 
   .thread-head {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: var(--space-2);
   }
 
-  .category-badge {
-    align-self: flex-start;
-    padding: 0.15rem 0.6rem;
-    font-size: 0.72rem;
-    font-weight: 700;
+  .thread-cat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    font-size: var(--text-xs);
+    font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    border-radius: var(--radius-sm);
-    border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
-    color: var(--accent);
+    color: var(--text-secondary);
+  }
+
+  .thread-cat .chip-dot {
+    background: var(--accent);
   }
 
   .thread-title {
     margin: 0;
-    font-size: 1.5rem;
-    line-height: 1.3;
-    font-weight: 700;
+    font-size: var(--text-2xl);
+    line-height: var(--leading-tight);
+    font-weight: 600;
+    letter-spacing: -0.015em;
   }
 
   .thread-meta {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
     flex-wrap: wrap;
+    gap: 0.4rem 0.9rem;
+    margin: 0;
+    font-size: var(--text-xs);
     color: var(--text-muted);
-    font-size: 0.82rem;
+  }
+
+  .thread-author {
+    color: var(--text-primary);
+    font-weight: 600;
   }
 
   .callsign {
-    padding: 0.1rem 0.4rem;
-    font-family:
-      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-      monospace;
-    font-size: 0.72rem;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
-    color: var(--accent);
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
   }
 
+  /* The post body is the only long-form text on the page: 16px on a relaxed
+     leading, kept on the same measure as the replies below it. */
   .thread-body {
     margin: 0;
-    max-width: var(--max-width-narrow);
-    color: var(--text-secondary);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
+    color: var(--text-primary);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
@@ -438,34 +468,30 @@
   .thread-actions {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
     border-top: 1px solid var(--border);
-    padding-top: 1rem;
   }
 
   .delete-row {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-  }
-
-  .delete-btn,
-  .cancel-delete-btn {
-    flex: 0 0 auto;
-    width: auto;
+    gap: var(--space-2);
   }
 
   .replies-section {
-    margin-top: var(--block-gap);
+    margin-top: var(--section-gap);
   }
 
   .replies-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0 0 1rem;
-    font-size: 1.1rem;
-    font-weight: 700;
+    margin: 0 0 var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
   }
 
   .replies-empty {
@@ -475,52 +501,53 @@
   .reply-tree {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
   }
 
   .reply-composer {
-    margin-top: var(--block-gap);
+    margin-top: var(--section-gap);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-4);
   }
 
   .reply-target {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: var(--radius-md);
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     background-color: var(--bg-inset);
-    border: 1px solid var(--border-card);
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     color: var(--text-secondary);
   }
 
-  .action-btn {
+  .quiet-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    padding: 0.2rem 0.4rem;
+    padding: 0.15rem 0.3rem;
     border: none;
-    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-muted);
-    font-size: 0.82rem;
+    font-size: var(--text-xs);
+    font-weight: 500;
     cursor: pointer;
     transition: color var(--transition-fast);
   }
 
-  .action-btn:hover {
-    color: var(--accent);
+  .quiet-btn:hover {
+    color: var(--text-primary);
   }
 
   .gate-notice {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: var(--space-2);
   }
 
   .gate-note {
@@ -530,12 +557,12 @@
   .composer-form {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-4);
   }
 
   .composer-textarea {
-    min-height: 6rem;
-    font-family: inherit;
+    min-height: 8rem;
+    font-family: var(--font-ui);
     resize: vertical;
   }
 </style>

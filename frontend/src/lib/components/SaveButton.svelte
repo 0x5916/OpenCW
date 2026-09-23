@@ -13,6 +13,6 @@
   );
 </script>
 
-<button type="submit" class="btn-primary settings-btn-compact" disabled={saving}>
+<button type="submit" class="btn-primary settings-btn-compact" disabled={saving} aria-live="polite">
   {label}
 </button>
