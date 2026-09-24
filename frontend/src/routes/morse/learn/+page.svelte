@@ -1,6 +1,13 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { calculateDuration, generateTimedLesson, LESSONS, MORSE } from '$lib/morse';
+  import {
+    calculateDuration,
+    generateTimedLesson,
+    getLessonChars,
+    LESSONS,
+    MORSE
+  } from '$lib/morse';
+  import { formatClock, percentage } from '$lib/format';
   import MorsePlayer from '$lib/components/MorsePlayer.svelte';
   import ResultOverlay from '$lib/components/ResultOverlay.svelte';
   import GuestNotice from '$lib/components/GuestNotice.svelte';
@@ -22,6 +29,13 @@
   } from '$lib/cwSync';
   import * as m from '$lib/paraglide/messages';
 
+  /** The playback controls the page drives from outside the player. */
+  type PlayerHandle = {
+    playNow: () => Promise<void>;
+    stopNow: () => Promise<void>;
+    isStarted: () => boolean;
+  };
+
   let inputText = $state('');
 
   // The stored lesson can only be read in the browser (the site is fully
@@ -41,7 +55,7 @@
   // Attempts for this visit only: the durable record lives in the progress
   // queue and on the profile page. The strip exists so a practice session has a
   // visible shape without touching any stored data.
-  let attempts = $state<{ accuracy: number; lesson: number }[]>([]);
+  let attempts = $state<number[]>([]);
   let playing = $state(false);
 
   // Two distinct practices share this page: drilling a single character and
@@ -64,11 +78,7 @@
   // Character drill: familiarisation with one character. The character and its
   // pattern stay on screen, playback plays that character, and the selector
   // changes both.
-  let drillPlayer = $state<{
-    playNow: () => Promise<void>;
-    stopNow: () => Promise<void>;
-    isStarted: () => boolean;
-  } | null>(null);
+  let drillPlayer = $state<PlayerHandle | null>(null);
   let drillPlaying = $state(false);
   let drillPlayed = $state(false);
 
@@ -160,17 +170,12 @@
   });
 
   let lessonText = $derived(generateTimedLesson(chosenLesson, 60, charWpm, effWpm));
-  let currentLessonWord = $derived(LESSONS.slice(0, chosenLesson).join(''));
-  let currentLessonChars = $derived(currentLessonWord.split('').filter(Boolean));
+  let currentLessonChars = $derived(getLessonChars(chosenLesson).split('').filter(Boolean));
   // Drill target: the newest character the lesson introduces. Lesson 1's
   // sequence ends with M, so that is where the default lands; the lesson effect
   // below keeps it right for every other lesson.
   let selectedLessonChar = $state((LESSONS[0] ?? '').slice(-1));
-  let fullLessonPlayer = $state<{
-    playNow: () => Promise<void>;
-    stopNow: () => Promise<void>;
-    isStarted: () => boolean;
-  } | null>(null);
+  let fullLessonPlayer = $state<PlayerHandle | null>(null);
   function regenerate() {
     // A fresh passage never plays under the previous one.
     if (playing) void stopPlayback();
@@ -188,7 +193,7 @@
     // A pending discard stops being pending once the copy has been checked.
     newExerciseArmed = false;
     if (newExerciseTimer) clearTimeout(newExerciseTimer);
-    attempts = [...attempts, { accuracy: result, lesson: chosenLesson }].slice(-20);
+    attempts = [...attempts, result].slice(-20);
     if (result > 0) {
       saveProgressOfflineFirst({
         lesson: chosenLesson,
@@ -203,9 +208,9 @@
   let hasPrevLesson = $derived(result < SCORE_OK && chosenLesson > 1);
 
   let attemptCount = $derived(attempts.length);
-  let bestAttempt = $derived(attempts.reduce((best, a) => Math.max(best, a.accuracy), 0));
+  let bestAttempt = $derived(attempts.reduce((best, value) => Math.max(best, value), 0));
   let averageAttempt = $derived(
-    attempts.length === 0 ? 0 : attempts.reduce((sum, a) => sum + a.accuracy, 0) / attempts.length
+    attempts.length === 0 ? 0 : attempts.reduce((sum, value) => sum + value, 0) / attempts.length
   );
   // Set composition, used by the lesson card and the character-set popover.
   const isLetter = (char: string) => /[A-Z]/.test(char);
@@ -216,8 +221,8 @@
   let symbolChars = $derived(
     currentLessonChars.filter((char) => !isLetter(char) && !isNumber(char))
   );
-  // Fixed-height set preview: the first eight characters plus a remainder count,
-  // so the lesson card is the same height at lesson 1 and lesson 39.
+  // Fixed-height set preview: only the newest characters, so the card stays the
+  // same height as the set grows.
   let latestChars = $derived(currentLessonChars.slice(-7));
   let learnedLabel = $derived(
     currentLessonChars.length === 1
@@ -252,12 +257,6 @@
   // is only approximate, so the header quotes the same clock the transport does.
   // Floored, not rounded, so both readouts agree to the second.
   let sendSeconds = $derived(Math.floor(calculateDuration(lessonText, charWpm, effWpm)));
-
-  function clock(seconds: number): string {
-    const minutes = Math.floor(seconds / 60);
-    const rest = (seconds % 60).toString().padStart(2, '0');
-    return `${minutes}:${rest}`;
-  }
 
   // One line per state, naming what to do next.
   let sessionStateText = $derived(
@@ -303,10 +302,6 @@
   // Only the action that is next uses the amber fill: while the audio runs the
   // transport owns it, then the check does — until the copy has been checked.
   let isCheckPrimary = $derived(inputText.trim() !== '' && !playing && result < 0);
-
-  function pct(value: number): string {
-    return `${Math.round(value * 100)}%`;
-  }
 
   function prevLesson() {
     chosenLesson -= 1;
@@ -513,7 +508,7 @@
 
 {#if showQuickStart}
   <section class="quickstart" aria-labelledby="quickstart-title">
-    <div class="quickstart-body">
+    <div>
       <h2 id="quickstart-title" class="quickstart-title">{m.trainer_quickstart_title()}</h2>
       <ol class="quickstart-steps">
         <li>{m.trainer_quickstart_step1()}</li>
@@ -631,11 +626,11 @@
             </div>
             <div class="metric">
               <span class="metric-label">{m.trainer_metric_best()}</span>
-              <span class="metric-value">{pct(bestAttempt)}</span>
+              <span class="metric-value">{percentage(bestAttempt)}</span>
             </div>
             <div class="metric">
               <span class="metric-label">{m.trainer_metric_average()}</span>
-              <span class="metric-value">{pct(averageAttempt)}</span>
+              <span class="metric-value">{percentage(averageAttempt)}</span>
             </div>
           </div>
         {/if}
@@ -664,7 +659,7 @@
               count: String(currentLessonChars.length),
               speed: `${charWpm}/${effWpm}`,
               hz: String(freq),
-              time: clock(sendSeconds)
+              time: formatClock(sendSeconds)
             })}
           {:else}
             {m.trainer_summary_meta_drill({
@@ -762,7 +757,7 @@
 
           {#if !showOverlay && result >= 0}
             <p class="result-line" aria-live="polite">
-              {m.trainer_result_last({ percent: pct(result) })}
+              {m.trainer_result_last({ percent: percentage(result) })}
               <button
                 type="button"
                 class="quiet-btn quiet-btn--accent"
@@ -832,7 +827,6 @@
             {freq}
             {volume}
             {startDelay}
-            compact
             showSettings
             showTransportExtras={false}
             onStart={onDrillStart}
@@ -849,9 +843,8 @@
                mode switch above works at any time, and once the character has
                been played this is the advised next step. -->
           <div class="drill-actions">
-            <button
-              class={drillPlayed ? 'btn-primary drill-cta' : 'btn-ghost drill-cta'}
-              onclick={goToPassage}>{m.trainer_drill_cta()}</button
+            <button class={drillPlayed ? 'btn-primary' : 'btn-ghost'} onclick={goToPassage}
+              >{m.trainer_drill_cta()}</button
             >
           </div>
         </div>
@@ -913,17 +906,6 @@
 
   .side-panel :global(.card-title) {
     margin: 0;
-  }
-
-  /* One label scale for both panels: the sidebar's section labels and the
-     practice panel's field labels read as the same voice. */
-  .panel-label {
-    margin: 0;
-    font-size: var(--text-xs);
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-muted);
   }
 
   .side-divider {
@@ -1178,9 +1160,10 @@
     min-width: 0;
   }
 
-  /* Quiet inline action: review. Amber belongs to the next action, so these
-     stay secondary until hovered. */
-  .quiet-btn {
+  /* Quiet inline actions (review, character set): the text does the work, and
+     amber belongs to the next action, so these stay secondary until hovered. */
+  .quiet-btn,
+  .charset-toggle {
     background: none;
     border: none;
     padding: 0;
@@ -1192,7 +1175,8 @@
     cursor: pointer;
   }
 
-  .quiet-btn:hover {
+  .quiet-btn:hover,
+  .charset-toggle:hover {
     color: var(--accent);
   }
 
@@ -1227,18 +1211,6 @@
      trainer layout never moves. */
   .charset {
     position: relative;
-  }
-
-  .charset-toggle {
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    cursor: pointer;
-  }
-
-  .charset-toggle:hover {
-    color: var(--accent);
   }
 
   .charset-toggle::-webkit-details-marker {
@@ -1340,14 +1312,19 @@
     color: var(--text-primary);
   }
 
+  /* Preflight removes list markers; the numbered steps and the tips carry the
+     structure, so their markers are restored here. */
   .quickstart-steps {
     margin: var(--space-2) 0 0;
     padding-left: 1.15rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
+    list-style: decimal;
     font-size: var(--text-sm);
     color: var(--text-secondary);
+  }
+
+  .quickstart-steps li + li,
+  .quickstart-tips li + li {
+    margin-top: 0.3rem;
   }
 
   .quickstart-tips {
@@ -1364,9 +1341,7 @@
   .quickstart-tips ul {
     margin: var(--space-2) 0 0;
     padding-left: 1.15rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
+    list-style: disc;
   }
 
   /* Drill: one character, one player, one way onward. */

@@ -12,7 +12,7 @@ COPY . .
 # Both are build-time values: PUBLIC_API_BASE is baked into the client bundle
 # via $env/static/public, and PRERENDER_ORIGIN becomes the origin of the
 # canonical/hreflang/Open Graph URLs and sitemap.xml written during the build.
-ARG PUBLIC_API_BASE=http://localhost:8000
+ARG PUBLIC_API_BASE=http://localhost:8080/v1
 ARG PRERENDER_ORIGIN=https://opencw.net
 ENV PUBLIC_API_BASE=$PUBLIC_API_BASE
 ENV PRERENDER_ORIGIN=$PRERENDER_ORIGIN

@@ -26,15 +26,12 @@
      playhead, the active lesson, focus. Status colours below stay semantic —
      green means correct, never "brand". */
   --accent: #f2a33c;
-  --accent-hover: #f7b860;
   --accent-cta: #e8952f;
   --accent-cta-h: #f2a33c;
   --danger: #e0705c;
-  --danger-h: #c75a48;
   /* Filled accent surfaces carry a dark-on-amber label; white on #e8952f only
      reaches ~2.2:1. */
   --on-accent: #211603;
-  --on-danger: #2a0f0a;
 
   --result-good-bg: #14251a;
   --result-bad-bg: #2a1410;
@@ -75,8 +72,6 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
   --space-10: 2.5rem;
-  --space-12: 3rem;
-  --space-16: 4rem;
 
   --transition-fast: 150ms;
   --transition-base: 200ms;
@@ -144,13 +139,10 @@
     --text-muted: #605849;
     --text-label: #57503f;
     --accent: #a94c08;
-    --accent-hover: #8f4107;
     --accent-cta: #a24a08;
     --accent-cta-h: #8f4107;
     --danger: #b42318;
-    --danger-h: #911b12;
     --on-accent: #fff8ef;
-    --on-danger: #ffffff;
     --status-good: #1e7a46;
     --status-ok: #8a5a00;
     --status-bad: #b42318;
@@ -176,13 +168,10 @@
   --text-muted: #605849;
   --text-label: #57503f;
   --accent: #a94c08;
-  --accent-hover: #8f4107;
   --accent-cta: #a24a08;
   --accent-cta-h: #8f4107;
   --danger: #b42318;
-  --danger-h: #911b12;
   --on-accent: #fff8ef;
-  --on-danger: #ffffff;
   --status-good: #1e7a46;
   --status-ok: #8a5a00;
   --status-bad: #b42318;
@@ -253,8 +242,8 @@ body {
   padding: var(--space-4);
 }
 
-/* Heading for a card/panel's own content. `.card-label` stays the eyebrow/meta
-   label; use `.card-title` whenever the text actually heads the surface. */
+/* Heading for a card/panel's own content. `.card-title` heads the text;
+   `.card-label` is the quiet caps label above it. */
 .card-title {
   color: var(--text-primary);
   font-size: var(--text-base);
@@ -263,13 +252,21 @@ body {
   margin: 0 0 0.5rem;
 }
 
-.card-label {
+/* One caps-label recipe for every surface — a card, a trainer panel, a metric
+   readout. Only the margin differs: the surface that owns its own rhythm adds
+   none, so `.panel-label` and `.metric-label` stay margin-free. */
+.card-label,
+.panel-label,
+.metric-label {
   color: var(--text-muted);
   font-size: var(--text-xs);
-  line-height: var(--leading-snug);
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card-label {
+  line-height: var(--leading-snug);
   margin-bottom: 0.75rem;
 }
 
@@ -281,6 +278,31 @@ body {
   border-radius: var(--radius-md);
   border: 1px solid var(--border-card);
   background-color: var(--bg-inset);
+}
+
+/* Empty and error states read as text, not as illustration. `.state-block` is
+   the message itself; `.state-error` is the same shape for the states whose
+   children are controls (an alert plus a retry). */
+.state-block {
+  padding: var(--space-8) 0;
+  max-width: var(--max-width-narrow);
+}
+
+.state-title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.state-note {
+  margin: 0 0 var(--space-4);
+}
+
+.state-error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
 }
 
 /* Rule between two parts of the same section (never between sections: those
@@ -410,21 +432,34 @@ body {
 }
 
 /* Buttons are inline by default: the action decides its own width. Hover is a
-   colour step only — no lift, no glow. */
-.btn-primary {
+   colour step only — no lift, no glow. The base below carries the control
+   frame; each variant only sets its size, colour and hover step. */
+.btn-primary,
+.btn-ghost,
+.btn-cta,
+.btn-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+/* The two text-sized buttons share a footprint, so an action row that mixes
+   them lines up on one height. */
+.btn-primary,
+.btn-ghost {
   gap: 0.4rem;
   min-height: 2.5rem;
   padding: 0 var(--space-4);
   font-size: var(--text-sm);
+}
+
+.btn-primary {
   font-weight: 600;
-  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background-color: var(--accent-cta);
   color: var(--on-accent);
-  cursor: pointer;
   transition: background-color var(--transition-fast);
 }
 
@@ -455,19 +490,10 @@ body {
 
 /* Secondary: the default quiet action. */
 .btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  min-height: 2.5rem;
-  padding: 0 var(--space-4);
-  font-size: var(--text-sm);
   font-weight: 500;
-  border-radius: var(--radius-sm);
   border: 1px solid var(--border-control);
   background-color: var(--bg-surface);
   color: var(--text-primary);
-  cursor: pointer;
   transition:
     border-color var(--transition-fast),
     background-color var(--transition-fast);
@@ -485,19 +511,14 @@ body {
 
 /* Large primary action (mastheads and end-of-article CTAs). */
 .btn-cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   gap: 0.5rem;
   min-height: 2.875rem;
   padding: 0 1.75rem;
   font-size: var(--text-base);
   font-weight: 600;
-  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background-color: var(--accent-cta);
   color: var(--on-accent);
-  cursor: pointer;
   transition: background-color 0.15s;
 }
 
@@ -521,10 +542,6 @@ body {
     background-color var(--transition-base),
     border-color var(--transition-base),
     color var(--transition-base);
-}
-
-.select {
-  padding: var(--space-2) 0.7rem;
 }
 
 .textarea {
@@ -596,6 +613,70 @@ select.select {
   gap: 0.3rem;
 }
 
+/* Composer: the new-thread panel and the inline reply boxes are one form
+   shape, so a thread and its answers do not look like two different products.
+   `.is-inline` is the compact variant used when answering one comment. */
+.composer-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.composer-form.is-inline {
+  gap: var(--space-3);
+}
+
+.composer-textarea {
+  min-height: 8rem;
+  font-family: var(--font-ui);
+  line-height: var(--leading-normal);
+  resize: vertical;
+  /* Keep the focused box clear of the sticky header and the phone tab bar. */
+  scroll-margin-block: 5rem;
+}
+
+.composer-textarea.is-inline {
+  min-height: 5rem;
+}
+
+.composer-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Unverified-posting gate: a notice plus the settings link that clears it. */
+.gate-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.gate-note {
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .composer-form,
+  .composer-form.is-inline {
+    gap: var(--space-3);
+  }
+
+  .composer-textarea {
+    min-height: 7rem;
+  }
+
+  .composer-textarea.is-inline {
+    min-height: 4.75rem;
+  }
+
+  .composer-actions button {
+    min-width: 0;
+  }
+}
+
 .diff-legend {
   display: flex;
   gap: 0.5rem;
@@ -659,7 +740,8 @@ summary:focus-visible,
   .footer,
   button,
   .btn-primary,
-  .btn-ghost {
+  .btn-ghost,
+  .btn-cta {
     display: none !important;
   }
 
@@ -693,7 +775,8 @@ summary:focus-visible,
     border-width: 2px;
   }
 
-  .btn-primary {
+  .btn-primary,
+  .btn-cta {
     border: 2px solid currentColor;
   }
 }
@@ -739,20 +822,38 @@ summary:focus-visible,
   flex-shrink: 0;
 }
 
-/* Metric: label + monospace value readout (profile stats, session strip). */
+/* Operator call sign: set in the mono face beside a display name. */
+.callsign {
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+/* Forum category label: small caps with the amber dot, on the thread list and
+   the thread page alike. */
+.thread-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.thread-cat .chip-dot {
+  background: var(--accent);
+}
+
+/* Metric: label + monospace value readout (profile stats, session strip). The
+   label itself is the shared caps label above. */
 .metric {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
   min-width: 0;
-}
-
-.metric-label {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
 }
 
 .metric-value {
@@ -762,8 +863,9 @@ summary:focus-visible,
   color: var(--text-primary);
 }
 
-/* Row list: hairline-separated rows. The default structure for forum topics,
-   session history and link lists — a list is not a grid of cards. */
+/* Row list: hairline-separated rows. The one structure for whole-row link
+   lists — home destinations, the Morse hub and forum topics — because a list
+   is not a grid of cards, and a row should not measure differently per page. */
 .row-list {
   list-style: none;
   margin: 0;
@@ -805,6 +907,36 @@ summary:focus-visible,
   background-color: var(--bg-inset);
   border-radius: var(--radius-xs);
   animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+/* Loading rows: one list item and its parts, shared by the forum list and the
+   thread page so a pending page does not change shape between routes. */
+.skeleton-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.skeleton-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: var(--space-2);
+}
+
+.skeleton-title {
+  height: 1.15rem;
+  width: min(28rem, 80%);
+}
+
+.skeleton-line {
+  height: 0.8rem;
+  width: 100%;
+}
+
+.skeleton-meta {
+  height: 0.8rem;
+  width: min(18rem, 60%);
 }
 
 @keyframes skeleton-pulse {

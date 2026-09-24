@@ -55,7 +55,7 @@
   }
 </script>
 
-<div class="page-narrow more-page">
+<div class="page-narrow">
   <!-- Same heading shape as the Settings page: mark + page title. -->
   <div class="more-heading">
     <img src="/favicon.svg" alt="" class="more-logo" />

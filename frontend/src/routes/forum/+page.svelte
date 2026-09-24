@@ -264,7 +264,7 @@
         </div>
       {:else if postingStatus === 'ready'}
         <form class="composer-form" onsubmit={submitThread}>
-          <label class="composer-field">
+          <label class="field">
             <span class="label-text">{m.forum_thread_category_label()}</span>
             <select class="select" bind:value={composerCategory}>
               {#each FORUM_CATEGORIES as category (category)}
@@ -273,7 +273,7 @@
             </select>
           </label>
 
-          <label class="composer-field">
+          <label class="field">
             <span class="label-text">{m.forum_thread_title_label()}</span>
             <input
               class="input"
@@ -284,10 +284,10 @@
             />
           </label>
 
-          <label class="composer-field">
+          <label class="field">
             <span class="label-text">{m.forum_thread_body_label()}</span>
             <textarea
-              class="input composer-textarea"
+              class="textarea composer-textarea"
               maxlength="10000"
               placeholder={m.forum_thread_body_placeholder()}
               bind:value={composerBody}></textarea>
@@ -299,7 +299,7 @@
 
           <div class="composer-actions">
             <button type="submit" class="btn-primary" disabled={composerSubmitting}>
-              {composerSubmitting ? m.settings_saving() : m.forum_thread_submit()}
+              {composerSubmitting ? m.common_saving() : m.forum_thread_submit()}
             </button>
             <button type="button" class="btn-ghost" onclick={closeComposer}>
               {m.forum_cancel()}
@@ -313,7 +313,7 @@
   {/if}
 
   {#if loading}
-    <div class="thread-skeleton">
+    <div class="skeleton-rows">
       {#each SKELETON_ROWS as row (row)}
         <div class="skeleton-row">
           <span class="skeleton skeleton-title"></span>
@@ -323,15 +323,15 @@
     </div>
     <p class="sr-only" role="status">{m.common_loading()}</p>
   {:else if loadFailed}
-    <div class="forum-error">
+    <div class="state-error">
       <ErrorAlert message={loadFailed} />
       <button type="button" class="btn-ghost" onclick={() => loadFirstPage(filter)}>
         {m.forum_retry()}
       </button>
     </div>
   {:else if threads.length === 0}
-    <section class="forum-empty">
-      <h2 class="empty-title">
+    <section class="state-block">
+      <h2 class="state-title">
         {filter
           ? m.forum_threads_empty_filtered_title({ category: forumCategoryLabel(filter) })
           : m.forum_threads_empty_title()}
@@ -459,80 +459,17 @@
     font-weight: 600;
   }
 
-  .composer-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-  }
-
-  .composer-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-
-  .composer-textarea {
-    min-height: 9rem;
-    font-family: var(--font-ui);
-    resize: vertical;
-  }
-
-  .composer-actions {
-    display: flex;
-    gap: var(--space-2);
-    align-items: center;
-  }
-
-  .gate-notice {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .gate-note {
-    margin: 0;
-  }
-
-  .forum-error {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: flex-start;
-  }
-
-  /* Empty and error states read as text, not as illustration. */
-  .forum-empty {
-    padding: var(--space-8) 0;
-    max-width: var(--max-width-narrow);
-  }
-
-  .empty-title {
-    margin: 0 0 var(--space-2);
-    font-size: var(--text-lg);
-    font-weight: 600;
-  }
-
+  /* A thread row is a `.row-link`, so it inherits the shared row spec —
+     hairline separators, row padding, and the floor + 2px amber edge on
+     hover/focus. The list itself only carries the gap to the next block. */
   .thread-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
     margin-bottom: var(--block-gap);
-    border-top: none;
   }
 
-  .thread-list > li {
-    border-bottom: none;
-  }
-
-  /* The whole row is one link: the shared `.row-link` hover supplies the floor
-     and the 2px amber edge, so the row reads as a single target. */
   .thread-row {
     display: flex;
     flex-direction: column;
     gap: 0.55rem;
-    padding: var(--space-3);
-    border-radius: var(--radius-xs);
   }
 
   .thread-title {
@@ -558,60 +495,15 @@
 
   /* Category label: small caps with a dot, the same treatment as the trainer
      and the thread page. */
-  .thread-cat {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 600;
-    color: var(--text-secondary);
-  }
-
-  .thread-cat .chip-dot {
-    background: var(--accent);
-  }
-
   .thread-replies {
     color: var(--text-muted);
     white-space: nowrap;
-  }
-
-  .callsign {
-    font-family: var(--font-mono);
-    letter-spacing: 0.04em;
-    color: var(--text-secondary);
   }
 
   .load-more-row {
     display: flex;
     justify-content: flex-start;
     margin-top: var(--block-gap);
-  }
-
-  /* Loading: rows with reserved height, so the list does not jump when the
-     threads arrive. */
-  .thread-skeleton {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-  }
-
-  .skeleton-row {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: var(--space-2);
-  }
-
-  .skeleton-title {
-    height: 1rem;
-    width: min(28rem, 80%);
-  }
-
-  .skeleton-meta {
-    height: 0.75rem;
-    width: min(18rem, 60%);
   }
 
   @media (max-width: 720px) {
@@ -638,10 +530,6 @@
       flex-basis: 100%;
       margin-left: 0;
       padding-left: 0;
-    }
-
-    .thread-row {
-      padding: var(--space-2);
     }
 
     .thread-title {

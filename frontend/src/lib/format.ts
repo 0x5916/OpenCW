@@ -40,6 +40,16 @@ export function percentage(value: number): string {
   return Math.round(value * 100) + '%';
 }
 
+/** Format a duration in seconds as a clock readout, e.g. "2:07". */
+export function formatClock(seconds: number): string {
+  const safe = Math.max(seconds, 0);
+  const minutes = Math.floor(safe / 60);
+  const rest = Math.floor(safe % 60)
+    .toString()
+    .padStart(2, '0');
+  return `${minutes}:${rest}`;
+}
+
 /** CSS modifier for an accuracy ratio (0..1). */
 export function accuracyClass(value: number): string {
   return `acc-${scoreGrade(value)}`;

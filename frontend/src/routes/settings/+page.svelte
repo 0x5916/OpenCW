@@ -413,7 +413,7 @@
 
     {#if $user}
       <!-- Account -->
-      <section class="panel settings-card">
+      <section class="panel">
         <h2 class="card-title">{m.settings_account_section()}</h2>
         <form onsubmit={saveCallSign} class="settings-form">
           <label class="field">
@@ -523,7 +523,7 @@
       <!-- Password gets its own surface: every panel is then headed by an
            `h2.card-title` (the password group used to be an `h3` buried half-way
            down the account panel), and the account panel stays about identity. -->
-      <section class="panel settings-card">
+      <section class="panel">
         <h2 class="card-title">{m.settings_password_section()}</h2>
         <form onsubmit={savePassword} class="settings-form">
           <label class="field">
@@ -572,7 +572,7 @@
     {/if}
 
     <!-- Page Settings -->
-    <section class="panel settings-card">
+    <section class="panel">
       <h2 class="card-title">{m.settings_page_section()}</h2>
       <form onsubmit={savePage} class="settings-form">
         <label class="field">
@@ -600,7 +600,7 @@
     </section>
 
     <!-- CW Settings -->
-    <section class="panel settings-card">
+    <section class="panel">
       <h2 class="card-title">{m.settings_cw_section()}</h2>
       <form onsubmit={saveCW} class="settings-form">
         <label class="field">

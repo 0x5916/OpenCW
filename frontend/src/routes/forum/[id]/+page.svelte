@@ -263,7 +263,7 @@
   <title>{thread ? `${thread.title} | OpenCW` : `${m.forum_title()} | OpenCW`}</title>
 </svelte:head>
 
-<div class="thread-page page-narrow">
+<div class="page-narrow">
   <nav class="thread-crumbs" aria-label={m.forum_title()}>
     <a class="crumb" href={href('/forum')}>
       <ArrowLeft size={14} aria-hidden="true" />
@@ -272,10 +272,10 @@
   </nav>
 
   {#if loading}
-    <div class="thread-skeleton">
+    <div class="skeleton-rows">
       <span class="skeleton skeleton-title"></span>
       <span class="skeleton skeleton-line"></span>
-      <span class="skeleton skeleton-line short"></span>
+      <span class="skeleton skeleton-meta"></span>
     </div>
     <p class="sr-only" role="status">{m.common_loading()}</p>
   {:else if notFound}
@@ -285,7 +285,7 @@
       <a class="btn-primary" href={href('/forum')}>{m.forum_back_to_threads()}</a>
     </section>
   {:else if loadFailed}
-    <div class="thread-error">
+    <div class="state-error">
       <ErrorAlert message={loadFailed} />
       <button type="button" class="btn-ghost" onclick={retryLoad}>{m.forum_retry()}</button>
     </div>
@@ -412,47 +412,6 @@
     color: var(--accent);
   }
 
-  .state-block {
-    padding: var(--space-8) 0;
-  }
-
-  .state-title {
-    margin: 0 0 var(--space-2);
-    font-size: var(--text-lg);
-    font-weight: 600;
-  }
-
-  .state-note {
-    margin: 0 0 var(--space-4);
-  }
-
-  .thread-error {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-    align-items: flex-start;
-  }
-
-  .thread-skeleton {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-  }
-
-  .skeleton-title {
-    height: 1.25rem;
-    width: min(26rem, 85%);
-  }
-
-  .skeleton-line {
-    height: 0.8rem;
-    width: 100%;
-  }
-
-  .skeleton-line.short {
-    width: 60%;
-  }
-
   .thread-main {
     display: flex;
     flex-direction: column;
@@ -465,22 +424,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-  }
-
-  .thread-cat {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    margin: 0;
-    font-size: var(--text-xs);
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-  }
-
-  .thread-cat .chip-dot {
-    background: var(--accent);
   }
 
   .thread-title {
@@ -504,12 +447,6 @@
   .thread-author {
     color: var(--text-primary);
     font-weight: 600;
-  }
-
-  .callsign {
-    font-family: var(--font-mono);
-    letter-spacing: 0.04em;
-    color: var(--text-secondary);
   }
 
   /* The post body is the only long-form text on the page: 16px on a relaxed

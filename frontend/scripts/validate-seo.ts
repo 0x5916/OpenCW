@@ -1,4 +1,5 @@
-import { locales } from '../src/lib/paraglide/runtime.js';
+import { readFileSync } from 'node:fs';
+import { NOINDEX_ROUTE_PATHS } from '../src/lib/routes.js';
 import {
   buildSitemapUrlSet,
   buildLocalizedPath,
@@ -9,9 +10,13 @@ import {
 
 type CheckResult = { ok: true; message: string } | { ok: false; message: string };
 
+// Read from the committed inlang project rather than the generated paraglide
+// runtime, so the check also runs on a clean checkout.
+const { locales } = JSON.parse(
+  readFileSync(new URL('../project.inlang/settings.json', import.meta.url), 'utf8')
+) as { locales: string[] };
+
 const INDEXABLE_ROUTES = getIndexablePublicRoutePaths();
-// `/more` is the phone-only "More" screen: a redirect target on desktop, never a landing page.
-const NOINDEX_ROUTES = ['/login', '/register', '/profile', '/settings', '/more'];
 
 function absolute(origin: string, path: string): string {
   return new URL(path, origin).toString();
@@ -94,7 +99,7 @@ async function validateSitemap(): Promise<CheckResult[]> {
     }
   }
 
-  for (const routePath of NOINDEX_ROUTES) {
+  for (const routePath of NOINDEX_ROUTE_PATHS) {
     if (isRouteIndexable(routePath)) {
       checks.push({
         ok: false,
@@ -117,11 +122,42 @@ async function validateSitemap(): Promise<CheckResult[]> {
   return checks;
 }
 
+function validateInfra(): CheckResult[] {
+  const checks: CheckResult[] = [];
+  const nginxConfig = readFileSync(new URL('../nginx.conf', import.meta.url), 'utf8');
+
+  // The forum deep-link location carries the locale prefix, so nginx has to
+  // know the same locale list the app does.
+  const alternation = nginxConfig.match(/location ~ \^\/\(\?:\(\?:([^)]+)\)\/\)\?forum/);
+
+  if (!alternation) {
+    checks.push({ ok: false, message: 'nginx.conf: forum locale location not found' });
+    return checks;
+  }
+
+  const nginxLocales = alternation[1].split('|');
+  const missing = locales.filter((locale) => !nginxLocales.includes(locale));
+  const extra = nginxLocales.filter((locale) => !locales.includes(locale));
+
+  if (missing.length > 0) {
+    checks.push({ ok: false, message: `nginx.conf is missing locales: ${missing.join(', ')}` });
+  }
+  if (extra.length > 0) {
+    checks.push({ ok: false, message: `nginx.conf has unknown locales: ${extra.join(', ')}` });
+  }
+  if (missing.length === 0 && extra.length === 0) {
+    checks.push({ ok: true, message: 'nginx.conf locale list matches the inlang project' });
+  }
+
+  return checks;
+}
+
 async function main() {
   const results: CheckResult[] = [];
 
   results.push(...validateMetadata());
   results.push(...(await validateSitemap()));
+  results.push(...validateInfra());
 
   const failures = results.filter((result) => !result.ok);
   const successes = results.filter((result) => result.ok);

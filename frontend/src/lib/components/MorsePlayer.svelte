@@ -1,5 +1,6 @@
 <script lang="ts">
   import { calculateDuration, getFarnsworthWpmSet, MORSE } from '$lib/morse';
+  import { formatClock } from '$lib/format';
   import { onDestroy } from 'svelte';
   import { Play, Square, Pause, SlidersHorizontal, SkipForward } from '@lucide/svelte';
   import { user } from '$lib/auth';
@@ -12,8 +13,7 @@
     effWpm = $bindable(12),
     freq = $bindable(600),
     startDelay = 0,
-    volume = $bindable(1.0),
-    compact = false,
+    volume = 1.0,
     playLabel = '',
     label = '',
     showSettings = false,
@@ -280,15 +280,6 @@
   let elapsedTime = $derived(Math.max(timer, 0));
   let totalTime = $derived(Math.max(duration - startDelay, 0));
 
-  function formatClock(seconds: number) {
-    const safe = Math.max(seconds, 0);
-    const min = Math.floor(safe / 60);
-    const sec = Math.floor(safe % 60)
-      .toString()
-      .padStart(2, '0');
-    return `${min}:${sec}`;
-  }
-
   $effect(() => {
     if (!started) activeText = text;
   });
@@ -420,9 +411,9 @@
 <div class="player-wrapper">
   <!-- Safe-area probe: the placement script reads env(safe-area-inset-*) here. -->
   <div class="safe-area-probe" aria-hidden="true" bind:this={safeProbeEl}></div>
-  {#if label || !compact}
+  {#if label}
     <div class="player-header">
-      {#if label}<p class="card-title player-label">{label}</p>{/if}
+      <p class="card-title player-label">{label}</p>
     </div>
   {/if}
   <!-- Playhead: the timing line that runs while the transmission plays. -->
@@ -444,7 +435,6 @@
             type="button"
             class="btn-icon"
             onclick={() => stop()}
-            disabled={!started}
             aria-label={m.player_stop()}
             title={m.player_stop()}
           >
@@ -474,7 +464,6 @@
             type="button"
             class="btn-icon"
             onclick={skipNext}
-            disabled={!started}
             aria-label={m.player_skip_next()}
             title={m.player_skip_next()}
           >

@@ -204,7 +204,7 @@
       freq = cw.freq;
       records = prog;
     } catch (e) {
-      loadError = localizeApiError(e, () => m.settings_load_error());
+      loadError = localizeApiError(e, () => m.common_load_error());
     } finally {
       loading = false;
     }
@@ -350,7 +350,7 @@
   }
 </script>
 
-<div class="profile-page page-stack">
+<div class="page-stack">
   {#if loading}
     <LoadingSpinner variant="spinner" />
   {:else if loadError}
@@ -405,7 +405,7 @@
       </div>
     </header>
 
-    <section class="panel profile-heatmap-card">
+    <section class="panel">
       <div class="profile-section-header profile-section-header--split">
         <div class="profile-section-title-wrap">
           <h2 class="card-title">
@@ -515,7 +515,7 @@
     </section>
 
     <!-- CW settings snapshot: peer readouts, so a stat strip rather than a card. -->
-    <section class="profile-cw-card">
+    <section>
       <h2 class="card-title">{m.profile_cw_settings()}</h2>
       <div class="profile-cw-grid">
         <div class="profile-cw-item">
@@ -534,7 +534,7 @@
     </section>
 
     <!-- Progress history: dense tabular data, the table is the content. -->
-    <section class="panel profile-history-card">
+    <section class="panel">
       <h2 class="card-title">{m.profile_history()}</h2>
       {#if recentRecords.length === 0}
         <p class="body-text profile-empty">

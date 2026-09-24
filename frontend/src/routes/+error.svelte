@@ -9,7 +9,7 @@
   const isNotFound = $derived(page.status === 404);
 </script>
 
-<div class="error-page page-narrow">
+<div class="page-narrow">
   <div class="panel error-card">
     <p class="error-code">{page.status}</p>
     <h1 class="page-title error-title">

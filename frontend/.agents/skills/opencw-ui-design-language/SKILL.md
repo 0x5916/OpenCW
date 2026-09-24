@@ -46,8 +46,11 @@ Read the relevant route/component first, then cross-check these sources:
 
 ## Controls and interactions
 
-- Use shared classes before inventing new controls: `.btn-primary`, `.btn-ghost`, `.btn-cta`, `.btn-icon`, `.input`, `.select`, `.textarea`, `.field`, `.notice`, `.chip`, `.metric`, `.row-list`.
+- Use shared classes before inventing new controls: `.btn-primary`, `.btn-ghost`, `.btn-cta`, `.btn-icon` (one shared base, plus a shared size tier for the two text-sized buttons), `.input`, `.select`, `.textarea`, `.field`, `.notice`, `.chip`, `.callsign`, `.thread-cat`, `.metric`, `.panel-label`, `.composer-form` / `.composer-textarea` / `.composer-actions` (with `.is-inline`), `.gate-notice` / `.gate-note`, `.state-block` / `.state-title` / `.state-note` / `.state-error`, `.skeleton-rows` with `.skeleton-row` / `.skeleton-title` / `.skeleton-line` / `.skeleton-meta`, `.row-list`.
+- One row language: every whole-row link list — home destinations, the Morse hub, and the forum thread list — is a `.row-list` of `.row-link`s: hairline separators, the shared row padding, and the floor + 2px amber edge on hover and keyboard focus. Do not give one list its own padding, radius or separator strategy. The quieter treatments are deliberate and local, not drift: dropdown items, the profile history table, the desktop navbar, the bottom tab bar, and `/more` rows (colour-only hover).
+- Labels share one recipe: `.card-label` (which keeps its bottom margin), `.panel-label` and `.metric-label` (margin-free) are the same caps label. Do not author a fourth.
 - Whole-row links (`.row-link`) read as one target: hover and keyboard focus floor the row with `--bg-inset` and run the shared 2px amber edge. Destructive row actions stay quiet (unbordered, danger on hover) rather than filled buttons.
+- Top-bar controls share one treatment: a secondary-ink label over a 2px amber rule that grows on hover and `:focus-visible`, and stays put while that control's dropdown is open. The rule is an absolutely positioned child, so the shared block in `layout.css` declares `position: relative` for the controls it applies to — a new top-bar control must join that selector list, or the sticky `.navbar` becomes the containing block and the rule paints across the whole bar. The rule stays local to its control; never draw a full-width bar indicator.
 - Keep hover/focus restrained: color, background, border, or the established 2px amber rule; no lift/glow for static content. Always preserve visible keyboard focus.
 - Reserve filled accent buttons for the main action in the current context. Use ghost/quiet text-like actions for secondary actions and destructive actions that should not dominate until hovered, focused, or confirmed.
 - Preserve semantic status colors. Do not use green as brand success decoration or amber as an error substitute.
@@ -66,5 +69,6 @@ Read the relevant route/component first, then cross-check these sources:
 - Confirm color choices work in dark theme, light theme, `prefers-contrast: more`, and keyboard focus states.
 - Confirm cards, borders, dividers, and empty-state copy are necessary and not decorative noise.
 - Confirm the page keeps its intended character instead of copying another page's layout wholesale.
+- Confirm rows follow the one row language, and that any deviation is one of the documented quieter treatments (menus, tables, chrome, `/more`).
 - Confirm unrelated behavior, routes, data loading, posting, deletion, storage, and accessibility semantics are unchanged.
 - For trainer-specific UI work, switch to `opencw-trainer-ui`; keep this skill focused on site-wide language and cross-page consistency.

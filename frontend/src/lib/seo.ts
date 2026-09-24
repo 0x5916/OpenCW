@@ -1,4 +1,5 @@
 import type { Locale } from '$lib/locale';
+import { NOINDEX_ROUTE_PATHS, ROUTE_PATHS } from './routes.js';
 
 export type SeoMetadata = {
   title: string;
@@ -10,7 +11,12 @@ export type SeoMetadata = {
 
 export const SITE_NAME = 'OpenCW';
 export const DEFAULT_OG_IMAGE_PATH = '/og-image.png';
-export const PUBLIC_ROUTE_PATHS = ['/', '/about', '/forum', '/morse', '/morse/learn'] as const;
+
+// Indexable surfaces, derived from the one route list so a route cannot be
+// sitemapped without also being prerendered.
+const PUBLIC_ROUTE_PATHS = ROUTE_PATHS.filter(
+  (routePath) => !NOINDEX_ROUTE_PATHS.includes(routePath)
+);
 
 type LocalizedSeoText = {
   title: string;
@@ -143,7 +149,6 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
     }
   },
   '/morse/learn': {
-    ogImagePath: '/og-image.png',
     localized: {
       en: {
         title: 'Learn Morse Code - OpenCW Koch Trainer',

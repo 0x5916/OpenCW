@@ -107,7 +107,7 @@
   }
 </script>
 
-<div class="reply" class:is-deleted={reply.is_deleted} class:is-target={isTarget}>
+<div class="reply" class:is-deleted={reply.is_deleted}>
   {#if reply.is_deleted}
     <div class="reply-main is-deleted">
       <div class="deleted-node" aria-label={m.forum_reply_deleted()}>
@@ -139,7 +139,7 @@
       <div class="reply-actions">
         <button
           type="button"
-          class="quiet-btn"
+          class="reply-action"
           bind:this={replyButton}
           onclick={() => onReply(reply)}
         >
@@ -150,17 +150,17 @@
           {#if confirmingDelete}
             <button
               type="button"
-              class="quiet-btn is-danger"
+              class="reply-action is-danger"
               disabled={deleting}
               onclick={handleDelete}
             >
               {m.forum_delete_confirm()}
             </button>
-            <button type="button" class="quiet-btn" onclick={() => (confirmingDelete = false)}>
+            <button type="button" class="reply-action" onclick={() => (confirmingDelete = false)}>
               {m.forum_cancel()}
             </button>
           {:else}
-            <button type="button" class="quiet-btn is-danger" onclick={handleDelete}>
+            <button type="button" class="reply-action is-danger" onclick={handleDelete}>
               {m.forum_delete_reply()}
             </button>
           {/if}
@@ -234,9 +234,6 @@
     flex-direction: column;
     gap: var(--space-2);
     border-radius: var(--radius-sm);
-    transition:
-      background-color var(--transition-fast),
-      box-shadow var(--transition-fast);
   }
 
   .reply-main.is-deleted {
@@ -250,13 +247,12 @@
     width: fit-content;
     max-width: 100%;
     padding: 0.15rem 0;
-    border-radius: var(--radius-full);
   }
 
   .deleted-dot {
     width: 0.38rem;
     height: 0.38rem;
-    border-radius: 999px;
+    border-radius: 50%;
     background-color: var(--border-subtle);
   }
 
@@ -309,12 +305,6 @@
     color: var(--text-secondary);
   }
 
-  .callsign {
-    font-family: var(--font-mono);
-    letter-spacing: 0.04em;
-    color: var(--text-secondary);
-  }
-
   .reply-text {
     margin: 0;
     font-size: var(--text-base);
@@ -331,7 +321,8 @@
     gap: 0.35rem var(--space-3);
   }
 
-  .quiet-btn {
+  /* Reply actions stay quiet: no box, danger only on hover. */
+  .reply-action {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
@@ -349,14 +340,14 @@
       background-color var(--transition-fast);
   }
 
-  .quiet-btn:hover,
-  .quiet-btn:focus-visible {
+  .reply-action:hover,
+  .reply-action:focus-visible {
     color: var(--text-primary);
     background-color: var(--bg-inset);
   }
 
-  .quiet-btn.is-danger:hover,
-  .quiet-btn.is-danger:focus-visible {
+  .reply-action.is-danger:hover,
+  .reply-action.is-danger:focus-visible {
     color: var(--danger);
   }
 

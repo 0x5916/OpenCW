@@ -12,6 +12,7 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "seo:validate": "node --experimental-strip-types scripts/validate-seo.ts",
+    "messages:validate": "node --experimental-strip-types scripts/validate-messages.ts",
     "icons": "node scripts/generate-icons.mjs",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write ."

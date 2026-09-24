@@ -1,6 +1,7 @@
 <script lang="ts">
   import { X } from '@lucide/svelte';
   import { scoreGrade, type DiffToken } from '$lib/score';
+  import { percentage } from '$lib/format';
   import * as m from '$lib/paraglide/messages';
   import { onMount } from 'svelte';
 
@@ -44,7 +45,7 @@
         ? m.trainer_score_good()
         : m.trainer_score_bad()
   );
-  let pct = $derived(Math.round(result * 100) + '%');
+  let pct = $derived(percentage(result));
 
   let panelRef = $state<HTMLDivElement | null>(null);
   let restoreFocusTo: HTMLElement | null = null;

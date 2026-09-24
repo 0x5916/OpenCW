@@ -28,9 +28,11 @@ genuinely belongs to it (footer or fixed-nav overlap), and never stretch the tra
 to fix a page-level problem.
 
 Contracts to keep unless the request explicitly changes them: lesson progression and
-storage, the `MorsePlayer` handle (`playNow` / `stopNow` / `isStarted`) and its settings,
-`saveProgressOfflineFirst` on checked copies, `generateTimedLesson` / `score` / `diffWords`,
-keyboard shortcuts, and the established visual style.
+storage, the `MorsePlayer` handle (`playNow` / `stopNow` / `isStarted`, typed once as
+`PlayerHandle` in the route) and its settings, `saveProgressOfflineFirst` on checked
+copies, `generateTimedLesson` / `score` / `diffWords`, `getLessonChars()` from `morse.ts`,
+the shared `formatClock` / `percentage` helpers in `format.ts`, keyboard shortcuts, and
+the established visual style.
 
 ## Mode rules
 
@@ -57,8 +59,12 @@ keyboard shortcuts, and the established visual style.
    final action row with the panel's normal padding. Watch for wrapping action rows on
    narrow screens (stack them full width when they wrap) and for anything hidden behind the
    fixed bottom navigation — that clearance belongs to the page shell, not the card.
+   Small `min-height`s are not fixed heights: the live status line and the answer box keep
+   theirs on purpose so the panel does not jump between states.
 5. **Delete, don't hide.** When behaviour changes, remove the obsolete markup, state,
-   handlers, styles and message keys together so nothing dead is left behind.
+   handlers, styles and message keys together so nothing dead is left behind. Run
+   `npm run messages:validate` after touching a message key: it fails on keys no source
+   file references and on any locale that lags the English source.
 6. **Verify, then report.** Run `npm run check`, `npm run lint` and `npm run build`. Then
    check the affected states in the browser (with `npm run dev` running — Paraglide only
    regenerates messages while it does) on desktop and at narrow mobile widths (about
@@ -81,4 +87,7 @@ keyboard shortcuts, and the established visual style.
       an answer exists); the drill's hand-over action stays secondary-looking until used.
 - [ ] No fixed panel height, no filler content, no accidental mobile button wrapping, no
       control under the bottom navigation.
-- [ ] No dead state, selectors or message keys; checks and build pass.
+- [ ] Labels use the shared caps recipe (`.panel-label`, the same class the review overlay
+      uses), and the quickstart — when it is shown — keeps its numbered steps and bulleted
+      tips (Tailwind preflight removes list markers, so the rules have to restore them).
+- [ ] No dead state, selectors or message keys; checks, `messages:validate` and build pass.

@@ -93,6 +93,8 @@ function getLessonChars(lesson: number): string {
   return LESSONS.slice(0, lesson).join('');
 }
 
+export { getLessonChars };
+
 export function getFarnsworthWpmSet(charWpm: number, effWpm: number) {
   const charDot = 1.2 / charWpm;
   const tFarn = (60 / effWpm - charDot * 31) / 19;

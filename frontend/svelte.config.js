@@ -1,25 +1,12 @@
 import adapter from '@sveltejs/adapter-static';
 import { readFileSync } from 'node:fs';
+import { ROUTE_PATHS } from './src/lib/routes.js';
 
 // Locales are read from the committed inlang project (the generated paraglide
 // runtime is gitignored and does not exist before `vite build` starts).
 const { locales } = JSON.parse(
   readFileSync(new URL('./project.inlang/settings.json', import.meta.url), 'utf8')
 );
-
-/** Every static route, without a locale prefix. */
-const ROUTE_PATHS = [
-  '/',
-  '/about',
-  '/forum',
-  '/morse',
-  '/morse/learn',
-  '/login',
-  '/more',
-  '/profile',
-  '/register',
-  '/settings'
-];
 
 /** Mirrors `buildLocalizedPath` in src/lib/seo.ts. */
 function localizedPath(routePath, locale) {

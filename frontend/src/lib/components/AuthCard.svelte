@@ -11,7 +11,7 @@
   let { title, subtitle, footer, children }: Props = $props();
 </script>
 
-<div class="page-narrow auth-page">
+<div class="page-narrow">
   <div class="card auth-card">
     <h1 class="page-title auth-title">{title}</h1>
     <p class="body-text auth-subtitle">{subtitle}</p>

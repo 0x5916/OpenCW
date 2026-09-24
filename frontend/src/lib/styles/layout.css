@@ -86,11 +86,6 @@
   color: var(--accent);
 }
 
-.navbar-brand img {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
 /* The desktop cluster carries both classes, so the hide rule is not order
    dependent against `.navbar-right { display: flex }`. */
 .navbar-right.navbar-desktop {
@@ -115,8 +110,17 @@
 }
 
 /* One control treatment for everything clickable in the top bar: a
-   secondary-ink label over an amber rule that grows from the left on hover;
-   the active route keeps the rule in place. */
+   secondary-ink label over an amber rule that grows from the left. The rule is
+   an absolutely positioned child, so it needs the control itself as its
+   containing block — the sticky `.navbar` is the nearest positioned ancestor
+   otherwise, which paints the rule across the whole bar. Declared once, here,
+   instead of relying on every control to remember it. */
+.navbar-link,
+.navbar-user-btn,
+.theme-icon-btn {
+  position: relative;
+}
+
 .navbar-link::after,
 .navbar-user-btn::after,
 .theme-icon-btn::after {
@@ -132,15 +136,26 @@
   transition: transform 0.18s ease;
 }
 
+/* The rule shows on hover and on keyboard focus, and stays put while a menu is
+   open so its trigger still reads as active. The active route keeps it in
+   place permanently. */
 .navbar-link:hover,
+.navbar-link:focus-visible,
 .navbar-user-btn:hover,
-.theme-icon-btn:hover {
+.navbar-user-btn:focus-visible,
+.navbar-user-btn[aria-expanded='true'],
+.theme-icon-btn:hover,
+.theme-icon-btn:focus-visible {
   color: var(--text-primary);
 }
 
 .navbar-link:hover::after,
+.navbar-link:focus-visible::after,
 .navbar-user-btn:hover::after,
-.theme-icon-btn:hover::after {
+.navbar-user-btn:focus-visible::after,
+.navbar-user-btn[aria-expanded='true']::after,
+.theme-icon-btn:hover::after,
+.theme-icon-btn:focus-visible::after {
   transform: scaleX(1);
 }
 
@@ -172,7 +187,6 @@
 }
 
 .navbar-user-btn {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -235,7 +249,6 @@
 }
 
 .theme-icon-btn {
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;

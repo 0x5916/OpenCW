@@ -105,7 +105,7 @@
 
     <div class="composer-actions">
       <button type="submit" class="btn-primary" disabled={submitting}>
-        {submitting ? m.settings_saving() : m.forum_reply_submit()}
+        {submitting ? m.common_saving() : m.forum_reply_submit()}
       </button>
       {#if onCancel}
         <button type="button" class="btn-ghost" onclick={onCancel}>{m.forum_cancel()}</button>
@@ -117,29 +117,6 @@
 {/if}
 
 <style>
-  .composer-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-  }
-
-  .composer-form.is-inline {
-    gap: var(--space-3);
-  }
-
-  .composer-textarea {
-    min-height: 8rem;
-    font-family: var(--font-ui);
-    line-height: var(--leading-normal);
-    resize: vertical;
-    /* Keep the focused box clear of the sticky header and the phone tab bar. */
-    scroll-margin-block: 5rem;
-  }
-
-  .composer-textarea.is-inline {
-    min-height: 5rem;
-  }
-
   .composer-target {
     display: flex;
     flex-direction: column;
@@ -162,41 +139,5 @@
     line-height: var(--leading-snug);
     font-style: italic;
     color: var(--text-muted);
-  }
-
-  .composer-actions {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-
-  .gate-notice {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-2);
-  }
-
-  .gate-note {
-    margin: 0;
-  }
-
-  @media (max-width: 720px) {
-    .composer-form {
-      gap: var(--space-3);
-    }
-
-    .composer-textarea {
-      min-height: 7rem;
-    }
-
-    .composer-textarea.is-inline {
-      min-height: 4.75rem;
-    }
-
-    .composer-actions :global(button) {
-      min-width: 0;
-    }
   }
 </style>
