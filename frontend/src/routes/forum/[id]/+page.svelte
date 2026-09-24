@@ -18,10 +18,9 @@
   import { authorLabel, formatDate } from '$lib/format';
   import { localizedHref as href } from '$lib/i18n.svelte';
   import ErrorAlert from '$lib/components/ErrorAlert.svelte';
-  import GuestNotice from '$lib/components/GuestNotice.svelte';
-  import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import ForumReplyItem from './ForumReplyItem.svelte';
-  import { ArrowLeft } from '@lucide/svelte';
+  import ReplyComposer from './ReplyComposer.svelte';
+  import { ArrowLeft, CornerDownRight } from '@lucide/svelte';
   import * as m from '$lib/paraglide/messages';
 
   const threadId = $derived(page.params.id);
@@ -35,8 +34,18 @@
 
   let postingStatus = $state<PostingStatus | null>(null);
 
-  let replyBody = $state('');
-  let replyTarget = $state<{ id: string; username: string } | null>(null);
+  // Two drafts. The comment composer answers one specific reply; the thread
+  // composer starts a top-level reply from below the main post. Drafts live in
+  // page state, so moving/cancelling composers does not drop typed text.
+  let topDraft = $state('');
+  let topError = $state('');
+  let topSubmitting = $state(false);
+  let threadComposerOpen = $state(false);
+
+  let inlineDraft = $state('');
+  // The target keeps the parent's body: "Replying to alan" alone does not say
+  // which of alan's messages is being answered.
+  let replyTarget = $state<{ id: string; username: string; preview: string } | null>(null);
   let replyError = $state('');
   let replySubmitting = $state(false);
   let repliesError = $state('');
@@ -92,6 +101,7 @@
     thread = null;
     replies = [];
     replyTarget = null;
+    threadComposerOpen = false;
     threadDeleteArmed = false;
 
     try {
@@ -131,34 +141,88 @@
     if (threadId) void loadThread(threadId);
   }
 
+  function openThreadComposer(): void {
+    threadComposerOpen = true;
+    replyTarget = null;
+    replyError = '';
+    topError = '';
+  }
+
+  function cancelThreadComposer(): void {
+    threadComposerOpen = false;
+    topError = '';
+  }
+
   function setReplyTarget(reply: ForumReply): void {
-    replyTarget = { id: reply.id, username: authorLabel(reply.author) };
+    threadComposerOpen = false;
+    topError = '';
+    replyTarget = {
+      id: reply.id,
+      username: authorLabel(reply.author),
+      preview: reply.body ?? ''
+    };
     replyError = '';
   }
 
-  async function submitReply(event: SubmitEvent): Promise<void> {
+  /** Closing the inline composer keeps whatever was typed into it. */
+  function cancelReplyTarget(): void {
+    replyTarget = null;
+    replyError = '';
+  }
+
+  async function submitReply(event: SubmitEvent, composer: 'top' | 'inline'): Promise<void> {
     event.preventDefault();
     const id = threadId;
-    if (!id || replySubmitting) return;
+    if (!id) return;
 
-    const body = replyBody.trim();
+    const inline = composer === 'inline';
+    if (inline ? replySubmitting : topSubmitting) return;
+
+    // The inline composer answers the open target; the page composer always
+    // starts a new top-level reply.
+    const parentId = inline ? replyTarget?.id : undefined;
+    if (inline && !parentId) return;
+
+    const fail = (message: string): void => {
+      if (inline) {
+        replyError = message;
+      } else {
+        topError = message;
+      }
+    };
+
+    const body = (inline ? inlineDraft : topDraft).trim();
     if (!body) {
-      replyError = m.forum_reply_body_error();
+      fail(m.forum_reply_body_error());
       return;
     }
 
-    replySubmitting = true;
-    replyError = '';
+    if (inline) {
+      replySubmitting = true;
+      replyError = '';
+    } else {
+      topSubmitting = true;
+      topError = '';
+    }
 
     try {
-      await createForumReply(id, body, replyTarget?.id);
-      replyBody = '';
-      replyTarget = null;
+      await createForumReply(id, body, parentId);
+      if (inline) {
+        inlineDraft = '';
+        replyTarget = null;
+      } else {
+        topDraft = '';
+        threadComposerOpen = false;
+      }
       await refreshReplies();
     } catch (error) {
-      replyError = localizeApiError(error, () => m.api_error_forum_create_failed());
+      fail(localizeApiError(error, () => m.api_error_forum_create_failed()));
     } finally {
-      replySubmitting = false;
+      if (inline) {
+        replySubmitting = false;
+      } else {
+        topSubmitting = false;
+      }
     }
   }
 
@@ -242,28 +306,59 @@
       </header>
       <p class="thread-body">{thread.body}</p>
 
-      {#if isThreadAuthor}
-        <div class="thread-actions">
-          {#if deleteError}
-            <ErrorAlert message={deleteError} />
-          {/if}
-          <div class="delete-row">
+      <div class="thread-actions">
+        <div class="thread-action-row">
+          <button
+            type="button"
+            class="thread-reply-button"
+            aria-expanded={threadComposerOpen}
+            onclick={openThreadComposer}
+          >
+            <CornerDownRight size={14} aria-hidden="true" />
+            {m.forum_reply_thread_button()}
+          </button>
+
+          {#if isThreadAuthor}
             <button
               type="button"
-              class="btn-danger"
+              class="thread-delete-button"
               disabled={deletingThread}
               onclick={deleteThread}
             >
               {threadDeleteArmed ? m.forum_delete_confirm() : m.forum_delete_thread()}
             </button>
             {#if threadDeleteArmed}
-              <button type="button" class="btn-ghost" onclick={() => (threadDeleteArmed = false)}>
+              <button
+                type="button"
+                class="thread-cancel-delete"
+                onclick={() => (threadDeleteArmed = false)}
+              >
                 {m.forum_cancel()}
               </button>
             {/if}
-          </div>
+          {/if}
         </div>
-      {/if}
+
+        {#if deleteError}
+          <ErrorAlert message={deleteError} />
+        {/if}
+
+        {#if threadComposerOpen}
+          <div class="thread-composer-inline">
+            <ReplyComposer
+              variant="inline"
+              target={{ username: authorLabel(thread.author), preview: thread.body }}
+              draft={topDraft}
+              {postingStatus}
+              submitting={topSubmitting}
+              error={topError}
+              onDraftChange={(value) => (topDraft = value)}
+              onSubmit={(event) => void submitReply(event, 'top')}
+              onCancel={cancelThreadComposer}
+            />
+          </div>
+        {/if}
+      </div>
     </article>
 
     <section class="replies-section" aria-labelledby="replies-title">
@@ -273,15 +368,21 @@
         <ErrorAlert message={repliesError} />
       {/if}
 
-      {#if replies.length === 0}
-        <p class="body-text replies-empty">{m.forum_replies_empty()}</p>
-      {:else}
+      {#if replies.length > 0}
         <div class="reply-tree">
           {#each replies as reply (reply.id)}
             <ForumReplyItem
               {reply}
               currentUsername={$user?.username ?? null}
               threadAuthor={thread.author?.username ?? null}
+              replyTargetId={replyTarget?.id ?? null}
+              replyDraft={inlineDraft}
+              {replySubmitting}
+              {replyError}
+              {postingStatus}
+              onDraftChange={(value) => (inlineDraft = value)}
+              onCancelReply={cancelReplyTarget}
+              onSubmitReply={(event) => void submitReply(event, 'inline')}
               onReply={setReplyTarget}
               onDelete={onDeleteReply}
             />
@@ -289,55 +390,12 @@
         </div>
       {/if}
     </section>
-
-    <section class="reply-composer">
-      {#if replyTarget}
-        <div class="reply-target">
-          <span>{m.forum_replying_to({ username: replyTarget.username })}</span>
-          <button type="button" class="quiet-btn" onclick={() => (replyTarget = null)}>
-            {m.forum_cancel()}
-          </button>
-        </div>
-      {/if}
-
-      {#if postingStatus === 'guest'}
-        <GuestNotice class="body-text" message={m.forum_guest_notice()} />
-      {:else if postingStatus === 'unverified'}
-        <div class="notice gate-notice">
-          <p class="gate-note">{m.forum_email_unverified_notice()}</p>
-          <a class="link" href={href('/settings')}>{m.nav_settings()}</a>
-        </div>
-      {:else if postingStatus === 'ready'}
-        <form class="composer-form" onsubmit={submitReply}>
-          <label class="field">
-            <span class="label-text">{m.forum_reply_label()}</span>
-            <textarea
-              class="textarea composer-textarea"
-              maxlength="10000"
-              placeholder={m.forum_reply_placeholder()}
-              bind:value={replyBody}></textarea>
-          </label>
-
-          {#if replyError}
-            <ErrorAlert message={replyError} />
-          {/if}
-
-          <div class="delete-row">
-            <button type="submit" class="btn-primary" disabled={replySubmitting}>
-              {replySubmitting ? m.settings_saving() : m.forum_reply_submit()}
-            </button>
-          </div>
-        </form>
-      {:else}
-        <LoadingSpinner />
-      {/if}
-    </section>
   {/if}
 </div>
 
 <style>
   .thread-crumbs {
-    margin-bottom: var(--block-gap);
+    margin-bottom: var(--space-6);
   }
 
   .crumb {
@@ -399,6 +457,8 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--border);
   }
 
   .thread-head {
@@ -456,8 +516,6 @@
      leading, kept on the same measure as the replies below it. */
   .thread-body {
     margin: 0;
-    padding-top: var(--space-4);
-    border-top: 1px solid var(--border);
     font-size: var(--text-base);
     line-height: var(--leading-relaxed);
     color: var(--text-primary);
@@ -468,34 +526,88 @@
   .thread-actions {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: var(--space-3);
-    padding-top: var(--space-4);
-    border-top: 1px solid var(--border);
   }
 
-  .delete-row {
+  .thread-action-row {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: var(--space-2);
   }
 
-  .replies-section {
-    margin-top: var(--section-gap);
+  .thread-reply-button,
+  .thread-delete-button,
+  .thread-cancel-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    min-height: 2rem;
+    border-radius: var(--radius-xs);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      color var(--transition-fast),
+      border-color var(--transition-fast),
+      background-color var(--transition-fast);
   }
 
-  .replies-title {
-    margin: 0 0 var(--space-4);
-    padding-bottom: var(--space-3);
-    border-bottom: 1px solid var(--border);
-    font-size: var(--text-sm);
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+  .thread-reply-button {
+    padding: 0.15rem 0.65rem;
+    border: 1px solid var(--border-control);
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+  }
+
+  .thread-reply-button:hover,
+  .thread-reply-button:focus-visible {
+    border-color: var(--accent);
+    background-color: var(--bg-inset);
+  }
+
+  .thread-delete-button,
+  .thread-cancel-delete {
+    padding: 0.15rem 0.35rem;
+    border: none;
+    background: transparent;
     color: var(--text-muted);
   }
 
-  .replies-empty {
-    margin: 0;
+  .thread-delete-button:hover,
+  .thread-delete-button:focus-visible {
+    color: var(--danger);
+    background-color: var(--bg-inset);
+  }
+
+  .thread-cancel-delete:hover,
+  .thread-cancel-delete:focus-visible {
+    color: var(--text-primary);
+    background-color: var(--bg-inset);
+  }
+
+  .thread-delete-button:disabled {
+    cursor: progress;
+    opacity: 0.6;
+  }
+
+  .thread-composer-inline {
+    width: 100%;
+  }
+
+  .replies-section {
+    margin-top: var(--space-5);
+  }
+
+  .replies-title {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
   }
 
   .reply-tree {
@@ -503,66 +615,41 @@
     flex-direction: column;
   }
 
-  .reply-composer {
-    margin-top: var(--section-gap);
-    padding-top: var(--space-4);
-    border-top: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-  }
+  @media (max-width: 720px) {
+    .thread-crumbs {
+      margin-bottom: var(--space-5);
+    }
 
-  .reply-target {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background-color: var(--bg-inset);
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-  }
+    .thread-main {
+      gap: var(--space-4);
+      padding-bottom: var(--space-5);
+    }
 
-  .quiet-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.15rem 0.3rem;
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: var(--text-xs);
-    font-weight: 500;
-    cursor: pointer;
-    transition: color var(--transition-fast);
-  }
+    .thread-title {
+      font-size: var(--text-xl);
+    }
 
-  .quiet-btn:hover {
-    color: var(--text-primary);
-  }
+    .thread-reply-button,
+    .thread-delete-button,
+    .thread-cancel-delete {
+      min-height: 2.5rem;
+    }
 
-  .gate-notice {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-2);
-  }
+    .thread-action-row {
+      align-items: stretch;
+    }
 
-  .gate-note {
-    margin: 0;
-  }
+    .thread-reply-button {
+      flex: 1 1 12rem;
+    }
 
-  .composer-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-  }
+    .thread-delete-button,
+    .thread-cancel-delete {
+      flex: 0 1 auto;
+    }
 
-  .composer-textarea {
-    min-height: 8rem;
-    font-family: var(--font-ui);
-    resize: vertical;
+    .replies-section {
+      margin-top: var(--space-4);
+    }
   }
 </style>

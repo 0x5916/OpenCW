@@ -628,7 +628,7 @@
     margin: 0;
   }
   .profile-email {
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
     color: var(--text-muted);
     margin: 0;
   }
@@ -636,7 +636,7 @@
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
     color: var(--text-muted);
     margin: 0;
   }
@@ -648,7 +648,7 @@
   }
   .profile-meta-item {
     margin: 0;
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
     color: var(--text-muted);
     display: inline-flex;
     gap: 0.25rem;
@@ -850,7 +850,7 @@
     font-variant-numeric: tabular-nums;
   }
   .profile-cw-key {
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     line-height: 1.15;
     color: var(--text-muted);
   }
@@ -868,7 +868,7 @@
   .profile-table th {
     text-align: left;
     padding: 0.5rem 0.75rem;
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-muted);
@@ -885,10 +885,12 @@
   .profile-table tbody tr:hover td {
     background-color: var(--bg-inset);
   }
-  .profile-lesson-cell {
+  /* `.profile-table td` colours every cell secondary; this cell wins on
+     specificity rather than with a blanket `!important`. */
+  .profile-table td.profile-lesson-cell {
     font-family: var(--font-mono);
     font-size: var(--text-sm);
-    color: var(--text-primary) !important;
+    color: var(--text-primary);
     letter-spacing: 0.12em;
   }
   /* Accuracy reads as a value with a status dot, not as a coloured pill. */
@@ -924,7 +926,7 @@
   }
   .profile-date-cell {
     white-space: nowrap;
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
   }
   .profile-empty {
     color: var(--text-muted);

@@ -19,7 +19,7 @@
 
   --text-primary: #f2ede3;
   --text-secondary: #cdc4b4;
-  --text-muted: #a2988a;
+  --text-muted: #aea496;
   --text-label: #bfb6a5;
 
   /* Signal amber. One accent for the whole product: interactive surfaces, the
@@ -152,10 +152,10 @@
     --border: #dcd5c6;
     --border-subtle: #cfc7b5;
     --border-card: #d8d1c1;
-    --border-control: #8f8570;
+    --border-control: #867c66;
     --text-primary: #201d18;
     --text-secondary: #4c463c;
-    --text-muted: #6e6557;
+    --text-muted: #605849;
     --text-label: #57503f;
     --accent: #a94c08;
     --accent-hover: #8f4107;
@@ -186,10 +186,10 @@
   --border: #dcd5c6;
   --border-subtle: #cfc7b5;
   --border-card: #d8d1c1;
-  --border-control: #8f8570;
+  --border-control: #867c66;
   --text-primary: #201d18;
   --text-secondary: #4c463c;
-  --text-muted: #6e6557;
+  --text-muted: #605849;
   --text-label: #57503f;
   --accent: #a94c08;
   --accent-hover: #8f4107;
@@ -358,7 +358,7 @@ body {
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -766,7 +766,7 @@ select.lesson-select {
   flex-wrap: wrap;
   gap: 0.35rem;
   font-family: var(--font-mono);
-  font-size: 1rem;
+  font-size: var(--text-base);
   line-height: 1.8;
 }
 
@@ -774,7 +774,7 @@ select.lesson-select {
   display: inline-block;
   padding: 0.08rem 0.35rem;
   border-radius: var(--radius-xs);
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 
@@ -800,7 +800,7 @@ select.lesson-select {
 }
 
 .diff-expected {
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   opacity: 0.8;
   font-weight: 400;
 }

@@ -1119,7 +1119,7 @@
     font-family: var(--font-mono);
     font-size: 0.6875rem;
     padding: 0.05rem 0.3rem;
-    border: 1px solid var(--border-subtle);
+    border: 1px solid var(--border-control);
     border-bottom-width: 2px;
     border-radius: var(--radius-xs);
     color: var(--text-secondary);

@@ -38,14 +38,14 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    padding: 2.5rem 1.5rem;
+    gap: var(--space-2);
+    padding: var(--space-10) var(--space-6);
     text-align: center;
   }
 
   .error-code {
     margin: 0;
-    font-size: 0.8125rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     letter-spacing: 0.16em;
     color: var(--text-muted);
@@ -65,9 +65,9 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 0.75rem;
+    gap: var(--space-3);
     width: 100%;
-    margin-top: 1rem;
+    margin-top: var(--space-4);
   }
 
   .error-btn {

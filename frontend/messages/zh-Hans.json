@@ -125,6 +125,7 @@
   "forum_thread_not_found_body": "该主题可能已被删除，或者链接有误。",
   "forum_replies_empty": "还没有回复 — 成为第一个回复的人。",
   "forum_reply_button": "回复",
+  "forum_reply_thread_button": "回复主题",
   "forum_replying_to": "回复 {username}",
   "forum_reply_placeholder": "写下你的回复",
   "forum_reply_submit": "发布回复",

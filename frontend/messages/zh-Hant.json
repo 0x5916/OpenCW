@@ -125,6 +125,7 @@
   "forum_thread_not_found_body": "該主題可能已被刪除，或者連結有誤。",
   "forum_replies_empty": "還沒有回覆 — 成為第一個回覆的人。",
   "forum_reply_button": "回覆",
+  "forum_reply_thread_button": "回覆主題",
   "forum_replying_to": "回覆 {username}",
   "forum_reply_placeholder": "寫下你的回覆",
   "forum_reply_submit": "發佈回覆",

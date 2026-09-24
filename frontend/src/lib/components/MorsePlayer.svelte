@@ -822,7 +822,7 @@
 
   .player-settings-auth-hint {
     margin: 0.1rem 0 0;
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     color: var(--text-muted);
     line-height: 1.45;
   }
@@ -840,7 +840,7 @@
   }
 
   .player-volume-value {
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     color: var(--text-muted);
     min-width: 3ch;
     text-align: right;
@@ -869,7 +869,7 @@
     }
 
     .player-inline-timer {
-      font-size: 0.72rem;
+      font-size: var(--text-xs);
       letter-spacing: -0.01em;
     }
   }

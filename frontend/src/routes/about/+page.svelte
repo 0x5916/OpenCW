@@ -136,7 +136,7 @@
   /* Width and vertical gaps come from `.page-narrow` and the shell; this page
      owns only the article's internal rhythm. */
   .about-intro {
-    margin: 0.5rem 0 0;
+    margin: var(--space-2) 0 0;
   }
 
   .about-toc {
@@ -156,7 +156,7 @@
     margin: 0;
     padding: 0;
     list-style: none;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
   }
 
   /* Long-form, sequential content: no card chrome. Article rhythm + rules read
@@ -182,21 +182,21 @@
   }
 
   .about-links {
-    margin-top: 0.75rem;
+    margin-top: var(--space-3);
   }
 
   /* Two-peer comparison: one container, one shared edge, tinted columns. */
   .compare {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    margin-top: 0.75rem;
+    margin-top: var(--space-3);
     border: 1px solid var(--border-card);
     border-radius: var(--radius-md);
     overflow: hidden;
   }
 
   .compare-col {
-    padding: 1rem;
+    padding: var(--space-4);
   }
 
   .compare-col + .compare-col {
@@ -217,7 +217,7 @@
     gap: 0.4rem;
     margin: 0 0 0.5rem;
     color: var(--text-muted);
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     line-height: 1rem;
     font-weight: 600;
     letter-spacing: 0.1em;

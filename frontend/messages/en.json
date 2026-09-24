@@ -139,6 +139,7 @@
   "forum_thread_not_found_body": "This thread may have been deleted, or the link may be incorrect.",
   "forum_replies_empty": "No replies yet — be the first to reply.",
   "forum_reply_button": "Reply",
+  "forum_reply_thread_button": "Reply to thread",
   "forum_reply_label": "Your reply",
   "forum_op_tag": "Author",
   "forum_replying_to": "Replying to {username}",

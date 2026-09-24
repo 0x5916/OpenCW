@@ -663,7 +663,7 @@
   }
   .settings-email-status {
     margin: 0;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     font-weight: 600;
   }
   .settings-email-status.is-verified {

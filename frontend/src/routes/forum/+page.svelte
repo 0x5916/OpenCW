@@ -231,7 +231,7 @@
         href={categoryHref(category)}>{forumCategoryLabel(category)}</a
       >
     {/each}
-    {#if totalCount !== null && !loading}
+    {#if totalCount !== null && !loading && (filter !== null || nextCursor !== null || threads.length < totalCount)}
       <span class="filter-count"
         >{m.forum_threads_count({
           shown: String(threads.length),
@@ -336,9 +336,6 @@
           ? m.forum_threads_empty_filtered_title({ category: forumCategoryLabel(filter) })
           : m.forum_threads_empty_title()}
       </h2>
-      <p class="body-text empty-note">
-        {filter ? m.forum_threads_empty_filtered_body() : m.forum_threads_empty_body()}
-      </p>
       {#if filter}
         <a class="link" href="?">{m.forum_category_all()}</a>
       {/if}
@@ -381,43 +378,50 @@
 
 <style>
   .forum-masthead {
-    margin-bottom: var(--block-gap);
+    margin-bottom: var(--space-6);
   }
 
   .masthead-row {
     display: flex;
-    align-items: flex-start;
+    align-items: flex-end;
     justify-content: space-between;
-    gap: var(--space-4);
+    gap: var(--space-5);
     flex-wrap: wrap;
   }
 
   .masthead-text {
+    flex: 1 1 26rem;
     min-width: 0;
+  }
+
+  .masthead-row :global(.btn-primary) {
+    flex: none;
   }
 
   .forum-intro {
     margin: var(--space-2) 0 0;
     max-width: var(--max-width-narrow);
+    line-height: var(--leading-relaxed);
   }
 
   /* Filters are links on a hairline: navigation, not a row of chips. */
   .forum-filters {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     flex-wrap: wrap;
-    gap: var(--space-4);
+    gap: 0.65rem var(--space-4);
     padding-bottom: var(--space-3);
-    margin-bottom: var(--space-5);
+    margin-bottom: var(--space-4);
     border-bottom: 1px solid var(--border);
   }
 
   .filter-link {
     position: relative;
-    padding-bottom: 0.35rem;
+    padding: 0.15rem 0 0.45rem;
     color: var(--text-secondary);
     font-size: var(--text-sm);
     font-weight: 500;
+    line-height: var(--leading-snug);
     text-decoration: none;
   }
 
@@ -435,9 +439,11 @@
 
   .filter-count {
     margin-left: auto;
+    padding-left: var(--space-2);
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     color: var(--text-muted);
+    white-space: nowrap;
   }
 
   .composer {
@@ -507,35 +513,56 @@
     font-weight: 600;
   }
 
-  .empty-note {
-    margin: 0 0 var(--space-3);
+  .thread-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--block-gap);
+    border-top: none;
   }
 
-  .thread-list {
-    margin-bottom: var(--block-gap);
+  .thread-list > li {
+    border-bottom: none;
   }
 
   .thread-row {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: 0.55rem;
+    padding: var(--space-3);
+    border-radius: var(--radius-xs);
+  }
+
+  /* The whole row is one link: hover floors it and runs the same 2px amber rule
+     the active filter uses, so the row reads as a single target. Keyboard focus
+     keeps the shared row outline and gets the same flooring. */
+  .thread-row:hover,
+  .thread-row:focus-visible {
+    background-color: var(--bg-inset);
+  }
+
+  .thread-row:hover {
+    box-shadow: inset 2px 0 0 var(--accent);
   }
 
   .thread-title {
     margin: 0;
-    font-size: var(--text-base);
+    max-width: 58rem;
+    font-size: var(--text-lg);
     font-weight: 600;
     line-height: var(--leading-snug);
     color: var(--text-primary);
+    overflow-wrap: anywhere;
   }
 
   .thread-meta {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 0.4rem 0.9rem;
+    gap: 0.45rem 0.85rem;
     margin: 0;
     font-size: var(--text-xs);
+    line-height: var(--leading-snug);
     color: var(--text-muted);
   }
 
@@ -555,6 +582,11 @@
     background: var(--accent);
   }
 
+  .thread-replies {
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
   .callsign {
     font-family: var(--font-mono);
     letter-spacing: 0.04em;
@@ -570,15 +602,16 @@
   /* Loading: rows with reserved height, so the list does not jump when the
      threads arrive. */
   .thread-skeleton {
-    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
   }
 
   .skeleton-row {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    padding: var(--space-4) var(--space-2);
-    border-bottom: 1px solid var(--border);
+    padding: var(--space-2);
   }
 
   .skeleton-title {
@@ -589,5 +622,44 @@
   .skeleton-meta {
     height: 0.75rem;
     width: min(18rem, 60%);
+  }
+
+  @media (max-width: 720px) {
+    .forum-masthead {
+      margin-bottom: var(--space-5);
+    }
+
+    .masthead-row {
+      align-items: stretch;
+      gap: var(--space-4);
+    }
+
+    .masthead-row :global(.btn-primary) {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .forum-filters {
+      gap: 0.55rem var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    .filter-count {
+      flex-basis: 100%;
+      margin-left: 0;
+      padding-left: 0;
+    }
+
+    .thread-row {
+      padding: var(--space-2);
+    }
+
+    .thread-title {
+      font-size: var(--text-base);
+    }
+
+    .thread-meta {
+      gap: 0.4rem 0.7rem;
+    }
   }
 </style>
