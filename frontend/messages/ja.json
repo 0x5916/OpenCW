@@ -127,6 +127,7 @@
   "forum_reply_button": "返信",
   "forum_reply_thread_button": "スレッドに返信",
   "forum_replying_to": "{username} さんへの返信",
+  "forum_replying_to_removed": "削除されたコメントへの返信",
   "forum_reply_placeholder": "返信を入力",
   "forum_reply_submit": "返信を投稿",
   "forum_reply_deleted": "[削除済み]",

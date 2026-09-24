@@ -127,6 +127,7 @@
   "forum_reply_button": "回覆",
   "forum_reply_thread_button": "回覆主題",
   "forum_replying_to": "回覆 {username}",
+  "forum_replying_to_removed": "回覆已刪除的留言",
   "forum_reply_placeholder": "寫下你的回覆",
   "forum_reply_submit": "發佈回覆",
   "forum_reply_deleted": "[已刪除]",

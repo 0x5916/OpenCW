@@ -143,6 +143,7 @@
   "forum_reply_label": "Your reply",
   "forum_op_tag": "Author",
   "forum_replying_to": "Replying to {username}",
+  "forum_replying_to_removed": "Replying to a removed comment",
   "forum_reply_placeholder": "Write your reply",
   "forum_reply_submit": "Post reply",
   "forum_reply_deleted": "[deleted]",

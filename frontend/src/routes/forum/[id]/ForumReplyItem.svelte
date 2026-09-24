@@ -13,10 +13,6 @@
     currentUsername: string | null;
     /** Username of the thread author, used to mark their replies. */
     threadAuthor?: string | null;
-    /** Display name of the reply this one answers; shown when nesting is flat. */
-    parentLabel?: string | null;
-    /** Body of the reply this one answers, so the context names the message. */
-    parentPreview?: string | null;
     /** Nesting level used to cap the visual indentation. */
     depth?: number;
     /** Id of the reply the open inline composer belongs to, if any. */
@@ -37,8 +33,6 @@
     reply,
     currentUsername,
     threadAuthor = null,
-    parentLabel = null,
-    parentPreview = null,
     depth = 0,
     replyTargetId = null,
     replyDraft = '',
@@ -66,6 +60,12 @@
 
   /** The open inline composer belongs to this reply. */
   const isTarget = $derived(!reply.is_deleted && replyTargetId === reply.id);
+
+  // A reply that answers a parent no longer present in the tree renders at the
+  // top level, so no connector shows what it answers; only then does the reply
+  // repeat its parent relationship as a quiet note. Replies rendered under a
+  // visible parent already read through the thread connectors.
+  const parentMissing = $derived(!reply.is_deleted && depth === 0 && reply.parent_id !== null);
 
   let wasTarget = $state(false);
 
@@ -127,15 +127,12 @@
         {/if}
         <span class="reply-date">{formatDate(reply.created_at)}</span>
       </div>
-      {#if depth >= 3 && parentLabel}
+      {#if parentMissing}
         <p class="reply-context">
           <span class="reply-context-icon" aria-hidden="true">
             <CornerDownRight size={13} />
           </span>
-          <span class="reply-context-label">{m.forum_replying_to({ username: parentLabel })}</span>
-          {#if parentPreview}
-            <span class="reply-context-text">{parentPreview}</span>
-          {/if}
+          <span class="reply-context-label">{m.forum_replying_to_removed()}</span>
         </p>
       {/if}
       <p class="reply-text">{reply.body}</p>
@@ -198,8 +195,6 @@
           {currentUsername}
           {threadAuthor}
           depth={depth + 1}
-          parentLabel={reply.is_deleted ? null : authorLabel(reply.author)}
-          parentPreview={reply.is_deleted ? null : (reply.body ?? '')}
           {replyTargetId}
           {replyDraft}
           {replySubmitting}
@@ -290,7 +285,8 @@
 
   .reply-context {
     display: flex;
-    align-items: baseline;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 0.35rem;
     margin: 0;
     min-width: 0;
@@ -304,22 +300,13 @@
 
   .reply-context-icon {
     flex: none;
-    align-self: center;
     display: inline-flex;
     color: var(--accent);
   }
 
   .reply-context-label {
-    flex: none;
-    color: var(--text-secondary);
-  }
-
-  .reply-context-text {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-style: italic;
+    color: var(--text-secondary);
   }
 
   .callsign {
@@ -467,15 +454,6 @@
     .reply-children.flattened > :global(.reply > .reply-main)::before {
       left: calc(-1 * var(--space-2));
       width: 0.45rem;
-    }
-
-    .reply-context {
-      flex-wrap: wrap;
-      align-items: flex-start;
-    }
-
-    .reply-context-text {
-      flex-basis: 100%;
     }
   }
 </style>

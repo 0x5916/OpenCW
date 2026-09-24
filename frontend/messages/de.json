@@ -127,6 +127,7 @@
   "forum_reply_button": "Antworten",
   "forum_reply_thread_button": "Auf Thema antworten",
   "forum_replying_to": "Antwort an {username}",
+  "forum_replying_to_removed": "Antwort an einen entfernten Kommentar",
   "forum_reply_placeholder": "Schreibe deine Antwort",
   "forum_reply_submit": "Antwort veröffentlichen",
   "forum_reply_deleted": "[gelöscht]",
