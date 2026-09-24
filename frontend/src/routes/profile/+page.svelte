@@ -514,21 +514,21 @@
       </div>
     </section>
 
-    <!-- CW settings snapshot: peer metrics, so a stat strip rather than a card. -->
+    <!-- CW settings snapshot: peer readouts, so a stat strip rather than a card. -->
     <section class="profile-cw-card">
       <h2 class="card-title">{m.profile_cw_settings()}</h2>
       <div class="profile-cw-grid">
         <div class="profile-cw-item">
-          <span class="profile-cw-val">{charWpm}</span>
-          <span class="profile-cw-key">{m.profile_cw_char_wpm()}</span>
+          <span class="metric-value">{charWpm}</span>
+          <span class="metric-label">{m.profile_cw_char_wpm()}</span>
         </div>
         <div class="profile-cw-item">
-          <span class="profile-cw-val">{effWpm}</span>
-          <span class="profile-cw-key">{m.profile_cw_eff_wpm()}</span>
+          <span class="metric-value">{effWpm}</span>
+          <span class="metric-label">{m.profile_cw_eff_wpm()}</span>
         </div>
         <div class="profile-cw-item">
-          <span class="profile-cw-val">{freq} Hz</span>
-          <span class="profile-cw-key">{m.profile_cw_freq()}</span>
+          <span class="metric-value">{freq} Hz</span>
+          <span class="metric-label">{m.profile_cw_freq()}</span>
         </div>
       </div>
     </section>
@@ -654,10 +654,6 @@
     gap: 0.25rem;
     align-items: center;
   }
-  .profile-meta-label {
-    color: var(--text-secondary);
-    font-weight: 600;
-  }
   :global(.profile-status-icon) {
     flex-shrink: 0;
   }
@@ -669,9 +665,6 @@
   }
 
   /* Activity heatmap */
-  .profile-heatmap-card {
-    overflow: visible;
-  }
   .profile-section-header--split {
     justify-content: space-between;
     gap: 0.75rem;
@@ -826,7 +819,8 @@
     margin-bottom: 0;
   }
 
-  /* CW settings: peer metrics in an inset stat strip. */
+  /* CW settings: peer readouts in an inset stat strip; values and labels reuse
+     the shared `.metric-value` / `.metric-label` pair. */
   .profile-cw-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
@@ -841,18 +835,6 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background-color: var(--bg-inset);
-  }
-  .profile-cw-val {
-    font-family: var(--font-mono);
-    font-size: var(--text-lg);
-    font-weight: 500;
-    color: var(--text-primary);
-    font-variant-numeric: tabular-nums;
-  }
-  .profile-cw-key {
-    font-size: var(--text-xs);
-    line-height: 1.15;
-    color: var(--text-muted);
   }
 
   /* History table */
@@ -938,10 +920,6 @@
     .profile-header {
       flex-direction: column;
       align-items: flex-start;
-    }
-    .profile-cw-grid {
-      flex-direction: column;
-      gap: 0.75rem;
     }
     .profile-heatmap-year-picker {
       width: 100%;

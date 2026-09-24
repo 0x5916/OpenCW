@@ -29,7 +29,7 @@
 
 <AuthCard title={m.login_title()} subtitle={m.login_subtitle()}>
   <form onsubmit={handleLogin} class="auth-form">
-    <label class="settings-field">
+    <label class="field">
       <span class="label-text">{m.login_username_label()}</span>
       <input
         type="text"
@@ -41,7 +41,7 @@
       />
     </label>
 
-    <label class="settings-field">
+    <label class="field">
       <span class="label-text">{m.login_password_label()}</span>
       <input
         type="password"

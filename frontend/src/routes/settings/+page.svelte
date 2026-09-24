@@ -416,11 +416,11 @@
       <section class="panel settings-card">
         <h2 class="card-title">{m.settings_account_section()}</h2>
         <form onsubmit={saveCallSign} class="settings-form">
-          <label class="settings-field">
+          <label class="field">
             <span class="label-text">{m.settings_username_label()}</span>
             <input type="text" value={username} class="input" disabled />
           </label>
-          <label class="settings-field">
+          <label class="field">
             <span class="label-text">{m.settings_call_sign_label()}</span>
             <div class="settings-input-action">
               <input
@@ -443,7 +443,7 @@
         <hr class="settings-divider" />
 
         <form onsubmit={saveEmail} class="settings-form">
-          <label class="settings-field">
+          <label class="field">
             <span class="label-text">{m.settings_email_label()}</span>
             <div class="settings-input-action">
               <input type="email" bind:value={email} class="input" required />
@@ -484,7 +484,7 @@
               onsubmit={submitEmailVerification}
               class="settings-form settings-verification-form"
             >
-              <label class="settings-field">
+              <label class="field">
                 <span class="label-text">{m.settings_email_verify_code_label()}</span>
                 <div class="settings-input-action">
                   <input
@@ -526,7 +526,7 @@
       <section class="panel settings-card">
         <h2 class="card-title">{m.settings_password_section()}</h2>
         <form onsubmit={savePassword} class="settings-form">
-          <label class="settings-field">
+          <label class="field">
             <span class="label-text">{m.settings_current_password_label()}</span>
             <input
               type="password"
@@ -537,7 +537,7 @@
               required
             />
           </label>
-          <label class="settings-field">
+          <label class="field">
             <span class="label-text">{m.settings_new_password_label()}</span>
             <input
               type="password"
@@ -548,7 +548,7 @@
               required
             />
           </label>
-          <label class="settings-field">
+          <label class="field">
             <span class="label-text">{m.settings_confirm_new_password_label()}</span>
             <input
               type="password"
@@ -575,7 +575,7 @@
     <section class="panel settings-card">
       <h2 class="card-title">{m.settings_page_section()}</h2>
       <form onsubmit={savePage} class="settings-form">
-        <label class="settings-field">
+        <label class="field">
           <span class="label-text">{m.settings_language_label()}</span>
           <select bind:value={pageLanguage} class="input">
             <option value="auto">{m.theme_auto()}</option>
@@ -584,7 +584,7 @@
             {/each}
           </select>
         </label>
-        <label class="settings-field">
+        <label class="field">
           <span class="label-text">{m.settings_current_lesson_label()}</span>
           <input type="number" bind:value={pageLesson} min="1" max={LESSONS.length} class="input" />
         </label>
@@ -603,19 +603,19 @@
     <section class="panel settings-card">
       <h2 class="card-title">{m.settings_cw_section()}</h2>
       <form onsubmit={saveCW} class="settings-form">
-        <label class="settings-field">
+        <label class="field">
           <span class="label-text">{m.trainer_label_char_wpm()}</span>
           <input type="number" bind:value={charWpm} min="5" max="50" class="input" />
         </label>
-        <label class="settings-field">
+        <label class="field">
           <span class="label-text">{m.trainer_label_eff_wpm()}</span>
           <input type="number" bind:value={effWpm} min="5" max="50" class="input" />
         </label>
-        <label class="settings-field">
+        <label class="field">
           <span class="label-text">{m.trainer_label_freq()}</span>
           <input type="number" bind:value={freq} min="300" max="2000" class="input" />
         </label>
-        <label class="settings-field">
+        <label class="field">
           <span class="label-text">{m.trainer_label_start_delay()}</span>
           <input type="number" bind:value={startDelay} min="0" max="10" step="0.5" class="input" />
         </label>

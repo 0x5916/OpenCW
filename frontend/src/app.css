@@ -37,9 +37,7 @@
   --on-danger: #2a0f0a;
 
   --result-good-bg: #14251a;
-  --result-good-bd: #2f6b45;
   --result-bad-bg: #2a1410;
-  --result-bad-bd: #7a3a2e;
 
   /* Semantic status roles. The result diff, verified/accuracy states and inline
      banners all read from these; components must not hard-code status hexes.
@@ -53,11 +51,6 @@
   --status-ok-tint: color-mix(in srgb, var(--status-ok) 15%, transparent);
   --status-bad-tint: color-mix(in srgb, var(--status-bad) 15%, transparent);
   --status-extra-tint: color-mix(in srgb, var(--status-extra) 15%, transparent);
-  /* Aliases so the diff rules below keep reading naturally. */
-  --diff-good: var(--status-good);
-  --diff-ok: var(--status-ok);
-  --diff-bad: var(--status-bad);
-  --diff-extra: var(--status-extra);
 
   /* Mostly rectangular surfaces: 2px chips, 3px controls, 5px panels, 6px the
      largest sheets. Pills are reserved for dots. */
@@ -73,8 +66,7 @@
 
   --focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent);
 
-  /* 4px rhythm. `--space-sm/md/lg` are kept as aliases so existing rules keep
-     reading naturally while new work uses the numbered scale. */
+  /* 4px rhythm. */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -85,9 +77,6 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
   --space-16: 4rem;
-  --space-sm: var(--space-2);
-  --space-md: var(--space-4);
-  --space-lg: var(--space-6);
 
   --transition-fast: 150ms;
   --transition-base: 200ms;
@@ -96,9 +85,6 @@
   --nav-control-height: 2.15rem;
   --max-width-container: 64rem;
   --max-width-narrow: 42rem;
-  --max-width-wide: 80rem;
-  /* Trainer workspace: sidebar + console need a little more than the chrome. */
-  --max-width-workspace: 72rem;
 
   /* Page rhythm. `.page-content` owns the gap above the first content block and
      below the last one; pages must not set their own vertical padding, or the
@@ -170,9 +156,7 @@
     --status-bad: #b42318;
     --status-extra: #3f5e9c;
     --result-good-bg: #edf3e7;
-    --result-good-bd: #b9d2b4;
     --result-bad-bg: #f8eae3;
-    --result-bad-bd: #dfb3a5;
     --shadow-menu: 0 2px 10px rgba(32, 25, 14, 0.12);
     --shadow-overlay: 0 12px 32px rgba(32, 25, 14, 0.18);
   }
@@ -204,9 +188,7 @@
   --status-bad: #b42318;
   --status-extra: #3f5e9c;
   --result-good-bg: #edf3e7;
-  --result-good-bd: #b9d2b4;
   --result-bad-bg: #f8eae3;
-  --result-bad-bd: #dfb3a5;
   --shadow-menu: 0 2px 10px rgba(32, 25, 14, 0.12);
   --shadow-overlay: 0 12px 32px rgba(32, 25, 14, 0.18);
 }
@@ -271,24 +253,6 @@ body {
   padding: var(--space-4);
 }
 
-/* The whole surface is a link or button. */
-.card--interactive {
-  display: block;
-  color: inherit;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.card--interactive:hover {
-  border-color: var(--border-subtle);
-  background-color: var(--bg-inset);
-}
-
-.card--interactive:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 /* Heading for a card/panel's own content. `.card-label` stays the eyebrow/meta
    label; use `.card-title` whenever the text actually heads the surface. */
 .card-title {
@@ -310,11 +274,6 @@ body {
 }
 
 /* Peer cards laid out as an auto-fitting grid (feature trio, stat tiles). */
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: 1.5rem;
-}
 
 /* Inline notice (guest prompts, hints): an inset block, never a card. */
 .notice {
@@ -442,11 +401,6 @@ body {
   line-height: var(--leading-snug);
 }
 
-.accent-text {
-  color: var(--accent);
-  font-weight: 600;
-}
-
 .link {
   color: var(--accent);
 }
@@ -455,9 +409,8 @@ body {
   text-decoration: underline;
 }
 
-/* Buttons are inline by default: the action decides its own width. Use
-   `.btn-block` inside forms and the trainer console where the action is the
-   whole point of the row. Hover is a colour step only — no lift, no glow. */
+/* Buttons are inline by default: the action decides its own width. Hover is a
+   colour step only — no lift, no glow. */
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -484,10 +437,6 @@ body {
   cursor: not-allowed;
 }
 
-.btn-block {
-  width: 100%;
-}
-
 /* Compact variant used by the settings save/verification buttons (auto width
    on desktop, full width on phones). */
 .settings-btn-compact {
@@ -502,48 +451,6 @@ body {
   .settings-btn-compact {
     width: 100%;
   }
-}
-
-.btn-danger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  min-height: 2.5rem;
-  padding: 0 var(--space-4);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  background-color: var(--danger);
-  color: var(--on-danger);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-}
-
-.btn-danger:hover {
-  background-color: var(--danger-h);
-}
-
-.btn-success {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  min-height: 2.5rem;
-  padding: 0 var(--space-4);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  background-color: var(--accent-cta);
-  color: var(--on-accent);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-}
-
-.btn-success:hover {
-  background-color: var(--accent-cta-h);
 }
 
 /* Secondary: the default quiet action. */
@@ -576,30 +483,6 @@ body {
   background-color: var(--bg-inset);
 }
 
-.btn-regen {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  min-height: 2.25rem;
-  padding: 0 var(--space-4);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background-color: var(--bg-surface);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition:
-    border-color 0.15s,
-    background-color 0.15s;
-}
-
-.btn-regen:hover {
-  border-color: var(--border-subtle);
-  background-color: var(--bg-inset);
-}
-
 /* Large primary action (mastheads and end-of-article CTAs). */
 .btn-cta {
   display: inline-flex;
@@ -620,44 +503,6 @@ body {
 
 .btn-cta:hover {
   background-color: var(--accent-cta-h);
-}
-
-.btn-next-lesson,
-.btn-prev-lesson {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 2.5rem;
-  padding: 0 var(--space-4);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition:
-    background-color 0.15s,
-    border-color 0.15s,
-    color 0.15s;
-}
-
-.btn-next-lesson {
-  border: 1px solid transparent;
-  background-color: var(--accent-cta);
-  color: var(--on-accent);
-}
-
-.btn-next-lesson:hover {
-  background-color: var(--accent-cta-h);
-}
-
-.btn-prev-lesson {
-  border: 1px solid var(--border);
-  background-color: var(--bg-surface);
-  color: var(--text-primary);
-}
-
-.btn-prev-lesson:hover {
-  border-color: var(--border-subtle);
-  background-color: var(--bg-inset);
 }
 
 .input,
@@ -719,8 +564,7 @@ body {
 }
 
 select.input,
-select.select,
-select.lesson-select {
+select.select {
   -webkit-appearance: none;
   appearance: none;
   padding-right: 2rem;
@@ -744,11 +588,8 @@ select.lesson-select {
   gap: 1rem;
 }
 
-/* Form field: an always-visible label above its control, optional hint below.
-   Prefer `.field`; `.settings-field` is the legacy name, kept while the older
-   call sites migrate. */
-.field,
-.settings-field {
+/* Form field: an always-visible label above its control, optional hint below. */
+.field {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -852,9 +693,7 @@ summary:focus-visible,
     border-width: 2px;
   }
 
-  .btn-primary,
-  .btn-success,
-  .btn-danger {
+  .btn-primary {
     border: 2px solid currentColor;
   }
 }
@@ -890,17 +729,6 @@ summary:focus-visible,
   font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
-}
-
-.chip--mono {
-  font-family: var(--font-mono);
-  letter-spacing: 0.04em;
-  color: var(--text-primary);
-}
-
-.chip--accent {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  color: var(--accent);
 }
 
 .chip-dot {
@@ -958,8 +786,12 @@ summary:focus-visible,
   transition: background-color var(--transition-fast);
 }
 
-.row-link:hover {
+/* Whole-row links read as one target: the row floors and runs the 2px amber
+   edge on hover and keyboard focus, matching the row-list's link treatment. */
+.row-link:hover,
+.row-link:focus-visible {
   background-color: var(--bg-inset);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .row-link:focus-visible {
@@ -1038,8 +870,6 @@ summary:focus-visible,
 @media (pointer: coarse) {
   .btn-primary,
   .btn-ghost,
-  .btn-danger,
-  .btn-success,
   .btn-cta,
   .input,
   .select {

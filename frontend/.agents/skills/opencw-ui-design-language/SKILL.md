@@ -33,7 +33,7 @@ Read the relevant route/component first, then cross-check these sources:
 
 ## Layout and hierarchy
 
-- Choose width by content: default container for normal pages, `.page-narrow` for focused forms/details/settings/thread reading, `.page-wide` for workspace or multi-column pages with their own inner measures.
+- Choose width by content: default container for normal pages, `.page-narrow` for focused forms/details/settings/thread reading. Add `.page-stack` when a page needs the block rhythm on its children without the narrow measure (profile).
 - Let text and primary task content lead. Use headings, whitespace, alignment, and quiet metadata before adding boxes, borders, badges, or extra copy.
 - Use cards/panels when content is an independent unit or dense bounded workspace. Use simpler vertical stacks, `.row-list`, or ledger-like sections for lists, settings, histories, and discussion flows.
 - Avoid “box of boxes”: do not wrap every row in a card, stack borders directly against section gaps, or add separators when spacing already groups content.
@@ -46,7 +46,8 @@ Read the relevant route/component first, then cross-check these sources:
 
 ## Controls and interactions
 
-- Use shared classes before inventing new controls: `.btn-primary`, `.btn-ghost`, `.btn-danger`, `.btn-cta`, `.btn-icon`, `.input`, `.select`, `.textarea`, `.field`, `.notice`, `.chip`, `.metric`, `.row-list`.
+- Use shared classes before inventing new controls: `.btn-primary`, `.btn-ghost`, `.btn-cta`, `.btn-icon`, `.input`, `.select`, `.textarea`, `.field`, `.notice`, `.chip`, `.metric`, `.row-list`.
+- Whole-row links (`.row-link`) read as one target: hover and keyboard focus floor the row with `--bg-inset` and run the shared 2px amber edge. Destructive row actions stay quiet (unbordered, danger on hover) rather than filled buttons.
 - Keep hover/focus restrained: color, background, border, or the established 2px amber rule; no lift/glow for static content. Always preserve visible keyboard focus.
 - Reserve filled accent buttons for the main action in the current context. Use ghost/quiet text-like actions for secondary actions and destructive actions that should not dominate until hovered, focused, or confirmed.
 - Preserve semantic status colors. Do not use green as brand success decoration or amber as an error substitute.

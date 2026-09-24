@@ -15,10 +15,8 @@
     volume = $bindable(1.0),
     compact = false,
     playLabel = '',
-    hideControls = false,
     label = '',
     showSettings = false,
-    mediaStyle = false,
     /* 'primary' keeps the play control amber; 'quiet' dresses it as a secondary
        action once the passage has already been played through once. */
     playTone = 'primary',
@@ -121,7 +119,7 @@
     // safe-area insets and a breathing edge. Every placement is clamped into it,
     // so the panel stays on screen even when its trigger has been scrolled away.
     const safe = safeAreaInsets();
-    const margin = tokenPx('--space-md', 1);
+    const margin = tokenPx('--space-4', 1);
     const topEdge = topBarHeight > 0 ? topBarHeight + margin : Math.max(margin, safe.top);
     const bottomEdge = navHeight > 0 ? navHeight + margin : Math.max(margin, safe.bottom);
     const usableLeft = viewLeft + Math.max(margin, safe.left);
@@ -419,201 +417,162 @@
   onDestroy(() => ctx?.close());
 </script>
 
-{#if !hideControls}
-  <div class="player-wrapper">
-    <!-- Safe-area probe: the placement script reads env(safe-area-inset-*) here. -->
-    <div class="safe-area-probe" aria-hidden="true" bind:this={safeProbeEl}></div>
-    {#if label || !compact}
-      <div class="player-header">
-        {#if label}<p class="card-title player-label">{label}</p>{/if}
-      </div>
-    {/if}
-    {#if mediaStyle}
-      <!-- Playhead: the timing line that runs while the transmission plays. -->
-      <div
-        class="player-playhead"
-        role="progressbar"
-        aria-valuenow={Math.round(progress * 100)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={m.player_progress()}
-      >
-        <div class="player-playhead-fill" style="width: {started ? progress * 100 : 0}%"></div>
-      </div>
-    {/if}
-    <div class="player-top">
-      <div class="player-buttons">
-        {#if mediaStyle}
-          <div class="player-media-controls">
-            {#if showTransportExtras}
-              <button
-                type="button"
-                class="btn-icon"
-                onclick={() => stop()}
-                disabled={!started}
-                aria-label={m.player_stop()}
-                title={m.player_stop()}
-              >
-                <Square size={16} />
-              </button>
-            {/if}
-            <button
-              type="button"
-              class={started && !paused
-                ? 'btn-primary player-play-btn'
-                : playTone === 'quiet'
-                  ? 'btn-ghost player-play-btn'
-                  : 'btn-primary player-play-btn'}
-              onclick={togglePlayPause}
-              aria-label={started && !paused ? m.player_pause() : effectivePlayLabel}
-            >
-              {#if started && !paused}
-                <Pause size={16} />
-                {m.player_pause()}
-              {:else}
-                <Play size={16} />
-                {effectivePlayLabel}
-              {/if}
-            </button>
-            {#if showTransportExtras}
-              <button
-                type="button"
-                class="btn-icon"
-                onclick={skipNext}
-                disabled={!started}
-                aria-label={m.player_skip_next()}
-                title={m.player_skip_next()}
-              >
-                <SkipForward size={16} />
-              </button>
-              <span class="player-inline-timer" class:player-timer-delay={timer < 0 && started}>
-                {formatClock(elapsedTime)} / {formatClock(totalTime)}
-              </span>
-            {/if}
-          </div>
-        {:else}
-          <button onclick={play} class="btn-success" class:hidden={started}
-            ><Play size={16} />{effectivePlayLabel}</button
+<div class="player-wrapper">
+  <!-- Safe-area probe: the placement script reads env(safe-area-inset-*) here. -->
+  <div class="safe-area-probe" aria-hidden="true" bind:this={safeProbeEl}></div>
+  {#if label || !compact}
+    <div class="player-header">
+      {#if label}<p class="card-title player-label">{label}</p>{/if}
+    </div>
+  {/if}
+  <!-- Playhead: the timing line that runs while the transmission plays. -->
+  <div
+    class="player-playhead"
+    role="progressbar"
+    aria-valuenow={Math.round(progress * 100)}
+    aria-valuemin={0}
+    aria-valuemax={100}
+    aria-label={m.player_progress()}
+  >
+    <div class="player-playhead-fill" style="width: {started ? progress * 100 : 0}%"></div>
+  </div>
+  <div class="player-top">
+    <div class="player-buttons">
+      <div class="player-media-controls">
+        {#if showTransportExtras}
+          <button
+            type="button"
+            class="btn-icon"
+            onclick={() => stop()}
+            disabled={!started}
+            aria-label={m.player_stop()}
+            title={m.player_stop()}
           >
-          <button onclick={() => stop()} class="btn-danger" class:hidden={!started}
-            ><Square size={16} />{m.player_stop()}</button
-          >
-          {#if !compact}
-            <button onclick={resume} class="btn-success" class:hidden={!paused}
-              ><Play size={16} />{m.player_resume()}</button
-            >
-            <button onclick={pause} class="btn-ghost" class:hidden={paused} disabled={!started}
-              ><Pause size={16} />{m.player_pause()}</button
-            >
+            <Square size={16} />
+          </button>
+        {/if}
+        <button
+          type="button"
+          class={started && !paused
+            ? 'btn-primary player-play-btn'
+            : playTone === 'quiet'
+              ? 'btn-ghost player-play-btn'
+              : 'btn-primary player-play-btn'}
+          onclick={togglePlayPause}
+          aria-label={started && !paused ? m.player_pause() : effectivePlayLabel}
+        >
+          {#if started && !paused}
+            <Pause size={16} />
+            {m.player_pause()}
+          {:else}
+            <Play size={16} />
+            {effectivePlayLabel}
           {/if}
-        {/if}
-        {#if showSettings}
-          <details class="player-settings-menu" bind:this={settingsEl} bind:open={settingsOpen}>
-            <summary
-              class="player-settings-trigger"
-              aria-label={m.trainer_label_settings()}
-              title={m.trainer_label_settings()}
-            >
-              <SlidersHorizontal size={14} />
-            </summary>
-            <div
-              class="player-settings-popover card-sm"
-              bind:this={settingsPanelEl}
-              style:top={settingsPlacement?.top}
-              style:left={settingsPlacement?.left}
-              style:width={settingsPlacement?.width}
-              style:max-height={settingsPlacement?.maxHeight}
-            >
-              <label class="player-settings-field">
-                <span class="label-text">{m.trainer_label_char_wpm()}</span>
-                <input
-                  type="number"
-                  bind:value={charWpm}
-                  min="5"
-                  max="50"
-                  class="input"
-                  oninput={() => onSettingsInput()}
-                />
-              </label>
-              <label class="player-settings-field">
-                <span class="label-text">{m.trainer_label_eff_wpm()}</span>
-                <input
-                  type="number"
-                  bind:value={effWpm}
-                  min="5"
-                  max="50"
-                  class="input"
-                  oninput={() => onSettingsInput()}
-                />
-              </label>
-              <label class="player-settings-field">
-                <span class="label-text">{m.trainer_label_freq()}</span>
-                <input
-                  type="number"
-                  bind:value={freq}
-                  min="300"
-                  max="2000"
-                  class="input"
-                  oninput={() => onSettingsInput()}
-                />
-              </label>
-              <label class="player-settings-field">
-                <span class="label-text">{m.player_volume()}</span>
-                <div class="player-volume-row">
-                  <input
-                    type="range"
-                    bind:value={volume}
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    class="player-volume-slider"
-                    oninput={() => onSettingsInput()}
-                  />
-                  <span class="player-volume-value">{Math.round(volume * 100)}%</span>
-                </div>
-              </label>
-              {#if mediaStyle}
-                <label class="player-settings-field">
-                  <span class="label-text">{m.trainer_label_start_delay()}</span>
-                  <input
-                    type="number"
-                    bind:value={startDelay}
-                    min="0"
-                    max="10"
-                    step="0.5"
-                    class="input"
-                    oninput={() => onSettingsInput()}
-                  />
-                </label>
-              {/if}
-              {#if !$user}
-                <div class="player-settings-auth-hint">
-                  <GuestNotice />
-                </div>
-              {/if}
-            </div>
-          </details>
+        </button>
+        {#if showTransportExtras}
+          <button
+            type="button"
+            class="btn-icon"
+            onclick={skipNext}
+            disabled={!started}
+            aria-label={m.player_skip_next()}
+            title={m.player_skip_next()}
+          >
+            <SkipForward size={16} />
+          </button>
+          <span class="player-inline-timer" class:player-timer-delay={timer < 0 && started}>
+            {formatClock(elapsedTime)} / {formatClock(totalTime)}
+          </span>
         {/if}
       </div>
-      {#if !mediaStyle && started}
-        <div class="player-progress-row">
-          <div
-            class="player-progress"
-            role="progressbar"
-            aria-valuenow={Math.round(progress * 100)}
-            aria-valuemin={0}
-            aria-valuemax={100}
+      {#if showSettings}
+        <details class="player-settings-menu" bind:this={settingsEl} bind:open={settingsOpen}>
+          <summary
+            class="player-settings-trigger"
+            aria-label={m.trainer_label_settings()}
+            title={m.trainer_label_settings()}
           >
-            <div class="player-progress-fill" style="width: {progress * 100}%"></div>
+            <SlidersHorizontal size={14} />
+          </summary>
+          <div
+            class="player-settings-popover card-sm"
+            bind:this={settingsPanelEl}
+            style:top={settingsPlacement?.top}
+            style:left={settingsPlacement?.left}
+            style:width={settingsPlacement?.width}
+            style:max-height={settingsPlacement?.maxHeight}
+          >
+            <label class="player-settings-field">
+              <span class="label-text">{m.trainer_label_char_wpm()}</span>
+              <input
+                type="number"
+                bind:value={charWpm}
+                min="5"
+                max="50"
+                class="input"
+                oninput={() => onSettingsInput()}
+              />
+            </label>
+            <label class="player-settings-field">
+              <span class="label-text">{m.trainer_label_eff_wpm()}</span>
+              <input
+                type="number"
+                bind:value={effWpm}
+                min="5"
+                max="50"
+                class="input"
+                oninput={() => onSettingsInput()}
+              />
+            </label>
+            <label class="player-settings-field">
+              <span class="label-text">{m.trainer_label_freq()}</span>
+              <input
+                type="number"
+                bind:value={freq}
+                min="300"
+                max="2000"
+                class="input"
+                oninput={() => onSettingsInput()}
+              />
+            </label>
+            <label class="player-settings-field">
+              <span class="label-text">{m.player_volume()}</span>
+              <div class="player-volume-row">
+                <input
+                  type="range"
+                  bind:value={volume}
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  class="player-volume-slider"
+                  oninput={() => onSettingsInput()}
+                />
+                <span class="player-volume-value">{Math.round(volume * 100)}%</span>
+              </div>
+            </label>
+            <label class="player-settings-field">
+              <span class="label-text">{m.trainer_label_start_delay()}</span>
+              <input
+                type="number"
+                bind:value={startDelay}
+                min="0"
+                max="10"
+                step="0.5"
+                class="input"
+                oninput={() => onSettingsInput()}
+              />
+            </label>
+            {#if !$user}
+              <div class="player-settings-auth-hint">
+                <GuestNotice />
+              </div>
+            {/if}
           </div>
-          <span class="player-timer" class:player-timer-delay={timer < 0}>
-            {timer.toFixed(1)}s / {(duration - startDelay).toFixed(1)}s
-          </span>
-        </div>
+        </details>
       {/if}
     </div>
   </div>
-{/if}
+</div>
 
 <style>
   .player-wrapper {
@@ -655,36 +614,6 @@
     gap: 0.75rem;
   }
 
-  .player-progress-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .player-progress {
-    flex: 1;
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .player-progress-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-  }
-
-  .player-timer {
-    font-family: var(--font-mono);
-    font-size: var(--text-xs);
-    font-variant-numeric: tabular-nums;
-    color: var(--accent);
-    white-space: nowrap;
-    min-width: 9ch;
-    text-align: right;
-  }
-
   .player-timer-delay {
     color: var(--text-muted);
   }
@@ -712,10 +641,6 @@
     min-width: 0;
   }
 
-  .player-buttons .hidden {
-    display: none;
-  }
-
   .player-media-controls {
     display: flex;
     flex-wrap: wrap;
@@ -735,13 +660,6 @@
     white-space: nowrap;
     text-align: right;
     min-width: 0;
-  }
-
-  .player-buttons > button {
-    min-height: var(--player-control-height);
-    line-height: 1;
-    padding-top: 0;
-    padding-bottom: 0;
   }
 
   /* The one labelled control: play/pause is the button people look for. */

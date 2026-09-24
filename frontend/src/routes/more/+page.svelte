@@ -105,7 +105,7 @@
   <section class="panel">
     <h2 class="card-title">{m.settings_page_section()}</h2>
     <div class="more-form">
-      <label class="settings-field">
+      <label class="field">
         <span class="label-text">{m.settings_theme_label()}</span>
         <select
           class="input"
@@ -117,7 +117,7 @@
           <option value="dark">{m.theme_dark()}</option>
         </select>
       </label>
-      <label class="settings-field">
+      <label class="field">
         <span class="label-text">{m.settings_language_label()}</span>
         <select
           class="input"
@@ -135,7 +135,8 @@
 </div>
 
 <style>
-  /* Mirrors `.settings-heading` so the two pages line up. */
+  /* The app mark opens this phone-only surface; its desktop counterpart
+     (Settings) opens with the shared eyebrow above the title instead. */
   .more-heading {
     display: flex;
     align-items: center;

@@ -37,7 +37,7 @@
 
 <AuthCard title={m.register_title()} subtitle={m.register_subtitle()}>
   <form onsubmit={handleRegister} class="auth-form">
-    <label class="settings-field">
+    <label class="field">
       <span class="label-text">{m.register_username_label()}</span>
       <input
         type="text"
@@ -51,7 +51,7 @@
       />
     </label>
 
-    <label class="settings-field">
+    <label class="field">
       <span class="label-text">{m.register_email_label()}</span>
       <input
         type="email"
@@ -63,7 +63,7 @@
       />
     </label>
 
-    <label class="settings-field">
+    <label class="field">
       <span class="label-text">{m.register_password_label()}</span>
       <input
         type="password"
@@ -76,7 +76,7 @@
       />
     </label>
 
-    <label class="settings-field">
+    <label class="field">
       <span class="label-text">{m.register_confirm_label()}</span>
       <input
         type="password"

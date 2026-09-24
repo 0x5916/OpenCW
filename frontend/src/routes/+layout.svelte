@@ -265,17 +265,16 @@
             {/snippet}
             {#snippet menu()}
               <a href={href('/profile')} class="user-dropdown-item" role="menuitem"
-                ><LayoutDashboard size={14} style="pointer-events:none" /> {m.nav_profile()}</a
+                ><LayoutDashboard size={14} /> {m.nav_profile()}</a
               >
               <a href={href('/settings')} class="user-dropdown-item" role="menuitem"
-                ><Settings size={14} style="pointer-events:none" /> {m.nav_settings()}</a
+                ><Settings size={14} /> {m.nav_settings()}</a
               >
               <button
                 type="button"
                 onclick={() => void handleLogout()}
                 class="user-dropdown-item"
-                role="menuitem"
-                ><LogOut size={14} style="pointer-events:none" /> {m.nav_logout()}</button
+                role="menuitem"><LogOut size={14} /> {m.nav_logout()}</button
               >
             {/snippet}
           </Dropdown>
@@ -287,16 +286,16 @@
             {/snippet}
             {#snippet menu()}
               <a href={href('/profile')} class="user-dropdown-item" role="menuitem"
-                ><LayoutDashboard size={14} style="pointer-events:none" /> {m.nav_profile()}</a
+                ><LayoutDashboard size={14} /> {m.nav_profile()}</a
               >
               <a href={href('/settings')} class="user-dropdown-item" role="menuitem"
-                ><Settings size={14} style="pointer-events:none" /> {m.nav_settings()}</a
+                ><Settings size={14} /> {m.nav_settings()}</a
               >
               <a href={href('/login')} class="user-dropdown-item" role="menuitem"
-                ><LogIn size={14} style="pointer-events:none" /> {m.nav_login()}</a
+                ><LogIn size={14} /> {m.nav_login()}</a
               >
               <a href={href('/register')} class="user-dropdown-item" role="menuitem"
-                ><UserPlus size={14} style="pointer-events:none" /> {m.nav_register()}</a
+                ><UserPlus size={14} /> {m.nav_register()}</a
               >
             {/snippet}
           </Dropdown>

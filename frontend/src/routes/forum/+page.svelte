@@ -196,7 +196,7 @@
   <title>{m.forum_title()} | OpenCW</title>
 </svelte:head>
 
-<div class="forum-page page-wide">
+<div class="forum-page">
   <header class="forum-masthead">
     <p class="eyebrow">{m.forum_eyebrow()}</p>
     <div class="masthead-row">
@@ -525,24 +525,14 @@
     border-bottom: none;
   }
 
+  /* The whole row is one link: the shared `.row-link` hover supplies the floor
+     and the 2px amber edge, so the row reads as a single target. */
   .thread-row {
     display: flex;
     flex-direction: column;
     gap: 0.55rem;
     padding: var(--space-3);
     border-radius: var(--radius-xs);
-  }
-
-  /* The whole row is one link: hover floors it and runs the same 2px amber rule
-     the active filter uses, so the row reads as a single target. Keyboard focus
-     keeps the shared row outline and gets the same flooring. */
-  .thread-row:hover,
-  .thread-row:focus-visible {
-    background-color: var(--bg-inset);
-  }
-
-  .thread-row:hover {
-    box-shadow: inset 2px 0 0 var(--accent);
   }
 
   .thread-title {

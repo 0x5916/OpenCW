@@ -720,7 +720,6 @@
           {volume}
           {startDelay}
           showSettings
-          mediaStyle
           playTone={sessionStarted && !playing ? 'quiet' : 'primary'}
           showTransportExtras={playing}
           onStart={onSessionStart}
@@ -835,7 +834,6 @@
             {startDelay}
             compact
             showSettings
-            mediaStyle
             showTransportExtras={false}
             onStart={onDrillStart}
             onSettingsInput={onCwSettingInput}
