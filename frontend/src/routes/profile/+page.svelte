@@ -365,18 +365,18 @@
     <!-- Header: identity block, not a card. -->
     <header class="profile-header">
       <!-- Call-sign plate: the one piece of radio identity, in monospace. -->
-      <div class="profile-plate">
-        <span class="profile-plate-value">{callSign ?? m.profile_call_sign_none()}</span>
-        <span class="profile-plate-label">{m.profile_call_sign_label()}</span>
+      <div class="profile-stat profile-plate">
+        <span class="metric-value">{callSign ?? m.profile_call_sign_none()}</span>
+        <span class="metric-label">{m.profile_call_sign_label()}</span>
       </div>
       <div class="profile-header-info">
-        <h1 class="profile-username">{username}</h1>
+        <h1 class="page-title">{username}</h1>
         {#if !isGuest}
           <p class="profile-email">{email}</p>
         {/if}
-        <div class="profile-meta-row">
+        <div class="meta-row">
           {#if !isGuest}
-            <p class="profile-meta-item">
+            <p class="meta-item">
               {#if emailVerified}
                 <Check
                   size={14}
@@ -418,14 +418,14 @@
           </h2>
         </div>
         <div
-          class="profile-heatmap-year-picker"
+          class="segmented profile-heatmap-year-picker"
           role="group"
           aria-label={m.profile_heatmap_year_aria()}
         >
           {#each availableYears as year (year)}
             <button
               type="button"
-              class={`profile-heatmap-year-btn ${year === selectedYear ? 'is-active' : ''}`}
+              class="segmented-item"
               aria-pressed={year === selectedYear}
               onclick={() => {
                 selectedYear = year;
@@ -514,19 +514,19 @@
       </div>
     </section>
 
-    <!-- CW settings snapshot: peer readouts, so a stat strip rather than a card. -->
-    <section>
+    <!-- CW settings snapshot: peer readouts in an inset stat strip. -->
+    <section class="panel">
       <h2 class="card-title">{m.profile_cw_settings()}</h2>
       <div class="profile-cw-grid">
-        <div class="profile-cw-item">
+        <div class="profile-stat">
           <span class="metric-value">{charWpm}</span>
           <span class="metric-label">{m.profile_cw_char_wpm()}</span>
         </div>
-        <div class="profile-cw-item">
+        <div class="profile-stat">
           <span class="metric-value">{effWpm}</span>
           <span class="metric-label">{m.profile_cw_eff_wpm()}</span>
         </div>
-        <div class="profile-cw-item">
+        <div class="profile-stat">
           <span class="metric-value">{freq} Hz</span>
           <span class="metric-label">{m.profile_cw_freq()}</span>
         </div>
@@ -546,10 +546,10 @@
           <table class="profile-table">
             <thead>
               <tr>
-                <th>{m.profile_history_lesson()}</th>
-                <th>{m.profile_history_accuracy()}</th>
-                <th>{m.profile_history_wpm()}</th>
-                <th>{m.profile_history_date()}</th>
+                <th class="panel-label">{m.profile_history_lesson()}</th>
+                <th class="panel-label">{m.profile_history_accuracy()}</th>
+                <th class="panel-label">{m.profile_history_wpm()}</th>
+                <th class="panel-label">{m.profile_history_date()}</th>
               </tr>
             </thead>
             <tbody>
@@ -583,49 +583,32 @@
   .profile-header {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
-    padding-bottom: 1.25rem;
+    gap: var(--block-gap);
+    padding-bottom: var(--space-5);
     border-bottom: 1px solid var(--border);
   }
-  .profile-plate {
+  /* One inset box for the page's readouts: the call-sign plate and the CW
+     stat strip share it. */
+  .profile-stat {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
     gap: 0.15rem;
-    min-width: 6rem;
     padding: var(--space-3) var(--space-4);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background-color: var(--bg-inset);
+    min-width: 0;
+  }
+  .profile-plate {
+    align-items: center;
+    justify-content: center;
+    min-width: 6rem;
     flex-shrink: 0;
-  }
-  .profile-plate-value {
-    font-family: var(--font-mono);
-    font-size: var(--text-lg);
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    color: var(--accent);
-  }
-  .profile-plate-label {
-    font-size: var(--text-xs);
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-muted);
   }
   .profile-header-info {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-  }
-  .profile-username {
-    font-size: var(--text-2xl);
-    line-height: var(--leading-tight);
-    font-weight: 600;
-    letter-spacing: -0.015em;
-    color: var(--text-primary);
-    margin: 0;
   }
   .profile-email {
     font-size: var(--text-sm);
@@ -639,20 +622,6 @@
     font-size: var(--text-xs);
     color: var(--text-muted);
     margin: 0;
-  }
-  .profile-meta-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    margin: 0;
-  }
-  .profile-meta-item {
-    margin: 0;
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-    display: inline-flex;
-    gap: 0.25rem;
-    align-items: center;
   }
   :global(.profile-status-icon) {
     flex-shrink: 0;
@@ -675,35 +644,6 @@
     align-items: center;
     gap: 0.5rem;
   }
-  .profile-heatmap-year-picker {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-  }
-  .profile-heatmap-year-btn {
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text-muted);
-    border-radius: var(--radius-sm);
-    padding: 0.2rem 0.5rem;
-    font-family: var(--font-mono);
-    font-size: var(--text-xs);
-    font-weight: 500;
-    cursor: pointer;
-    transition:
-      background-color 0.15s ease,
-      color 0.15s ease,
-      border-color 0.15s ease;
-  }
-  .profile-heatmap-year-btn:hover {
-    color: var(--text-primary);
-    border-color: var(--border-subtle);
-  }
-  .profile-heatmap-year-btn.is-active {
-    background: color-mix(in srgb, var(--accent), transparent 90%);
-    color: var(--accent);
-    border-color: var(--accent);
-  }
   .profile-heatmap-scroll {
     overflow-x: auto;
     padding-right: 0.15rem;
@@ -725,7 +665,7 @@
     display: grid;
     grid-template-columns: repeat(var(--week-count), 0.72rem);
     column-gap: 0.22rem;
-    font-size: 0.74rem;
+    font-size: var(--text-xs);
     color: var(--text-muted);
     line-height: 1;
   }
@@ -741,7 +681,7 @@
     display: grid;
     grid-template-rows: repeat(7, 0.72rem);
     row-gap: 0.22rem;
-    font-size: 0.68rem;
+    font-size: var(--text-xs);
     color: var(--text-muted);
     line-height: 1;
     align-items: center;
@@ -761,7 +701,7 @@
     height: 0.72rem;
     border-radius: var(--radius-xs);
     border: 1px solid color-mix(in srgb, var(--border), transparent 45%);
-    background: color-mix(in srgb, var(--bg-inset), black 12%);
+    background: var(--bg-inset);
     display: inline-block;
   }
   /* Level ramp derived from the accent so it matches the brand in both themes
@@ -795,15 +735,14 @@
   .profile-heatmap-cell.is-before-account {
     opacity: 0.32;
     border-color: color-mix(in srgb, var(--border), transparent 55%);
-    background: color-mix(in srgb, var(--bg-inset), black 8%);
   }
   .profile-heatmap-legend {
     display: flex;
     justify-content: flex-end;
     align-items: center;
     gap: 0.35rem;
-    margin-top: 0.65rem;
-    font-size: 0.76rem;
+    margin-top: var(--space-3);
+    font-size: var(--text-xs);
     color: var(--text-muted);
   }
 
@@ -824,17 +763,8 @@
   .profile-cw-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
-    gap: 0.75rem;
-    margin-top: 0.75rem;
-  }
-  .profile-cw-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    padding: 0.75rem 0.9rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background-color: var(--bg-inset);
+    gap: var(--space-3);
+    margin-top: var(--space-3);
   }
 
   /* History table */
@@ -850,10 +780,6 @@
   .profile-table th {
     text-align: left;
     padding: 0.5rem 0.75rem;
-    font-size: var(--text-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
     border-bottom: 1px solid var(--border);
   }
   .profile-table td {
@@ -912,7 +838,7 @@
   }
   .profile-empty {
     color: var(--text-muted);
-    padding: 0.5rem 0;
+    padding: var(--space-2) 0;
   }
 
   /* Responsive */
@@ -920,11 +846,6 @@
     .profile-header {
       flex-direction: column;
       align-items: flex-start;
-    }
-    .profile-heatmap-year-picker {
-      width: 100%;
-      overflow-x: auto;
-      padding-bottom: 0.2rem;
     }
   }
 </style>

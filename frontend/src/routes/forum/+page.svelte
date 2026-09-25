@@ -243,7 +243,7 @@
 
   {#if composerOpen}
     <section class="panel composer">
-      <h2 class="composer-title">{m.forum_new_thread_heading()}</h2>
+      <h2 class="card-title">{m.forum_new_thread_heading()}</h2>
 
       {#if postingStatus === 'guest'}
         <GuestNotice class="body-text" message={m.forum_guest_notice()} />
@@ -346,7 +346,7 @@
         <li>
           <a class="row-link thread-row" href={href(`/forum/${thread.id}`)}>
             <h3 class="thread-title">{thread.title}</h3>
-            <p class="thread-meta">
+            <p class="meta-row">
               <span class="thread-cat"
                 ><span class="chip-dot"></span>{forumCategoryLabel(thread.category)}</span
               >
@@ -453,10 +453,10 @@
     margin-bottom: var(--block-gap);
   }
 
-  .composer-title {
-    margin: 0;
-    font-size: var(--text-lg);
-    font-weight: 600;
+  /* The panel's flex gap owns the rhythm, so the shared heading drops its
+     bottom margin here. */
+  .composer :global(.card-title) {
+    margin-bottom: 0;
   }
 
   /* A thread row is a `.row-link`, so it inherits the shared row spec —
@@ -482,19 +482,6 @@
     overflow-wrap: anywhere;
   }
 
-  .thread-meta {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.45rem 0.85rem;
-    margin: 0;
-    font-size: var(--text-xs);
-    line-height: var(--leading-snug);
-    color: var(--text-muted);
-  }
-
-  /* Category label: small caps with a dot, the same treatment as the trainer
-     and the thread page. */
   .thread-replies {
     color: var(--text-muted);
     white-space: nowrap;
@@ -534,10 +521,6 @@
 
     .thread-title {
       font-size: var(--text-base);
-    }
-
-    .thread-meta {
-      gap: 0.4rem 0.7rem;
     }
   }
 </style>

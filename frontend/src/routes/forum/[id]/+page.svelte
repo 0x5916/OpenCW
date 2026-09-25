@@ -273,9 +273,11 @@
 
   {#if loading}
     <div class="skeleton-rows">
-      <span class="skeleton skeleton-title"></span>
-      <span class="skeleton skeleton-line"></span>
-      <span class="skeleton skeleton-meta"></span>
+      <div class="skeleton-row">
+        <span class="skeleton skeleton-title"></span>
+        <span class="skeleton skeleton-line"></span>
+        <span class="skeleton skeleton-meta"></span>
+      </div>
     </div>
     <p class="sr-only" role="status">{m.common_loading()}</p>
   {:else if notFound}
@@ -295,8 +297,8 @@
         <p class="thread-cat">
           <span class="chip-dot"></span>{forumCategoryLabel(thread.category)}
         </p>
-        <h1 class="thread-title">{thread.title}</h1>
-        <p class="thread-meta">
+        <h1 class="page-title">{thread.title}</h1>
+        <p class="meta-row">
           <span class="thread-author">{authorLabel(thread.author)}</span>
           {#if thread.author.call_sign}
             <span class="callsign">{thread.author.call_sign}</span>
@@ -304,13 +306,13 @@
           <span>{formatDate(thread.created_at)}</span>
         </p>
       </header>
-      <p class="thread-body">{thread.body}</p>
+      <p class="body-text body-text--prose thread-body">{thread.body}</p>
 
       <div class="thread-actions">
         <div class="thread-action-row">
           <button
             type="button"
-            class="thread-reply-button"
+            class="action-quiet"
             aria-expanded={threadComposerOpen}
             onclick={openThreadComposer}
           >
@@ -321,7 +323,7 @@
           {#if isThreadAuthor}
             <button
               type="button"
-              class="thread-delete-button"
+              class="action-quiet is-danger"
               disabled={deletingThread}
               onclick={deleteThread}
             >
@@ -330,7 +332,7 @@
             {#if threadDeleteArmed}
               <button
                 type="button"
-                class="thread-cancel-delete"
+                class="action-quiet"
                 onclick={() => (threadDeleteArmed = false)}
               >
                 {m.forum_cancel()}
@@ -362,7 +364,7 @@
     </article>
 
     <section class="replies-section" aria-labelledby="replies-title">
-      <h2 id="replies-title" class="replies-title">{replyCountLabel}</h2>
+      <h2 id="replies-title" class="panel-label replies-title">{replyCountLabel}</h2>
 
       {#if repliesError}
         <ErrorAlert message={repliesError} />
@@ -426,35 +428,15 @@
     gap: var(--space-2);
   }
 
-  .thread-title {
-    margin: 0;
-    font-size: var(--text-2xl);
-    line-height: var(--leading-tight);
-    font-weight: 600;
-    letter-spacing: -0.015em;
-  }
-
-  .thread-meta {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.4rem 0.9rem;
-    margin: 0;
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-  }
-
   .thread-author {
     color: var(--text-primary);
     font-weight: 600;
   }
 
-  /* The post body is the only long-form text on the page: 16px on a relaxed
-     leading, kept on the same measure as the replies below it. */
+  /* The post body keeps primary ink over the shared prose scale
+     (`.body-text--prose`), with the thread's own whitespace handling. */
   .thread-body {
     margin: 0;
-    font-size: var(--text-base);
-    line-height: var(--leading-relaxed);
     color: var(--text-primary);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -474,62 +456,6 @@
     gap: var(--space-2);
   }
 
-  .thread-reply-button,
-  .thread-delete-button,
-  .thread-cancel-delete {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.3rem;
-    min-height: 2rem;
-    border-radius: var(--radius-xs);
-    font-size: var(--text-xs);
-    font-weight: 500;
-    cursor: pointer;
-    transition:
-      color var(--transition-fast),
-      border-color var(--transition-fast),
-      background-color var(--transition-fast);
-  }
-
-  .thread-reply-button {
-    padding: 0.15rem 0.65rem;
-    border: 1px solid var(--border-control);
-    background-color: var(--bg-surface);
-    color: var(--text-primary);
-  }
-
-  .thread-reply-button:hover,
-  .thread-reply-button:focus-visible {
-    border-color: var(--accent);
-    background-color: var(--bg-inset);
-  }
-
-  .thread-delete-button,
-  .thread-cancel-delete {
-    padding: 0.15rem 0.35rem;
-    border: none;
-    background: transparent;
-    color: var(--text-muted);
-  }
-
-  .thread-delete-button:hover,
-  .thread-delete-button:focus-visible {
-    color: var(--danger);
-    background-color: var(--bg-inset);
-  }
-
-  .thread-cancel-delete:hover,
-  .thread-cancel-delete:focus-visible {
-    color: var(--text-primary);
-    background-color: var(--bg-inset);
-  }
-
-  .thread-delete-button:disabled {
-    cursor: progress;
-    opacity: 0.6;
-  }
-
   .thread-composer-inline {
     width: 100%;
   }
@@ -540,11 +466,6 @@
 
   .replies-title {
     margin: 0 0 var(--space-3);
-    font-size: var(--text-xs);
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-muted);
   }
 
   .reply-tree {
@@ -562,27 +483,8 @@
       padding-bottom: var(--space-5);
     }
 
-    .thread-title {
-      font-size: var(--text-xl);
-    }
-
-    .thread-reply-button,
-    .thread-delete-button,
-    .thread-cancel-delete {
-      min-height: 2.5rem;
-    }
-
     .thread-action-row {
       align-items: stretch;
-    }
-
-    .thread-reply-button {
-      flex: 1 1 12rem;
-    }
-
-    .thread-delete-button,
-    .thread-cancel-delete {
-      flex: 0 1 auto;
     }
 
     .replies-section {

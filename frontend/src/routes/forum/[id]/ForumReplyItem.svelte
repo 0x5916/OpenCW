@@ -117,7 +117,7 @@
     </div>
   {:else}
     <div class="reply-main">
-      <div class="reply-meta">
+      <div class="meta-row">
         <span class="reply-author">{authorLabel(reply.author)}</span>
         {#if isOp}
           <span class="chip">{m.forum_op_tag()}</span>
@@ -139,7 +139,7 @@
       <div class="reply-actions">
         <button
           type="button"
-          class="reply-action"
+          class="action-quiet"
           bind:this={replyButton}
           onclick={() => onReply(reply)}
         >
@@ -150,17 +150,17 @@
           {#if confirmingDelete}
             <button
               type="button"
-              class="reply-action is-danger"
+              class="action-quiet is-danger"
               disabled={deleting}
               onclick={handleDelete}
             >
               {m.forum_delete_confirm()}
             </button>
-            <button type="button" class="reply-action" onclick={() => (confirmingDelete = false)}>
+            <button type="button" class="action-quiet" onclick={() => (confirmingDelete = false)}>
               {m.forum_cancel()}
             </button>
           {:else}
-            <button type="button" class="reply-action is-danger" onclick={handleDelete}>
+            <button type="button" class="action-quiet is-danger" onclick={handleDelete}>
               {m.forum_delete_reply()}
             </button>
           {/if}
@@ -264,16 +264,6 @@
     line-height: var(--leading-snug);
   }
 
-  .reply-meta {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.35rem 0.7rem;
-    font-size: var(--text-xs);
-    line-height: var(--leading-snug);
-    color: var(--text-muted);
-  }
-
   .reply-author {
     color: var(--text-primary);
     font-weight: 600;
@@ -319,36 +309,6 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 0.35rem var(--space-3);
-  }
-
-  /* Reply actions stay quiet: no box, danger only on hover. */
-  .reply-action {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    min-height: 1.75rem;
-    padding: 0.1rem 0.3rem;
-    border: none;
-    border-radius: var(--radius-xs);
-    background: transparent;
-    color: var(--text-muted);
-    font-size: var(--text-xs);
-    font-weight: 500;
-    cursor: pointer;
-    transition:
-      color var(--transition-fast),
-      background-color var(--transition-fast);
-  }
-
-  .reply-action:hover,
-  .reply-action:focus-visible {
-    color: var(--text-primary);
-    background-color: var(--bg-inset);
-  }
-
-  .reply-action.is-danger:hover,
-  .reply-action.is-danger:focus-visible {
-    color: var(--danger);
   }
 
   .reply-composer-inline {

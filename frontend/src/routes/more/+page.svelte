@@ -56,7 +56,7 @@
 </script>
 
 <div class="page-narrow">
-  <!-- Same heading shape as the Settings page: mark + page title. -->
+  <!-- Phone-only hub: the app mark opens the page instead of an eyebrow. -->
   <div class="more-heading">
     <img src="/favicon.svg" alt="" class="more-logo" />
     <h1 class="page-title">{m.nav_more()}</h1>
@@ -108,7 +108,7 @@
       <label class="field">
         <span class="label-text">{m.settings_theme_label()}</span>
         <select
-          class="input"
+          class="select"
           value={theme}
           onchange={(e) => changeTheme(e.currentTarget.value as Theme)}
         >
@@ -120,7 +120,7 @@
       <label class="field">
         <span class="label-text">{m.settings_language_label()}</span>
         <select
-          class="input"
+          class="select"
           value={language}
           onchange={(e) => changeLanguage(e.currentTarget.value as LocalePreference)}
         >
@@ -140,8 +140,8 @@
   .more-heading {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    gap: var(--space-3);
+    margin-bottom: var(--block-gap);
   }
 
   .more-logo {
@@ -153,7 +153,7 @@
   .more-list {
     display: flex;
     flex-direction: column;
-    margin-top: 0.5rem;
+    margin-top: var(--space-2);
   }
 
   /* The panel already draws the group's boundary, so a row carries no box of
@@ -166,7 +166,7 @@
     align-items: center;
     gap: 0.6rem;
     width: 100%;
-    padding: 0.7rem 0;
+    padding: var(--space-3) 0;
     font-family: inherit;
     font-size: var(--text-sm);
     line-height: var(--leading-snug);
@@ -196,7 +196,7 @@
   .more-form {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    margin-top: 0.5rem;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
   }
 </style>

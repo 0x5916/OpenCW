@@ -5,10 +5,10 @@
 </script>
 
 <svelte:head>
-  <title>Morse tools - OpenCW</title>
+  <title>{m.morse_title()} | OpenCW</title>
 </svelte:head>
 
-<div class="page-narrow morse-index">
+<div class="page-narrow">
   <header class="morse-header">
     <p class="eyebrow">{m.morse_eyebrow()}</p>
     <h1 class="page-title">{m.morse_title()}</h1>
@@ -29,19 +29,8 @@
 </div>
 
 <style>
-  .morse-index {
-    display: grid;
-    gap: var(--section-gap);
-  }
-
-  .morse-header {
-    display: grid;
-    gap: var(--space-2);
-  }
-
-  .morse-header .page-title,
   .morse-header .body-text {
-    margin: 0;
+    margin: var(--space-2) 0 0;
   }
 
   .tool-row {
@@ -53,7 +42,7 @@
 
   .tool-copy {
     display: grid;
-    gap: 0.2rem;
+    gap: var(--space-1);
     min-width: 0;
   }
 

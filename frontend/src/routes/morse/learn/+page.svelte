@@ -683,11 +683,11 @@
 
       <!-- Mode switch: exactly one practice is on screen at a time. The drill
            leads, because the newest character is practised by ear first. -->
-      <fieldset class="mode-switch">
+      <fieldset class="segmented">
         <legend class="sr-only">{m.trainer_mode_legend()}</legend>
         <label class="mode-option">
           <input type="radio" name="practice-mode" value="drill" bind:group={mode} />
-          <span>{m.trainer_mode_drill()}</span>
+          <span class="segmented-item">{m.trainer_mode_drill()}</span>
         </label>
         <label class="mode-option">
           <input
@@ -697,7 +697,7 @@
             bind:this={modePassageEl}
             bind:group={mode}
           />
-          <span>{m.trainer_mode_passage()}</span>
+          <span class="segmented-item">{m.trainer_mode_passage()}</span>
         </label>
       </fieldset>
 
@@ -955,44 +955,14 @@
     color: var(--text-muted);
   }
 
-  /* Mode switch: native radios dressed as two quiet options. The checked one is
-     amber, so the current mode reads without a filled control. */
-  .mode-switch {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    margin: 0;
-    padding: 0;
-    border: none;
-  }
-
+  /* Mode switch: native radios dressed by the shared segmented control — the
+     checked one turns amber, so the current mode reads without a filled
+     control. */
   .mode-option input {
     position: absolute;
     width: 1px;
     height: 1px;
     opacity: 0;
-  }
-
-  .mode-option span {
-    display: inline-flex;
-    padding: 0.4rem 0.8rem;
-    border: 1px solid var(--border-control);
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    cursor: pointer;
-  }
-
-  .mode-option input:checked + span {
-    border-color: var(--accent);
-    color: var(--accent);
-    font-weight: 600;
-  }
-
-  .mode-option input:focus-visible + span {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
   }
 
   /* Flow: the five steps, current one in amber text (never a filled control). */

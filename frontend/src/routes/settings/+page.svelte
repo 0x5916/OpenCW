@@ -440,7 +440,7 @@
           {/if}
         </form>
 
-        <hr class="settings-divider" />
+        <hr class="divider" />
 
         <form onsubmit={saveEmail} class="settings-form">
           <label class="field">
@@ -577,7 +577,7 @@
       <form onsubmit={savePage} class="settings-form">
         <label class="field">
           <span class="label-text">{m.settings_language_label()}</span>
-          <select bind:value={pageLanguage} class="input">
+          <select bind:value={pageLanguage} class="select">
             <option value="auto">{m.theme_auto()}</option>
             {#each locales as locale (locale)}
               <option value={locale}>{languageLabel(locale)}</option>
@@ -644,16 +644,18 @@
     padding: var(--space-6) 0 0;
     background: transparent;
   }
+  /* The ledger sections keep their rule when the shared contrast rule would
+     thicken a card border. */
+  @media (prefers-contrast: more) {
+    .settings-page :global(.panel) {
+      border-top-width: 2px;
+    }
+  }
   .settings-form {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    margin-top: 0.5rem;
-  }
-  .settings-divider {
-    border: none;
-    border-top: 1px solid var(--border);
-    margin: 1rem 0;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
   }
   .settings-email-verification {
     margin-top: 0.5rem;

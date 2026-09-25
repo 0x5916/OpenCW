@@ -10,73 +10,39 @@
 </script>
 
 <div class="page-narrow">
-  <div class="panel error-card">
-    <p class="error-code">{page.status}</p>
-    <h1 class="page-title error-title">
+  <div class="error-head">
+    <p class="eyebrow">{page.status}</p>
+    <h1 class="page-title">
       {isNotFound ? m.error_title() : m.error_generic_title()}
     </h1>
     <p class="body-text error-body">
       {isNotFound ? m.error_body() : m.error_generic_body()}
     </p>
-    <div class="error-actions">
-      <a href={href('/')} class="btn-ghost error-btn">
-        <Home size={16} aria-hidden="true" />
-        {m.error_cta_home()}
-      </a>
-      <a href={href('/morse/learn')} class="btn-ghost error-btn error-btn-accent">
-        <Radio size={16} aria-hidden="true" />
-        {m.home_cta()}
-      </a>
-    </div>
+  </div>
+  <div class="error-actions">
+    <a href={href('/')} class="btn-primary">
+      <Home size={16} aria-hidden="true" />
+      {m.error_cta_home()}
+    </a>
+    <a href={href('/morse/learn')} class="btn-ghost">
+      <Radio size={16} aria-hidden="true" />
+      {m.home_cta()}
+    </a>
   </div>
 </div>
 
 <style>
-  /* `.page-narrow` owns the width and the shell owns the vertical gap, so this
-     page needs no size rules of its own. */
-  .error-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-10) var(--space-6);
-    text-align: center;
-  }
-
-  .error-code {
-    margin: 0;
-    font-size: var(--text-xs);
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    color: var(--text-muted);
-  }
-
-  .error-title {
-    margin: 0;
-    color: var(--accent);
-  }
-
+  /* A state page keeps the masthead shape: status eyebrow, neutral page title,
+     then one filled primary action beside a quiet secondary. */
   .error-body {
-    margin: 0;
+    margin: var(--space-3) 0 0;
     max-width: 30rem;
   }
 
   .error-actions {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
+    align-items: center;
     gap: var(--space-3);
-    width: 100%;
-    margin-top: var(--space-4);
-  }
-
-  .error-btn {
-    flex: 0 1 auto;
-    text-decoration: none;
-  }
-
-  .error-btn-accent {
-    border-color: var(--accent);
-    color: var(--accent);
   }
 </style>

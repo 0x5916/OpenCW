@@ -80,11 +80,11 @@
     <h3 class="sub-title">{m.about_koch_vs_title()}</h3>
     <div class="compare">
       <div class="compare-col compare-col--bad">
-        <p class="compare-head">{m.about_koch_vs_traditional_label()}</p>
+        <p class="panel-label compare-head">{m.about_koch_vs_traditional_label()}</p>
         <p class="body-text">{m.about_koch_vs_traditional_body()}</p>
       </div>
       <div class="compare-col compare-col--good">
-        <p class="compare-head">
+        <p class="panel-label compare-head">
           <CheckCircle size={15} aria-hidden="true" />
           <span>{m.about_koch_vs_koch_label()}</span>
         </p>
@@ -214,18 +214,8 @@
   .compare-head {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    margin: 0 0 0.5rem;
-    color: var(--text-muted);
-    font-size: var(--text-xs);
-    line-height: 1rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  .compare-col--good .compare-head {
-    color: var(--accent);
+    gap: var(--space-2);
+    margin: 0 0 var(--space-2);
   }
 
   .about-cta {
