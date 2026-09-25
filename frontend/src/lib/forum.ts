@@ -15,6 +15,11 @@ export function forumCategoryLabel(category: ForumCategoryValue): string {
   }
 }
 
+/** Whole-reply count label, shared by the thread list and the thread page. */
+export function formatReplyCount(count: number): string {
+  return count === 1 ? m.forum_reply_one() : m.forum_reply_many({ count: String(count) });
+}
+
 export type PostingStatus = 'guest' | 'unverified' | 'ready';
 
 /**

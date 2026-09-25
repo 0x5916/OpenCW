@@ -2,14 +2,15 @@
   import { ArrowRight } from '@lucide/svelte';
   import { localizedHref as href } from '$lib/i18n.svelte';
   import { LESSONS } from '$lib/morse';
+  import { GITHUB_URL } from '$lib/seo';
   import * as m from '$lib/paraglide/messages';
 
-  // Static lists are built once per component instance; the layout remounts the
-  // page when the language changes, so `m.*` never goes stale here.
+  // The lists store the message functions, not their values, so the template
+  // always reads the current locale (the layout also remounts on a switch).
   const steps = [
-    { title: m.home_step1_title(), body: m.home_step1_body() },
-    { title: m.home_step2_title(), body: m.home_step2_body() },
-    { title: m.home_step3_title(), body: m.home_step3_body() }
+    { title: m.home_step1_title, body: m.home_step1_body },
+    { title: m.home_step2_title, body: m.home_step2_body },
+    { title: m.home_step3_title, body: m.home_step3_body }
   ];
 
   // Where to go next: the four surfaces of the product as one plain list.
@@ -67,8 +68,8 @@
         <li class="step">
           <span class="step-number">{index + 1}</span>
           <div>
-            <strong class="step-title">{step.title}</strong>
-            <p class="body-text">{step.body}</p>
+            <strong class="step-title">{step.title()}</strong>
+            <p class="body-text">{step.body()}</p>
           </div>
         </li>
       {/each}
@@ -96,7 +97,7 @@
   <p class="body-text">{m.home_author_line()}</p>
   <div class="colophon-links">
     <a href={href('/about')} class="link">{m.home_author_link()}</a>
-    <a href="https://github.com/0x5916" class="link" rel="noopener noreferrer" target="_blank"
+    <a href={GITHUB_URL} class="link" rel="noopener noreferrer" target="_blank"
       >{m.home_author_github()}</a
     >
   </div>

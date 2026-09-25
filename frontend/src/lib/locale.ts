@@ -5,7 +5,7 @@ export type LocalePreference = Locale | 'auto';
 
 export const LOCALE_PREFERENCE_STORAGE_KEY = 'PARAGLIDE_LOCALE_PREF';
 
-export const LOCALE_DISPLAY: Record<Locale, { short: string; native: string; english: string }> = {
+const LOCALE_DISPLAY: Record<Locale, { short: string; native: string; english: string }> = {
   en: { short: 'EN', native: 'English', english: 'English' },
   de: { short: 'DE', native: 'Deutsch', english: 'German' },
   ja: { short: 'JA', native: '日本語', english: 'Japanese' },

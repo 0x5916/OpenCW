@@ -1,22 +1,18 @@
 <script lang="ts">
   interface Props {
     message: string;
-    variant?: 'error' | 'warning' | 'info';
   }
 
-  let { message, variant = 'error' }: Props = $props();
-
-  // Failures interrupt, informational banners do not.
-  let role = $derived(variant === 'info' ? 'status' : 'alert');
+  let { message }: Props = $props();
 </script>
 
-<div class="error-alert error-alert-{variant}" {role}>
+<div class="error-alert" role="alert">
   <span class="alert-mark" aria-hidden="true"></span>
   <p class="error-message">{message}</p>
 </div>
 
 <style>
-  /* Notice block: hairline box with a status-coloured left rule. The severity
+  /* Error notice: hairline box with a status-coloured left rule. The severity
      is carried by the rule and the dot, the text stays readable ink. */
   .error-alert {
     display: flex;
@@ -26,26 +22,9 @@
     border: 1px solid;
     border-left-width: 3px;
     border-radius: var(--radius-sm);
-  }
-
-  .error-alert-error {
     --alert-color: var(--status-bad);
     background: var(--status-bad-tint);
     border-color: color-mix(in srgb, var(--status-bad) 30%, transparent);
-  }
-
-  .error-alert-warning {
-    --alert-color: var(--status-ok);
-    background: var(--status-ok-tint);
-    border-color: color-mix(in srgb, var(--status-ok) 30%, transparent);
-  }
-
-  /* No dedicated info role exists, so the informational banner borrows the
-     accent (which is already tuned per theme). */
-  .error-alert-info {
-    --alert-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
-    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
   }
 
   .alert-mark {

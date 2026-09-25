@@ -5,6 +5,7 @@
   import { flushQueuedProgress, initializeProgressSync } from '$lib/progressSync';
   import { LESSONS } from '$lib/morse';
   import { reconcileSettingsWithServer, touchLocalPageSettingsUpdatedAt } from '$lib/cwSync';
+  import { GITHUB_URL } from '$lib/seo';
   import { goto, afterNavigate } from '$app/navigation';
   import { page } from '$app/state';
   import {
@@ -55,8 +56,6 @@
     { path: '/forum', label: m.nav_forum, icon: MessageSquare },
     { path: '/more', label: m.nav_more, icon: Ellipsis }
   ];
-
-  const GITHUB_URL = 'https://github.com/0x5916';
 
   let theme = $state<Theme>('auto');
   let ThemeIcon = $derived(themeIconFor(theme));

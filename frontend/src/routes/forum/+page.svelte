@@ -10,7 +10,12 @@
     type ForumCategoryValue,
     type ForumThreadSummary
   } from '$lib/api';
-  import { forumCategoryLabel, resolvePostingStatus, type PostingStatus } from '$lib/forum';
+  import {
+    formatReplyCount,
+    forumCategoryLabel,
+    resolvePostingStatus,
+    type PostingStatus
+  } from '$lib/forum';
   import { localizeApiError } from '$lib/errorLocalization';
   import { authorLabel, formatDate } from '$lib/format';
   import { localizedHref as href } from '$lib/i18n.svelte';
@@ -18,6 +23,7 @@
   import GuestNotice from '$lib/components/GuestNotice.svelte';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import { Plus } from '@lucide/svelte';
+  import { SITE_NAME } from '$lib/seo';
   import * as m from '$lib/paraglide/messages';
 
   let threads = $state<ForumThreadSummary[]>([]);
@@ -62,10 +68,6 @@
   // shareable, crawlable, and the back button behaves like a browser.
   function categoryHref(category: ForumCategoryValue): string {
     return `?category=${category}`;
-  }
-
-  function replyLabel(count: number): string {
-    return count === 1 ? m.forum_reply_one() : m.forum_reply_many({ count: String(count) });
   }
 
   onMount(syncFilterFromUrl);
@@ -136,7 +138,7 @@
 
   function selectCategory(category: ForumCategoryValue | null): void {
     if (category === filter) return;
-    const path = category ? `${href('/forum')}?category=${category}` : href('/forum');
+    const path = category ? `${href('/forum')}${categoryHref(category)}` : href('/forum');
     void goto(path, { keepFocus: true, noScroll: true });
   }
 
@@ -193,7 +195,7 @@
 </script>
 
 <svelte:head>
-  <title>{m.forum_title()} | OpenCW</title>
+  <title>{m.forum_title()} | {SITE_NAME}</title>
 </svelte:head>
 
 <div class="forum-page">
@@ -355,7 +357,7 @@
                 <span class="callsign">{thread.author.call_sign}</span>
               {/if}
               <span>{formatDate(thread.created_at)}</span>
-              <span class="thread-replies">{replyLabel(thread.reply_count)}</span>
+              <span class="thread-replies">{formatReplyCount(thread.reply_count)}</span>
             </p>
           </a>
         </li>

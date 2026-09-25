@@ -8,24 +8,23 @@
     Wrench
   } from '@lucide/svelte';
   import { localizedHref as href } from '$lib/i18n.svelte';
+  import { GITHUB_URL } from '$lib/seo';
   import * as m from '$lib/paraglide/messages';
 
-  const GITHUB_URL = 'https://github.com/0x5916';
-
-  // Static lists are built once per component instance; the layout remounts the
-  // page when the language changes, so `m.*` never goes stale here.
+  // The lists store the message functions, not their values, so the template
+  // always reads the current locale (the layout also remounts on a switch).
   const toc = [
-    { id: 'koch-method', label: m.about_koch_title() },
-    { id: 'the-project', label: m.about_project_title() },
-    { id: 'about-the-author', label: m.about_author_title() },
-    { id: 'your-data', label: m.about_privacy_title() }
+    { id: 'koch-method', label: m.about_koch_title },
+    { id: 'the-project', label: m.about_project_title },
+    { id: 'about-the-author', label: m.about_author_title },
+    { id: 'your-data', label: m.about_privacy_title }
   ];
 
   const kochSteps = [
-    { title: m.about_koch_step1_title(), body: m.about_koch_step1_body() },
-    { title: m.about_koch_step2_title(), body: m.about_koch_step2_body() },
-    { title: m.about_koch_step3_title(), body: m.about_koch_step3_body() },
-    { title: m.about_koch_step4_title(), body: m.about_koch_step4_body() }
+    { title: m.about_koch_step1_title, body: m.about_koch_step1_body },
+    { title: m.about_koch_step2_title, body: m.about_koch_step2_body },
+    { title: m.about_koch_step3_title, body: m.about_koch_step3_body },
+    { title: m.about_koch_step4_title, body: m.about_koch_step4_body }
   ];
 </script>
 
@@ -39,7 +38,7 @@
     <span class="card-label about-toc-label">{m.about_toc_label()}</span>
     <ul class="about-toc-list">
       {#each toc as item (item.id)}
-        <li><a class="link" href={`#${item.id}`}>{item.label}</a></li>
+        <li><a class="link" href={`#${item.id}`}>{item.label()}</a></li>
       {/each}
     </ul>
   </nav>
@@ -61,8 +60,8 @@
         <li class="step">
           <span class="step-number">{index + 1}</span>
           <div>
-            <strong class="step-title">{item.title}</strong>
-            <p class="body-text">{item.body}</p>
+            <strong class="step-title">{item.title()}</strong>
+            <p class="body-text">{item.body()}</p>
           </div>
         </li>
       {/each}

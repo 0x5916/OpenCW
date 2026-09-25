@@ -22,42 +22,51 @@ export function initAuth() {
 }
 
 export async function register(username: string, email: string, password: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, email, password })
-  });
-
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(extractErrorCodeFromBody(body) ?? 'REGISTER_FAILED');
-  }
-
-  const data = await response.json();
-  const resolvedUsername = await resolveUsername(data.access_token, username);
-  persistTokens(data.access_token, data.refresh_token, resolvedUsername);
-  user.set({ username: resolvedUsername });
+  await postCredentials(
+    '/auth/register',
+    { username, email, password },
+    'REGISTER_FAILED',
+    username
+  );
 }
 
 export async function login(username: string, password: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/auth/login`, {
+  await postCredentials(
+    '/auth/login',
+    { identifier: username, password },
+    'LOGIN_FAILED',
+    username
+  );
+}
+
+/**
+ * POST credentials, resolve the display username and persist the session.
+ * `fallbackCode` is the API error code used when the response carries none.
+ */
+async function postCredentials(
+  path: string,
+  payload: Record<string, string>,
+  fallbackCode: string,
+  fallbackUsername: string
+): Promise<void> {
+  const response = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identifier: username, password })
+    body: JSON.stringify(payload)
   });
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(extractErrorCodeFromBody(body) ?? 'LOGIN_FAILED');
+    throw new Error(extractErrorCodeFromBody(body) ?? fallbackCode);
   }
 
   const data = await response.json();
-  const resolvedUsername = await resolveUsername(data.access_token, username);
+  const resolvedUsername = await resolveUsername(data.access_token, fallbackUsername);
   persistTokens(data.access_token, data.refresh_token, resolvedUsername);
   user.set({ username: resolvedUsername });
 }
 
-export async function refreshTokens(): Promise<boolean> {
+async function refreshTokens(): Promise<boolean> {
   if (refreshInFlight) {
     return refreshInFlight;
   }
@@ -105,14 +114,23 @@ async function runTokenRefresh(): Promise<boolean> {
   return true;
 }
 
-/** Decode JWT payload and return true if the token is expired (or invalid). */
-function isTokenExpired(token: string, bufferSeconds: number = 60): boolean {
+/** Decode a JWT's payload claim set, or null when the token is malformed. */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return Date.now() / 1000 + bufferSeconds >= payload.exp;
+    const payload: unknown = JSON.parse(atob(token.split('.')[1]));
+    return typeof payload === 'object' && payload !== null
+      ? (payload as Record<string, unknown>)
+      : null;
   } catch {
-    return true;
+    return null;
   }
+}
+
+/** Return true if the token is expired, or cannot be read at all. */
+function isTokenExpired(token: string, bufferSeconds: number = 60): boolean {
+  const payload = decodeJwtPayload(token);
+  const exp = payload?.exp;
+  return typeof exp !== 'number' || Date.now() / 1000 + bufferSeconds >= exp;
 }
 
 /**
@@ -178,13 +196,9 @@ function persistTokens(accessToken: string, refreshToken: string, username: stri
 }
 
 async function resolveUsername(accessToken: string, fallback: string): Promise<string> {
-  try {
-    const payload = JSON.parse(atob(accessToken.split('.')[1]));
-    if (typeof payload?.username === 'string' && payload.username.trim() !== '') {
-      return payload.username;
-    }
-  } catch {
-    // Ignore token parse failure and fallback to API lookup.
+  const payload = decodeJwtPayload(accessToken);
+  if (typeof payload?.username === 'string' && payload.username.trim() !== '') {
+    return payload.username;
   }
 
   try {

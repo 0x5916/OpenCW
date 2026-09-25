@@ -352,7 +352,7 @@
 
 <div class="page-stack">
   {#if loading}
-    <LoadingSpinner variant="spinner" />
+    <LoadingSpinner />
   {:else if loadError}
     <ErrorAlert message={loadError} />
   {:else}

@@ -5,7 +5,7 @@ const LEGACY_LOCALE_COOKIE = 'PARAGLIDE_LOCALE';
 const LEGACY_LESSON_COOKIE = CW_STORAGE_KEYS.lesson;
 
 /** Read a legacy cookie value by name. Returns `null` on the server or absent. */
-export function readCookie(name: string): string | null {
+function readCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
 
   const target = `${name}=`;

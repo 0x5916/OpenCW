@@ -23,23 +23,26 @@ npm run dev
 
 ## Scripts
 
-| Script                 | Purpose                                                        |
-| ---------------------- | -------------------------------------------------------------- |
-| `npm run dev`          | Vite dev server with HMR                                       |
-| `npm run build`        | Static production build (prerendered site in `build/`)         |
-| `npm run start`        | Serve the production build locally (`vite preview`)            |
-| `npm run preview`      | Preview the production build                                   |
-| `npm run check`        | `svelte-kit sync` + `svelte-check` (TypeScript/Svelte errors)  |
-| `npm run lint`         | Prettier check + ESLint                                        |
-| `npm run format`       | Prettier write                                                 |
-| `npm run seo:validate` | SEO gate: sitemap coverage, metadata lengths, duplicate titles |
-| `npm run icons`        | Regenerate favicons/social images from the source SVG          |
+| Script                      | Purpose                                                         |
+| --------------------------- | --------------------------------------------------------------- |
+| `npm run dev`               | Vite dev server with HMR                                        |
+| `npm run build`             | Static production build (prerendered site in `build/`)          |
+| `npm run start`             | Serve the production build locally (`vite preview`)             |
+| `npm run preview`           | Preview the production build                                    |
+| `npm run check`             | `svelte-kit sync` + `svelte-check` (TypeScript/Svelte errors)   |
+| `npm run check:scripts`     | `tsc` over `scripts/` (validators are outside the app tsconfig) |
+| `npm run verify`            | All gates in order: messages, SEO, app check, scripts check     |
+| `npm run lint`              | Prettier check + ESLint                                         |
+| `npm run format`            | Prettier write                                                  |
+| `npm run messages:validate` | Message gate: locale parity, missing/extra keys                 |
+| `npm run seo:validate`      | SEO gate: sitemap coverage, metadata lengths, duplicate titles  |
+| `npm run icons`             | Regenerate favicons/social images from the source SVG           |
 
 ## Project layout
 
 ```
 messages/          Paraglide translation catalogs (one JSON per locale)
-scripts/           Icon generation + SEO validation
+scripts/           Icon generation + message/SEO validators
 src/
   app.css          Design tokens, base styles, shared UI classes
   hooks.server.ts  Paraglide middleware (dev server + prerendering only)
@@ -85,17 +88,23 @@ forum deep links so shared links open and unfurl correctly.
   locale (stored in `localStorage`). Existing visitors' legacy preference
   cookies are migrated once and then removed.
 
-## SEO validation gate
+## Validation gates
 
-Run before release:
+`npm run verify` runs every gate in order, and the Docker build runs it before
+`vite build`, so a missing translation, a drifted noindex route or a type error
+cannot ship:
 
 ```sh
-npm run seo:validate
+npm run verify
 ```
 
-It checks sitemap URL coverage for all locales and indexable public routes, excludes
-noindex routes, and sanity-checks title/description lengths and duplicate titles per
-locale.
+- `messages:validate` — locale parity, placeholder consistency, missing and
+  unreferenced message keys.
+- `seo:validate` — sitemap coverage for all locales and indexable public routes,
+  noindex exclusion, title/description lengths, duplicate titles, and the nginx
+  locale list.
+- `check` — `svelte-kit sync` + `svelte-check`.
+- `check:scripts` — `tsc` over `scripts/**`, which the app tsconfig does not cover.
 
 ## Docker
 
@@ -107,7 +116,8 @@ docker build \
 docker run -p 3000:80 opencw-frontend
 ```
 
-The image builds the static site and serves it with nginx. Both arguments are
+The image builds the static site and serves it with nginx; the build stage runs
+`npm run verify` before `npm run build`. Both arguments are
 build-time values: `PUBLIC_API_BASE` is baked into the client bundle through
 `$env/static/public`, and `PRERENDER_ORIGIN` (default `https://opencw.net`) into
 the canonical/hreflang/Open Graph URLs and `sitemap.xml`. The bundled nginx

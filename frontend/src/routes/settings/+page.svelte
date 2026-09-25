@@ -401,7 +401,7 @@
   </header>
 
   {#if loading}
-    <LoadingSpinner variant="spinner" padded />
+    <LoadingSpinner />
   {:else if loadError}
     <ErrorAlert message={loadError} />
   {:else}

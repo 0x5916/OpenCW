@@ -7,9 +7,7 @@
   import * as m from '$lib/paraglide/messages';
 
   interface Props {
-    /** `page` starts a top-level reply; `inline` answers one specific comment. */
-    variant: 'page' | 'inline';
-    /** The comment being answered — inline composers only. */
+    /** The comment being answered. */
     target?: { username: string; preview: string } | null;
     /** The unfinished reply text; owned by the page so it survives a move. */
     draft: string;
@@ -23,7 +21,6 @@
   }
 
   let {
-    variant,
     target = null,
     draft,
     postingStatus,
@@ -37,10 +34,10 @@
   let formEl = $state<HTMLFormElement | null>(null);
   let textareaEl = $state<HTMLTextAreaElement | null>(null);
 
-  // Opening an inline composer puts the caret in it — at the end of a draft
-  // that is still waiting there, so nothing has to be retyped.
+  // Opening the composer puts the caret in it — at the end of a draft that is
+  // still waiting there, so nothing has to be retyped.
   $effect(() => {
-    if (variant !== 'inline' || !textareaEl) return;
+    if (!textareaEl) return;
     textareaEl.focus();
     const end = textareaEl.value.length;
     textareaEl.setSelectionRange(end, end);
@@ -69,12 +66,7 @@
     <a class="link" href={href('/settings')}>{m.nav_settings()}</a>
   </div>
 {:else if postingStatus === 'ready'}
-  <form
-    class="composer-form"
-    class:is-inline={variant === 'inline'}
-    bind:this={formEl}
-    onsubmit={onSubmit}
-  >
+  <form class="composer-form is-inline" bind:this={formEl} onsubmit={onSubmit}>
     {#if target}
       <p class="composer-target">
         <span class="composer-target-label">
@@ -89,8 +81,7 @@
     <label class="field">
       <span class="label-text">{m.forum_reply_label()}</span>
       <textarea
-        class="textarea composer-textarea"
-        class:is-inline={variant === 'inline'}
+        class="textarea composer-textarea is-inline"
         maxlength="10000"
         placeholder={m.forum_reply_placeholder()}
         value={draft}

@@ -10,6 +10,7 @@ export type SeoMetadata = {
 };
 
 export const SITE_NAME = 'OpenCW';
+export const GITHUB_URL = 'https://github.com/0x5916';
 export const DEFAULT_OG_IMAGE_PATH = '/og-image.png';
 
 // Indexable surfaces, derived from the one route list so a route cannot be
@@ -31,6 +32,9 @@ type SeoRouteOverride = {
 };
 
 const DEFAULT_ROBOTS = 'index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1';
+// Routes listed in NOINDEX_ROUTE_PATHS are noindex regardless of their SEO
+// entry; a per-route `robots` override still wins if one is ever needed.
+const NOINDEX_ROBOTS = 'noindex,nofollow';
 
 const DEFAULT_LOCALIZED_TEXT: Record<Locale, LocalizedSeoText> = {
   en: {
@@ -207,7 +211,6 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
     }
   },
   '/more': {
-    robots: 'noindex,nofollow',
     localized: {
       en: {
         title: 'More - OpenCW',
@@ -232,7 +235,6 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
     }
   },
   '/login': {
-    robots: 'noindex,nofollow',
     localized: {
       en: {
         title: 'Login - OpenCW',
@@ -242,7 +244,6 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
     }
   },
   '/register': {
-    robots: 'noindex,nofollow',
     localized: {
       en: {
         title: 'Register - OpenCW',
@@ -252,7 +253,6 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
     }
   },
   '/profile': {
-    robots: 'noindex,nofollow',
     localized: {
       en: {
         title: 'Profile - OpenCW',
@@ -261,7 +261,6 @@ const ROUTE_SEO: Record<string, SeoRouteOverride> = {
     }
   },
   '/settings': {
-    robots: 'noindex,nofollow',
     localized: {
       en: {
         title: 'Settings - OpenCW',
@@ -280,9 +279,10 @@ const OG_LOCALE_BY_LOCALE: Record<Locale, string> = {
   'zh-Hant': 'zh_TW'
 };
 
-export function getRouteRobots(routeId: string): string {
+function getRouteRobots(routeId: string): string {
   const routeSeo = ROUTE_SEO[routeId];
-  return routeSeo?.robots ?? DEFAULT_ROBOTS;
+  if (routeSeo?.robots) return routeSeo.robots;
+  return NOINDEX_ROUTE_PATHS.includes(routeId) ? NOINDEX_ROBOTS : DEFAULT_ROBOTS;
 }
 
 export function isRouteIndexable(routeId: string): boolean {
@@ -334,7 +334,9 @@ export function resolveSeoMetadata(
   return {
     title: localizedRouteContent?.title ?? localizedDefaults.title,
     description: localizedRouteContent?.description ?? localizedDefaults.description,
-    robots: routeSeo?.robots ?? DEFAULT_ROBOTS,
+    // `getRouteRobots` is the one place that knows which routes are noindex
+    // (the route list) — never fall back to the indexable default here.
+    robots: getRouteRobots(routeId ?? ''),
     ogType: routeSeo?.ogType ?? 'website',
     ogImagePath: routeSeo?.ogImagePath ?? DEFAULT_OG_IMAGE_PATH
   };

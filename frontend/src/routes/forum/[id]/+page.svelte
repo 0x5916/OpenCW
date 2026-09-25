@@ -12,7 +12,12 @@
     type ForumReply,
     type ForumThreadDetail
   } from '$lib/api';
-  import { forumCategoryLabel, resolvePostingStatus, type PostingStatus } from '$lib/forum';
+  import {
+    formatReplyCount,
+    forumCategoryLabel,
+    resolvePostingStatus,
+    type PostingStatus
+  } from '$lib/forum';
   import { localizeApiError } from '$lib/errorLocalization';
   import { extractErrorCode } from '$lib/errorCode';
   import { authorLabel, formatDate } from '$lib/format';
@@ -21,6 +26,7 @@
   import ForumReplyItem from './ForumReplyItem.svelte';
   import ReplyComposer from './ReplyComposer.svelte';
   import { ArrowLeft, CornerDownRight } from '@lucide/svelte';
+  import { SITE_NAME } from '$lib/seo';
   import * as m from '$lib/paraglide/messages';
 
   const threadId = $derived(page.params.id);
@@ -64,9 +70,6 @@
   }
 
   let replyCount = $derived(countReplies(replies));
-  let replyCountLabel = $derived(
-    replyCount === 1 ? m.forum_reply_one() : m.forum_reply_many({ count: String(replyCount) })
-  );
 
   $effect(() => {
     const id = threadId;
@@ -260,7 +263,7 @@
 </script>
 
 <svelte:head>
-  <title>{thread ? `${thread.title} | OpenCW` : `${m.forum_title()} | OpenCW`}</title>
+  <title>{thread ? `${thread.title} | ${SITE_NAME}` : `${m.forum_title()} | ${SITE_NAME}`}</title>
 </svelte:head>
 
 <div class="page-narrow">
@@ -348,7 +351,6 @@
         {#if threadComposerOpen}
           <div class="thread-composer-inline">
             <ReplyComposer
-              variant="inline"
               target={{ username: authorLabel(thread.author), preview: thread.body }}
               draft={topDraft}
               {postingStatus}
@@ -364,7 +366,7 @@
     </article>
 
     <section class="replies-section" aria-labelledby="replies-title">
-      <h2 id="replies-title" class="panel-label replies-title">{replyCountLabel}</h2>
+      <h2 id="replies-title" class="panel-label replies-title">{formatReplyCount(replyCount)}</h2>
 
       {#if repliesError}
         <ErrorAlert message={repliesError} />

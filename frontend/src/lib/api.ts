@@ -92,18 +92,10 @@ async function apiSendJson<T = void>(
   }
 }
 
-async function apiPost(path: string, fallback: string): Promise<void> {
+/** Request helper for verbs whose response carries no body. */
+async function apiNoBody(path: string, method: 'POST' | 'DELETE', fallback: string): Promise<void> {
   const res = await apiFetch(path, {
-    method: 'POST',
-    headers: { Accept: 'application/json' }
-  });
-
-  if (!res.ok) return throwApiError(res, fallback);
-}
-
-async function apiDelete(path: string, fallback: string): Promise<void> {
-  const res = await apiFetch(path, {
-    method: 'DELETE',
+    method,
     headers: { Accept: 'application/json' }
   });
 
@@ -252,11 +244,15 @@ export async function createForumReply(
 }
 
 export async function deleteForumThread(threadId: string): Promise<void> {
-  await apiDelete(`/forum/threads/${encodeURIComponent(threadId)}`, 'FORUM_DELETE_FAILED');
+  await apiNoBody(
+    `/forum/threads/${encodeURIComponent(threadId)}`,
+    'DELETE',
+    'FORUM_DELETE_FAILED'
+  );
 }
 
 export async function deleteForumReply(replyId: string): Promise<void> {
-  await apiDelete(`/forum/replies/${encodeURIComponent(replyId)}`, 'FORUM_DELETE_FAILED');
+  await apiNoBody(`/forum/replies/${encodeURIComponent(replyId)}`, 'DELETE', 'FORUM_DELETE_FAILED');
 }
 
 export interface CombinedSettings {
@@ -289,7 +285,7 @@ export async function updateEmail(email: string): Promise<void> {
 }
 
 export async function sendVerificationEmail(): Promise<void> {
-  await apiPost('/auth/send-verification-email', 'VERIFICATION_SEND_FAILED');
+  await apiNoBody('/auth/send-verification-email', 'POST', 'VERIFICATION_SEND_FAILED');
 }
 
 export async function verifyEmail(code: string): Promise<void> {

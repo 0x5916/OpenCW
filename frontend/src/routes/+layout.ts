@@ -4,6 +4,7 @@ import { baseLocale, deLocalizeHref, locales, localizeHref } from '$lib/paraglid
 import {
   buildAbsoluteUrl,
   DEFAULT_OG_IMAGE_PATH,
+  GITHUB_URL,
   getOpenGraphLocale,
   normalizePathname,
   resolveSeoMetadata,
@@ -53,7 +54,7 @@ export const load: LayoutLoad = ({ url, route }) => {
           name: SITE_NAME,
           url: buildAbsoluteUrl(url.origin, '/'),
           logo: buildAbsoluteUrl(url.origin, '/apple-touch-icon.png'),
-          sameAs: ['https://github.com/0x5916']
+          sameAs: [GITHUB_URL]
         },
         {
           '@context': 'https://schema.org',

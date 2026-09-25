@@ -93,8 +93,8 @@
 
   onMount(() => {
     restoreFocusTo = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    // Focus the heading region's first control so screen readers announce the
-    // dialog name, then leave focus on the panel for arrow/Tab navigation.
+    // Focus the panel itself: it is labelled by the dialog title, so screen
+    // readers announce the dialog name before the learner moves on.
     panelRef?.focus();
     return () => restoreFocusTo?.focus();
   });
@@ -132,7 +132,7 @@
 
     <section class="overlay-source">
       <p class="panel-label">{m.trainer_source_label()}</p>
-      <p class="overlay-source-text">{sourceText}</p>
+      <p class="quote-text">{sourceText}</p>
     </section>
 
     <section class="overlay-diff-section">
@@ -166,13 +166,14 @@
 
     <footer class="overlay-actions">
       {#if hasNextLesson}
-        <button class="btn-primary" onclick={onNext}>
+        <button type="button" class="btn-primary" onclick={onNext}>
           {m.trainer_next_lesson({ lesson: String(nextLessonNum) })}
         </button>
       {/if}
-      <button class="btn-ghost" onclick={onRegenerate}>{m.trainer_try_again()}</button>
+      <button type="button" class="btn-ghost" onclick={onRegenerate}>{m.trainer_try_again()}</button
+      >
       {#if hasPrevLesson}
-        <button class="btn-ghost" onclick={onPrev}>
+        <button type="button" class="btn-ghost" onclick={onPrev}>
           {m.trainer_prev_lesson({ lesson: String(prevLessonNum) })}
         </button>
       {/if}
@@ -297,18 +298,6 @@
     gap: var(--space-2);
     padding: var(--space-4) var(--space-5);
     border-top: 1px solid var(--border);
-  }
-
-  .overlay-source-text {
-    margin: 0;
-    padding-left: var(--space-3);
-    border-left: 2px solid var(--border);
-    font-family: var(--font-mono);
-    font-size: var(--text-sm);
-    line-height: 1.7;
-    letter-spacing: 0.12em;
-    color: var(--text-primary);
-    overflow-wrap: anywhere;
   }
 
   .overlay-diff-section {

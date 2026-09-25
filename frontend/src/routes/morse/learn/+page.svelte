@@ -742,7 +742,7 @@
               <p class="transcript-head">
                 <span class="panel-label">{m.trainer_source_label()}</span>
               </p>
-              <p class="transcript-text">{lessonText}</p>
+              <p class="quote-text">{lessonText}</p>
             </div>
           {/if}
 
@@ -1113,20 +1113,6 @@
     align-items: baseline;
     gap: 0.35rem var(--space-3);
     margin: 0;
-  }
-
-  /* The passage, once the copy has been checked. A quote rule, not a nested
-     box. */
-  .transcript-text {
-    margin: 0;
-    padding-left: var(--space-3);
-    border-left: 2px solid var(--border);
-    font-family: var(--font-mono);
-    font-size: var(--text-sm);
-    line-height: 1.7;
-    letter-spacing: 0.12em;
-    color: var(--text-primary);
-    overflow-wrap: anywhere;
   }
 
   .lesson-nav {

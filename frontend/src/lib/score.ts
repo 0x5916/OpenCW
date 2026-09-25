@@ -7,6 +7,11 @@ export const SCORE_OK = 0.7;
 
 export type ScoreGrade = 'good' | 'ok' | 'bad';
 
+/** Upper-case and collapse whitespace; scoring and the word diff must agree. */
+function normalizeText(text: string): string {
+  return text.toUpperCase().trim().replace(/\s+/g, ' ');
+}
+
 export function scoreGrade(accuracy: number): ScoreGrade {
   if (accuracy >= SCORE_GOOD) return 'good';
   if (accuracy >= SCORE_OK) return 'ok';
@@ -14,14 +19,12 @@ export function scoreGrade(accuracy: number): ScoreGrade {
 }
 
 export function score(reference: string, input: string): number {
-  const ref = reference.toUpperCase().trim().replace(/\s+/g, ' ');
-  const ans = input.toUpperCase().trim().replace(/\s+/g, ' ');
-  return cer(ref, ans).accuracy;
+  return cer(normalizeText(reference), normalizeText(input)).accuracy;
 }
 
 // ── Word-level diff ─────────────────────────────────────────────────────────
 
-export type DiffType = 'correct' | 'substitution' | 'missing' | 'extra';
+type DiffType = 'correct' | 'substitution' | 'missing' | 'extra';
 
 export interface DiffToken {
   ref: string; // reference word (empty when type === 'extra')
@@ -30,8 +33,8 @@ export interface DiffToken {
 }
 
 export function diffWords(reference: string, input: string): DiffToken[] {
-  const ref = reference.toUpperCase().trim().replace(/\s+/g, ' ').split(' ').filter(Boolean);
-  const inp = input.toUpperCase().trim().replace(/\s+/g, ' ').split(' ').filter(Boolean);
+  const ref = normalizeText(reference).split(' ').filter(Boolean);
+  const inp = normalizeText(input).split(' ').filter(Boolean);
 
   // LCS table — flat Int16Array (~24× less memory than nested JS arrays)
   const m = ref.length,

@@ -415,6 +415,20 @@ body {
   line-height: var(--leading-relaxed);
 }
 
+/* Reference copy set as a quote: the mono line the learner's copy is measured
+   against, on the trainer's checked copy and in the result overlay. */
+.quote-text {
+  margin: 0;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.7;
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
 .label-text {
   color: var(--text-label);
   font-size: var(--text-xs);

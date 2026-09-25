@@ -1,11 +1,12 @@
 <script lang="ts">
   import { ArrowRight } from '@lucide/svelte';
   import { localizedHref as href } from '$lib/i18n.svelte';
+  import { SITE_NAME } from '$lib/seo';
   import * as m from '$lib/paraglide/messages';
 </script>
 
 <svelte:head>
-  <title>{m.morse_title()} | OpenCW</title>
+  <title>{m.morse_title()} | {SITE_NAME}</title>
 </svelte:head>
 
 <div class="page-narrow">

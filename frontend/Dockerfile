@@ -17,8 +17,9 @@ ARG PRERENDER_ORIGIN=https://opencw.net
 ENV PUBLIC_API_BASE=$PUBLIC_API_BASE
 ENV PRERENDER_ORIGIN=$PRERENDER_ORIGIN
 
-# Generate .svelte-kit files in clean build environments, then build.
-RUN npm run prepare && npm run build
+# Generate .svelte-kit files in clean build environments, gate on the message,
+# SEO and type checks, then build.
+RUN npm run prepare && npm run verify && npm run build
 
 # The output is a fully static site (prerendered pages, assets, fallback 404).
 FROM nginx:alpine

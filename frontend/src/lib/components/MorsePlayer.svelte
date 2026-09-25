@@ -405,7 +405,11 @@
     return started;
   }
 
-  onDestroy(() => ctx?.close());
+  onDestroy(() => {
+    // `onDestroy` also runs during SSR teardown, where there is no rAF API.
+    if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(rafId);
+    return ctx?.close();
+  });
 </script>
 
 <div class="player-wrapper">

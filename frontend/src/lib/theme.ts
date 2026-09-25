@@ -10,7 +10,7 @@ export const THEME_CYCLE: Record<Theme, Theme> = {
 };
 
 /** Narrow an arbitrary stored value to a known theme. */
-export function normalizeTheme(value: string | null | undefined): Theme {
+function normalizeTheme(value: string | null | undefined): Theme {
   return value === 'light' || value === 'dark' ? value : 'auto';
 }
 

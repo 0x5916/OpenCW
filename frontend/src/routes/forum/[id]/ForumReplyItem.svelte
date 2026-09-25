@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { tick } from 'svelte';
   import { CornerDownRight } from '@lucide/svelte';
   import type { ForumReply } from '$lib/api';
   import type { PostingStatus } from '$lib/forum';
@@ -84,8 +83,6 @@
 
   function handleCancel(): void {
     onCancelReply();
-    // Cancelling puts the focus back on the button that opened the composer.
-    void tick().then(() => replyButton?.focus());
   }
 
   async function handleDelete(): Promise<void> {
@@ -140,6 +137,7 @@
         <button
           type="button"
           class="action-quiet"
+          aria-expanded={isTarget}
           bind:this={replyButton}
           onclick={() => onReply(reply)}
         >
@@ -172,7 +170,6 @@
              replies that comment already has. -->
         <div class="reply-composer-inline">
           <ReplyComposer
-            variant="inline"
             target={{ username: authorLabel(reply.author), preview: reply.body ?? '' }}
             draft={replyDraft}
             {postingStatus}
