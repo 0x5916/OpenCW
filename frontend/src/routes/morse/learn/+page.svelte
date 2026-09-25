@@ -404,14 +404,15 @@
   function onSessionStart() {
     sessionStarted = true;
     playing = true;
+    // Start → listen → type: the cursor belongs in the answer box whichever
+    // control started the audio. The box stays disabled until the session has
+    // started, so focus once that state has reached the DOM.
+    void tick().then(() => answerEl?.focus());
   }
 
   async function playSession() {
     if (!fullLessonPlayer || fullLessonPlayer.isStarted()) return;
     await fullLessonPlayer.playNow();
-    // The flow is start → listen → type, so the cursor lands where the next step
-    // happens once the audio is running.
-    answerEl?.focus();
   }
 
   async function stopPlayback() {
@@ -461,12 +462,21 @@
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       if (inputText.trim() !== '') checkResult();
+      return;
+    }
+
+    // Escape stops the transmission from inside the field as well, so a copy can
+    // be cut short without leaving the box or reaching for the mouse.
+    if (event.key === 'Escape' && playing) {
+      event.preventDefault();
+      void stopPlayback();
     }
   }
 
-  // Session shortcuts, live only while focus is outside a control: Space starts
-  // the transmission, Escape stops it. Inside the answer box the textarea's own
-  // handlers take precedence, so typing is never intercepted.
+  // Session shortcuts, live while focus is outside a control: Space starts the
+  // transmission, Escape stops it. The answer box settles its own keys (see
+  // `onAnswerKeydown`), so typing is never intercepted — Space types a space
+  // there, and Escape stops playback from inside the box too.
   $effect(() => {
     if (!browser) return;
 

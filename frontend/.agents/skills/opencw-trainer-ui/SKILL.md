@@ -42,7 +42,10 @@ the established visual style.
   no results.
 - **Copy passage** owns transcription: playback, answer field, state line, state-driven
   hints, Check transcription / Generate another passage, and the source passage rendered
-  **only after the copy has been checked**, with review in the overlay.
+  **only after the copy has been checked**, with review in the overlay. Starting playback —
+  the player's Play button, Start session, a replay, a skip — puts the cursor in the answer
+  field, and Escape there stops the transmission through the same handler the page-level
+  shortcut uses.
 - The mode switch is always available; the drill leads a lesson the learner has not opened
   yet, and the chosen mode is remembered.
 
@@ -78,8 +81,9 @@ the established visual style.
 - [ ] Both modes still work in their ready, active and review states.
 - [ ] Audio plays, replays and stops as before; playback settings still apply.
 - [ ] Lesson selection, default lesson and remembered mode are unchanged.
-- [ ] Keyboard: Space starts/replays and Esc stops from outside controls, Enter checks a
-      copy, and spaces typed in the transcription field are never intercepted.
+- [ ] Keyboard: Space starts/replays from outside controls and Esc stops the transmission,
+      whether focus is outside a control or in the answer field; Enter checks a copy, and
+      keys typed in the transcription field (including Space) are never intercepted.
 - [ ] Drill shows the selected character and its pattern, and never asks for an answer.
 - [ ] Passage keeps the source hidden until the copy is checked.
 - [ ] The current next-step action is the primary one — Start session while ready, then
