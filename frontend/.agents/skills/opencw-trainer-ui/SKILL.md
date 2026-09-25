@@ -1,6 +1,6 @@
 ---
 name: opencw-trainer-ui
-description: 'Use when changing, fixing, reviewing, or verifying OpenCW''s Morse practice trainer (src/routes/morse/learn/+page.svelte): trainer UI, Character drill, Copy passage, keyboard shortcuts, checked-copy review, responsive or mobile layout, panel height, and controls that collide with the fixed bottom navigation. Also use when asked why the drill or passage panel behaves, wraps, or measures differently than expected.'
+description: 'Use when changing, fixing, reviewing, or verifying OpenCW''s Morse practice trainer (src/routes/morse/learn/+page.svelte): Character drill, Copy passage, playback, keyboard shortcuts, checked-copy review, lesson/mode state, panel layout constraints, and controls that collide with the fixed bottom navigation. Visual changes here also follow opencw-ui-design-language for shared tokens, primitives and cross-page consistency — load both when the work is visual, and this skill alone when it is trainer behaviour. Also use when asked why the drill or passage panel behaves, wraps, or measures differently than expected.'
 argument-hint: 'Describe the trainer change to make, or the states to verify'
 ---
 
@@ -11,17 +11,25 @@ and **Copy passage** (transcribing a timed transmission). They share a lesson mo
 playback component and mode switch, and they are deliberately different tools — most
 mistakes here come from blurring them together.
 
+This skill and `opencw-ui-design-language` both apply to trainer visual work. The
+design-language skill owns the shared visual language (tokens, primitives, shell,
+cross-page consistency); this one owns what is trainer-specific — modes, interaction
+contracts, keyboard behaviour, panel layout constraints, and the verification states
+below. Neither overrides the other outside its scope.
+
 ## Inspect before editing (reflect the code, not assumptions)
 
 - `src/routes/morse/learn/+page.svelte` — both modes plus their styles.
 - `src/app.css` — design tokens and shared classes (buttons, fields, panels).
-- `src/lib/styles/layout.css` — page shell, footer, fixed mobile bottom navigation and the
-  clearance that keeps content above it.
-- Direct components: `MorsePlayer` (playback + settings), `ResultOverlay` (review).
+- `src/lib/styles/layout.css` — page shell, footer and the fixed mobile bottom navigation.
+- Direct components, both in `src/lib/components/`: `MorsePlayer.svelte` (playback +
+  settings) and `ResultOverlay.svelte` (review).
 - `src/lib/storageKeys.ts` — `CW_STORAGE_KEYS.lesson`, `UI_STORAGE_KEYS.trainerMode`,
-  `UI_STORAGE_KEYS.trainerIntroLesson`. Never rename these.
+  `UI_STORAGE_KEYS.trainerIntroLesson`, `UI_STORAGE_KEYS.quickstartDismissed` (which decides
+  whether the quickstart strip shows). Never rename these.
 - `messages/*.json` — message keys; English is the source and the fallback for other
-  locales. Paraglide only regenerates while the dev server runs.
+  locales. The generated Paraglide modules are gitignored and only exist after a dev run or
+  a build, so regenerate (dev server or `npm run build`) before `npm run check`.
 
 Edit surface: the route and those direct components. Touch the shell only when the issue
 genuinely belongs to it (footer or fixed-nav overlap), and never stretch the trainer card
@@ -32,7 +40,7 @@ storage, the `MorsePlayer` handle (`playNow` / `stopNow` / `isStarted`, typed on
 `PlayerHandle` in the route) and its settings, `saveProgressOfflineFirst` on checked
 copies, `generateTimedLesson` / `score` / `diffWords`, `getLessonChars()` from `morse.ts`,
 the shared `formatClock` / `percentage` helpers in `format.ts`, keyboard shortcuts, and
-the established visual style.
+the shared visual style (`opencw-ui-design-language`).
 
 ## Mode rules
 
@@ -60,8 +68,9 @@ the established visual style.
    the passage's source-hidden-until-review rule.
 4. **Layout discipline:** no fixed card heights or filler space; the panel ends after its
    final action row with the panel's normal padding. Watch for wrapping action rows on
-   narrow screens (stack them full width when they wrap) and for anything hidden behind the
-   fixed bottom navigation — that clearance belongs to the page shell, not the card.
+   narrow screens (stack them full width when they wrap) and for content hidden behind the
+   fixed bottom navigation — bottom-nav clearance is a shell rule, covered by
+   `opencw-ui-design-language`.
    Small `min-height`s are not fixed heights: the live status line and the answer box keep
    theirs on purpose so the panel does not jump between states.
 5. **Delete, don't hide.** When behaviour changes, remove the obsolete markup, state,
@@ -69,12 +78,12 @@ the established visual style.
    `npm run messages:validate` after touching a message key: it fails on keys no source
    file references and on any locale that lags the English source.
 6. **Verify, then report.** Run `npm run check`, `npm run lint` and `npm run build`. Then
-   check the affected states in the browser (with `npm run dev` running — Paraglide only
-   regenerates messages while it does) on desktop and at narrow mobile widths (about
-   320–430 px), including the review state. Trust measured geometry (bounding boxes,
-   `scrollWidth`/`clientWidth`, computed styles, document height) over screenshots, and
-   confirm no clipping, no unwanted internal scroll area, and no overlap with the bottom
-   navigation. Report what changed, what you verified, and what you could not verify.
+   exercise the affected states in the browser — including the review state — at the widths,
+   themes and focus states the design-language skill's responsive checks call for.
+   Trainer-specific geometry to confirm: no clipping, no unwanted internal scroll area, and
+   no control under the bottom navigation; trust measured geometry (bounding boxes,
+   computed styles, document height) over screenshots. Report what changed, what you
+   verified, and what you could not verify.
 
 ## Checklist before finishing
 
@@ -94,4 +103,6 @@ the established visual style.
 - [ ] Labels use the shared caps recipe (`.panel-label`, the same class the review overlay
       uses), and the quickstart — when it is shown — keeps its numbered steps and bulleted
       tips (Tailwind preflight removes list markers, so the rules have to restore them).
+- [ ] The shared visual checks from `opencw-ui-design-language` hold for the trainer
+      surface too (themes, contrast, focus visibility, widths) — its checklist applies here.
 - [ ] No dead state, selectors or message keys; checks, `messages:validate` and build pass.

@@ -216,7 +216,7 @@
     </div>
   </header>
 
-  <nav class="forum-filters" aria-label={m.forum_category_all()}>
+  <nav class="forum-filters" aria-label={m.forum_categories_navigation()}>
     <a
       class="filter-link"
       class:is-active={filter === null}
