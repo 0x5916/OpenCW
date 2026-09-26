@@ -4,7 +4,7 @@
   import { user, initAuth, logout } from '$lib/auth';
   import { flushQueuedProgress, initializeProgressSync } from '$lib/progressSync';
   import { LESSONS } from '$lib/morse';
-  import { reconcileSettingsWithServer, touchLocalPageSettingsUpdatedAt } from '$lib/cwSync';
+  import { reconcileSettingsWithServer, applyPageLanguagePreference } from '$lib/cwSync';
   import { GITHUB_URL } from '$lib/seo';
   import { goto, afterNavigate } from '$app/navigation';
   import { page } from '$app/state';
@@ -27,7 +27,6 @@
   import {
     lang,
     langPreference,
-    setLang,
     setLangPreference,
     initLang,
     localizedHref as href
@@ -115,13 +114,8 @@
     return getLocaleShortLabel(locale);
   }
 
-  function languageLabel(locale: Locale): string {
-    return getLocaleLongLabel(locale);
-  }
-
   function setLanguage(locale: Locale): void {
-    setLang(locale);
-    touchLocalPageSettingsUpdatedAt();
+    applyPageLanguagePreference(locale, setLangPreference);
   }
 
   // Theme is a device-local preference: changing it must not mark the synced page
@@ -324,7 +318,7 @@
                 role="menuitem"
                 onclick={() => setLanguage(locale as Locale)}
               >
-                {languageLabel(locale as Locale)}
+                {getLocaleLongLabel(locale as Locale)}
               </button>
             {/each}
           {/snippet}

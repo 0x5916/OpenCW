@@ -35,10 +35,8 @@
   "footer_link_github": "GitHub",
 
   "home_hero_title": "Learn Morse code at real speed",
-  "morse_eyebrow": "Workshop",
   "morse_title": "Morse tools",
   "morse_intro": "One drill, run properly: copy by ear at full character speed and see your copy marked.",
-  "home_eyebrow": "OpenCW",
   "home_go_title": "Where to go next",
   "home_go_train": "Run a session — copy by ear, then see it marked.",
   "home_go_forum": "Ask a question or post what you are working on.",
@@ -93,7 +91,6 @@
 
   "forum_title": "Forum",
   "forum_categories_navigation": "Forum categories",
-  "forum_eyebrow": "Community",
   "forum_intro": "Ask questions, share your progress, and swap tips with other Morse code operators.",
   "forum_community_member": "Community member",
   "forum_new_thread": "New thread",
@@ -168,7 +165,7 @@
   "register_error_unknown": "Unknown error",
 
   "trainer_title": "Morse practice",
-  "trainer_eyebrow": "Trainer",
+  "trainer_back_to_workshop": "Back to Morse tools",
   "trainer_label_lesson": "Lesson",
   "trainer_current_lesson": "Lesson",
   "trainer_lesson_prev": "Previous lesson",
@@ -266,7 +263,6 @@
   "overlay_diff_expected": "expected: {char}",
 
   "settings_title": "Settings",
-  "settings_eyebrow": "Account",
   "settings_account_section": "Account",
   "settings_username_label": "Username",
   "settings_call_sign_label": "Call sign",
@@ -287,7 +283,7 @@
   "settings_new_password_label": "New Password",
   "settings_confirm_new_password_label": "Confirm New Password",
   "settings_password_min_length": "Password must be at least 8 characters.",
-  "settings_page_section": "Page Settings",
+  "settings_page_section": "Preferences",
   "settings_theme_label": "Theme",
   "settings_language_label": "Language",
   "settings_current_lesson_label": "Current Lesson",

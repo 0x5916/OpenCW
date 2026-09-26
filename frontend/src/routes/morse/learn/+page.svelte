@@ -12,7 +12,7 @@
   import ResultOverlay from '$lib/components/ResultOverlay.svelte';
   import GuestNotice from '$lib/components/GuestNotice.svelte';
   import { tick, untrack, onDestroy } from 'svelte';
-  import { ChevronLeft, ChevronRight } from '@lucide/svelte';
+  import { ArrowLeft, ChevronLeft, ChevronRight } from '@lucide/svelte';
   import { CW_STORAGE_KEYS, UI_STORAGE_KEYS } from '$lib/storageKeys';
   import { langPreference, localizedHref as href } from '$lib/i18n.svelte';
   import { SCORE_GOOD, SCORE_OK, score, diffWords } from '$lib/score';
@@ -511,8 +511,14 @@
   });
 </script>
 
+<nav class="crumb-nav" aria-label={m.morse_title()}>
+  <a class="crumb-link" href={href('/morse')}>
+    <ArrowLeft size={14} aria-hidden="true" />
+    {m.trainer_back_to_workshop()}
+  </a>
+</nav>
+
 <header class="workspace-heading">
-  <p class="eyebrow">{m.trainer_eyebrow()}</p>
   <h1 class="page-title">{m.trainer_title()}</h1>
 </header>
 

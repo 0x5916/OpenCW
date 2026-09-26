@@ -18,7 +18,6 @@
 
     {@render children()}
 
-    <hr class="divider" />
     <p class="body-text auth-footer-text">{@render footer()}</p>
   </div>
 </div>
@@ -34,6 +33,8 @@
   /* `.page-title` already carries the h1 scale; the card only owns the gap. */
   .auth-title {
     margin-bottom: 0.35rem;
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--border);
   }
 
   .auth-subtitle {
@@ -41,7 +42,7 @@
   }
 
   .auth-footer-text {
-    margin: 0;
+    margin: var(--block-gap) 0 0;
     text-align: center;
   }
 

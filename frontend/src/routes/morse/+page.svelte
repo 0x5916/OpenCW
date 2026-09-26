@@ -11,7 +11,6 @@
 
 <div class="page-narrow">
   <header class="morse-header">
-    <p class="eyebrow">{m.morse_eyebrow()}</p>
     <h1 class="page-title">{m.morse_title()}</h1>
     <p class="body-text">{m.morse_intro()}</p>
   </header>

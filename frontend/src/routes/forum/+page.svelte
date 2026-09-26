@@ -200,7 +200,6 @@
 
 <div class="forum-page">
   <header class="forum-masthead">
-    <p class="eyebrow">{m.forum_eyebrow()}</p>
     <div class="masthead-row">
       <div class="masthead-text">
         <h1 class="page-title">{m.forum_title()}</h1>
@@ -414,7 +413,6 @@
     gap: 0.65rem var(--space-4);
     padding-bottom: var(--space-3);
     margin-bottom: var(--space-4);
-    border-bottom: 1px solid var(--border);
   }
 
   .filter-link {

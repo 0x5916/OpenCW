@@ -11,7 +11,7 @@
     savePageSettings,
     type PageSettings
   } from '$lib/api';
-  import { langPreference, setLangPreference, type Locale } from '$lib/i18n.svelte';
+  import { langPreference, setLangPreference } from '$lib/i18n.svelte';
   import { locales } from '$lib/paraglide/runtime';
   import {
     getLocaleLongLabel,
@@ -21,6 +21,7 @@
   import { LESSONS } from '$lib/morse';
   import {
     applyClientPageSettings,
+    applyPageLanguagePreference,
     normalizeLesson,
     readClientCwSettings,
     readClientPageSettings,
@@ -66,7 +67,6 @@
 
   // Page settings section
   let pageLanguage = $state<LocalePreference>(langPreference.value);
-  let initialPageLanguage = $state<LocalePreference>(langPreference.value);
   let pageLesson = $state(1);
   let initialPageLesson = $state(1);
   let pageSaving = $state(false);
@@ -95,10 +95,7 @@
   );
   const callSignDirty = $derived(callSign.trim().toUpperCase() !== initialCallSign);
   const emailDirty = $derived(email.trim() !== initialEmail.trim());
-  const pageDirty = $derived(
-    pageLanguage !== initialPageLanguage ||
-      normalizeLesson(pageLesson, LESSONS.length) !== initialPageLesson
-  );
+  const pageDirty = $derived(normalizeLesson(pageLesson, LESSONS.length) !== initialPageLesson);
   const cwDirty = $derived(
     charWpm !== initialCharWpm ||
       effWpm !== initialEffWpm ||
@@ -132,7 +129,6 @@
 
   function applyPageState(page: PageSettings) {
     pageLanguage = normalizeLocalePreference(page.language);
-    initialPageLanguage = pageLanguage;
     pageLesson = normalizeLesson(page.cur_lesson, LESSONS.length);
     initialPageLesson = pageLesson;
   }
@@ -208,8 +204,12 @@
     }
   }
 
-  function languageLabel(locale: Locale): string {
-    return getLocaleLongLabel(locale);
+  // Language applies immediately (the top bar's language menu and the phone More
+  // hub work the same way): commit it and stamp the synced page-settings
+  // timestamp through the shared helper. Save then covers the lesson only.
+  function applyLanguageChange(next: LocalePreference) {
+    pageLanguage = next;
+    applyPageLanguagePreference(next, setLangPreference);
   }
 
   async function saveEmail(e: SubmitEvent) {
@@ -381,7 +381,6 @@
       }
 
       applyClientPageSettings(pagePayload, LESSONS.length, setLangPreference);
-      initialPageLanguage = pageLanguage;
       initialPageLesson = pageLesson;
       showSavedFlag((value) => {
         pageSaved = value;
@@ -394,9 +393,8 @@
   }
 </script>
 
-<div class="page-narrow settings-page">
+<div class="page-narrow">
   <header class="settings-heading">
-    <p class="eyebrow">{m.settings_eyebrow()}</p>
     <h1 class="page-title">{m.settings_title()}</h1>
   </header>
 
@@ -413,7 +411,7 @@
 
     {#if $user}
       <!-- Account -->
-      <section class="panel">
+      <section class="panel panel--ledger">
         <h2 class="card-title">{m.settings_account_section()}</h2>
         <form onsubmit={saveCallSign} class="settings-form">
           <label class="field">
@@ -439,8 +437,6 @@
             <ErrorAlert message={callSignError} />
           {/if}
         </form>
-
-        <hr class="divider" />
 
         <form onsubmit={saveEmail} class="settings-form">
           <label class="field">
@@ -523,7 +519,7 @@
       <!-- Password gets its own surface: every panel is then headed by an
            `h2.card-title` (the password group used to be an `h3` buried half-way
            down the account panel), and the account panel stays about identity. -->
-      <section class="panel">
+      <section class="panel panel--ledger">
         <h2 class="card-title">{m.settings_password_section()}</h2>
         <form onsubmit={savePassword} class="settings-form">
           <label class="field">
@@ -571,16 +567,20 @@
       </section>
     {/if}
 
-    <!-- Page Settings -->
-    <section class="panel">
+    <!-- Preferences -->
+    <section class="panel panel--ledger">
       <h2 class="card-title">{m.settings_page_section()}</h2>
       <form onsubmit={savePage} class="settings-form">
         <label class="field">
           <span class="label-text">{m.settings_language_label()}</span>
-          <select bind:value={pageLanguage} class="select">
+          <select
+            class="select"
+            value={pageLanguage}
+            onchange={(e) => applyLanguageChange(e.currentTarget.value as LocalePreference)}
+          >
             <option value="auto">{m.theme_auto()}</option>
             {#each locales as locale (locale)}
-              <option value={locale}>{languageLabel(locale)}</option>
+              <option value={locale}>{getLocaleLongLabel(locale)}</option>
             {/each}
           </select>
         </label>
@@ -600,7 +600,7 @@
     </section>
 
     <!-- CW Settings -->
-    <section class="panel">
+    <section class="panel panel--ledger">
       <h2 class="card-title">{m.settings_cw_section()}</h2>
       <form onsubmit={saveCW} class="settings-form">
         <label class="field">
@@ -636,26 +636,15 @@
   .settings-heading {
     margin-bottom: var(--block-gap);
   }
-  /* Settings reads as one ledger: hairline-separated sections, not four cards. */
-  .settings-page :global(.panel) {
-    border: none;
-    border-top: 1px solid var(--border);
-    border-radius: 0;
-    padding: var(--space-6) 0 0;
-    background: transparent;
-  }
-  /* The ledger sections keep their rule when the shared contrast rule would
-     thicken a card border. */
-  @media (prefers-contrast: more) {
-    .settings-page :global(.panel) {
-      border-top-width: 2px;
-    }
-  }
   .settings-form {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
     margin-top: var(--space-2);
+  }
+
+  .settings-form + .settings-form {
+    margin-top: var(--block-gap);
   }
   .settings-email-verification {
     margin-top: 0.5rem;

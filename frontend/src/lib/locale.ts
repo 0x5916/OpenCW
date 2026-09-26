@@ -5,12 +5,12 @@ export type LocalePreference = Locale | 'auto';
 
 export const LOCALE_PREFERENCE_STORAGE_KEY = 'PARAGLIDE_LOCALE_PREF';
 
-const LOCALE_DISPLAY: Record<Locale, { short: string; native: string; english: string }> = {
-  en: { short: 'EN', native: 'English', english: 'English' },
-  de: { short: 'DE', native: 'Deutsch', english: 'German' },
-  ja: { short: 'JA', native: '日本語', english: 'Japanese' },
-  'zh-Hans': { short: '简', native: '简体中文', english: 'Chinese (Simplified)' },
-  'zh-Hant': { short: '繁', native: '繁體中文', english: 'Chinese (Traditional)' }
+const LOCALE_DISPLAY: Record<Locale, { short: string; native: string }> = {
+  en: { short: 'EN', native: 'English' },
+  de: { short: 'DE', native: 'Deutsch' },
+  ja: { short: 'JA', native: '日本語' },
+  'zh-Hans': { short: '简', native: '简体中文' },
+  'zh-Hant': { short: '繁', native: '繁體中文' }
 };
 
 export function normalizeLocalePreference(value: string | null | undefined): LocalePreference {
@@ -54,8 +54,5 @@ export function getLocaleShortLabel(locale: Locale): string {
 }
 
 export function getLocaleLongLabel(locale: Locale): string {
-  const label = LOCALE_DISPLAY[locale];
-  if (!label) return locale;
-  if (label.native === label.english) return label.native;
-  return `${label.native} (${label.english})`;
+  return LOCALE_DISPLAY[locale]?.native ?? locale;
 }

@@ -4,7 +4,7 @@
   "nav_progress": "進捗",
   "nav_forum": "フォーラム",
   "nav_about": "概要",
-  "nav_settings": "設定",
+  "nav_settings": "アカウント設定",
   "nav_profile": "プロフィール",
   "nav_login": "ログイン",
   "nav_register": "登録",
@@ -35,10 +35,8 @@
   "footer_link_github": "GitHub",
 
   "home_hero_title": "実戦速度でモールス信号を学ぶ",
-  "morse_eyebrow": "ワークショップ",
   "morse_title": "モールスツール",
   "morse_intro": "きちんと取り組む一つのドリル。フルスピードで耳で聞き取り、書き取った内容を確認できます。",
-  "home_eyebrow": "OpenCW",
   "home_go_title": "次に進む先",
   "home_go_train": "セッションを開始 — 耳で書き取り、結果を確認できます。",
   "home_go_forum": "質問したり、今取り組んでいることを投稿できます。",
@@ -93,7 +91,6 @@
 
   "forum_title": "フォーラム",
   "forum_categories_navigation": "フォーラムのカテゴリ",
-  "forum_eyebrow": "コミュニティ",
   "forum_intro": "質問をしたり、進捗を共有したり、他のモールス符号愛好家とコツを交換しましょう。",
   "forum_community_member": "コミュニティメンバー",
   "forum_new_thread": "新しいスレッド",
@@ -168,7 +165,7 @@
   "register_error_unknown": "不明なエラー",
 
   "trainer_title": "モールス信号トレーナー",
-  "trainer_eyebrow": "トレーナー",
+  "trainer_back_to_workshop": "モールスツールに戻る",
   "trainer_label_lesson": "レッスン",
   "trainer_current_lesson": "現在のレッスン：",
   "trainer_lesson_prev": "前のレッスン",
@@ -265,7 +262,6 @@
   "overlay_diff_expected": "正解: {char}",
 
   "settings_title": "設定",
-  "settings_eyebrow": "アカウント",
   "settings_account_section": "アカウント",
   "settings_username_label": "ユーザー名",
   "settings_call_sign_label": "コールサイン",
@@ -286,7 +282,7 @@
   "settings_new_password_label": "新しいパスワード",
   "settings_confirm_new_password_label": "新しいパスワード（確認用）",
   "settings_password_min_length": "パスワードは8文字以上である必要があります。",
-  "settings_page_section": "ページ設定",
+  "settings_page_section": "環境設定",
   "settings_theme_label": "テーマ",
   "settings_language_label": "言語",
   "settings_current_lesson_label": "現在のレッスン",

@@ -267,8 +267,8 @@
 </svelte:head>
 
 <div class="page-narrow">
-  <nav class="thread-crumbs" aria-label={m.forum_title()}>
-    <a class="crumb" href={href('/forum')}>
+  <nav class="crumb-nav" aria-label={m.forum_title()}>
+    <a class="crumb-link" href={href('/forum')}>
       <ArrowLeft size={14} aria-hidden="true" />
       {m.forum_back_to_threads()}
     </a>
@@ -398,30 +398,11 @@
 </div>
 
 <style>
-  .thread-crumbs {
-    margin-bottom: var(--space-6);
-  }
-
-  .crumb {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    color: var(--text-secondary);
-    font-size: var(--text-sm);
-    text-decoration: none;
-    transition: color var(--transition-fast);
-  }
-
-  .crumb:hover {
-    color: var(--accent);
-  }
-
   .thread-main {
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
     padding-bottom: var(--space-6);
-    border-bottom: 1px solid var(--border);
   }
 
   .thread-head {
@@ -476,7 +457,7 @@
   }
 
   @media (max-width: 720px) {
-    .thread-crumbs {
+    .crumb-nav {
       margin-bottom: var(--space-5);
     }
 

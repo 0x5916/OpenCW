@@ -64,6 +64,21 @@ export function touchLocalPageSettingsUpdatedAt(isoTimestamp: string = nowIso())
   writeLocalUpdatedAt(PAGE_SETTINGS_UPDATED_AT_STORAGE_KEY, isoTimestamp);
 }
 
+/**
+ * A language change is a synced page-settings change: apply it, then stamp the
+ * local timestamp so the reconcile pass pushes it. Stamping stays at the
+ * user-action call sites — the reconcile pass applies server values through
+ * `onLocale` and must not mark them local. The theme is device-local and
+ * deliberately does not stamp.
+ */
+export function applyPageLanguagePreference(
+  preference: LocalePreference,
+  onLocale: (preference: LocalePreference, options?: { navigate?: boolean }) => void
+): void {
+  onLocale(preference);
+  touchLocalPageSettingsUpdatedAt();
+}
+
 function touchLocalCwSettingsUpdatedAt(isoTimestamp: string = nowIso()): void {
   writeLocalUpdatedAt(CW_SETTINGS_UPDATED_AT_STORAGE_KEY, isoTimestamp);
 }

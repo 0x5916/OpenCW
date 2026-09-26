@@ -643,6 +643,8 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex: 1 1 auto;
+    min-width: 0;
   }
   .profile-heatmap-scroll {
     overflow-x: auto;
@@ -755,6 +757,7 @@
     color: var(--text-muted);
   }
   .profile-section-header :global(.card-title) {
+    width: 100%;
     margin-bottom: 0;
   }
 
@@ -784,11 +787,7 @@
   }
   .profile-table td {
     padding: 0.6rem 0.75rem;
-    border-bottom: 1px solid var(--border);
     color: var(--text-secondary);
-  }
-  .profile-table tbody tr:last-child td {
-    border-bottom: none;
   }
   .profile-table tbody tr:hover td {
     background-color: var(--bg-inset);

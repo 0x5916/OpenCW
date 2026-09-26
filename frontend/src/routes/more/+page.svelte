@@ -1,15 +1,24 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { House, Info, LogIn, LogOut, Settings, UserPlus } from '@lucide/svelte';
+  import {
+    House,
+    Info,
+    Languages,
+    LogIn,
+    LogOut,
+    Monitor,
+    Settings,
+    UserPlus
+  } from '@lucide/svelte';
   import { logout, user } from '$lib/auth';
-  import { touchLocalPageSettingsUpdatedAt } from '$lib/cwSync';
+  import { applyPageLanguagePreference } from '$lib/cwSync';
   import { localizedHref as href, setLangPreference, langPreference } from '$lib/i18n.svelte';
   import { getLocaleLongLabel } from '$lib/locale';
   import { locales } from '$lib/paraglide/runtime';
   import { readStoredTheme, setTheme, type Theme } from '$lib/theme';
   import * as m from '$lib/paraglide/messages';
-  import type { Locale, LocalePreference } from '$lib/i18n.svelte';
+  import type { LocalePreference } from '$lib/i18n.svelte';
 
   // Mirrors the `max-width: 639px` block in layout.css, where the top bar and the
   // tab bar hand over to each other.
@@ -41,12 +50,7 @@
 
   function changeLanguage(next: LocalePreference) {
     language = next;
-    setLangPreference(next);
-    touchLocalPageSettingsUpdatedAt();
-  }
-
-  function languageLabel(locale: Locale): string {
-    return getLocaleLongLabel(locale);
+    applyPageLanguagePreference(next, setLangPreference);
   }
 
   async function handleLogout() {
@@ -56,13 +60,13 @@
 </script>
 
 <div class="page-narrow">
-  <!-- Phone-only hub: the app mark opens the page instead of an eyebrow. -->
-  <div class="more-heading">
-    <img src="/favicon.svg" alt="" class="more-logo" />
+  <!-- Phone-only hub. The masthead matches the other pages (page-title only);
+       the app mark lives in the top bar, which stays visible on this screen. -->
+  <header class="more-heading">
     <h1 class="page-title">{m.nav_more()}</h1>
-  </div>
+  </header>
 
-  <section class="panel">
+  <section class="panel panel--ledger">
     <h2 class="card-title">{m.more_app_section()}</h2>
     <div class="more-list">
       <a href={href('/')} class="more-link"
@@ -71,17 +75,17 @@
       <a href={href('/about')} class="more-link"
         ><Info size={16} aria-hidden="true" /><span class="more-link-text">{m.nav_about()}</span></a
       >
+    </div>
+  </section>
+
+  <section class="panel panel--ledger">
+    <h2 class="card-title">{m.settings_account_section()}</h2>
+    <div class="more-list">
       <a href={href('/settings')} class="more-link"
         ><Settings size={16} aria-hidden="true" /><span class="more-link-text"
           >{m.nav_settings()}</span
         ></a
       >
-    </div>
-  </section>
-
-  <section class="panel">
-    <h2 class="card-title">{m.settings_account_section()}</h2>
-    <div class="more-list">
       {#if $user}
         <button type="button" class="more-link" onclick={() => void handleLogout()}
           ><LogOut size={16} aria-hidden="true" /><span class="more-link-text"
@@ -102,13 +106,14 @@
     </div>
   </section>
 
-  <section class="panel">
+  <section class="panel panel--ledger">
     <h2 class="card-title">{m.settings_page_section()}</h2>
-    <div class="more-form">
-      <label class="field">
-        <span class="label-text">{m.settings_theme_label()}</span>
+    <div class="more-list">
+      <label class="more-link more-control">
+        <Monitor size={16} aria-hidden="true" />
+        <span class="more-link-text">{m.settings_theme_label()}</span>
         <select
-          class="select"
+          class="select more-select"
           value={theme}
           onchange={(e) => changeTheme(e.currentTarget.value as Theme)}
         >
@@ -117,16 +122,17 @@
           <option value="dark">{m.theme_dark()}</option>
         </select>
       </label>
-      <label class="field">
-        <span class="label-text">{m.settings_language_label()}</span>
+      <label class="more-link more-control">
+        <Languages size={16} aria-hidden="true" />
+        <span class="more-link-text">{m.settings_language_label()}</span>
         <select
-          class="select"
+          class="select more-select"
           value={language}
           onchange={(e) => changeLanguage(e.currentTarget.value as LocalePreference)}
         >
           <option value="auto">{m.theme_auto()}</option>
           {#each locales as locale (locale)}
-            <option value={locale}>{languageLabel(locale)}</option>
+            <option value={locale}>{getLocaleLongLabel(locale)}</option>
           {/each}
         </select>
       </label>
@@ -135,19 +141,9 @@
 </div>
 
 <style>
-  /* The app mark opens this phone-only surface; its desktop counterpart
-     (Settings) opens with the shared eyebrow above the title instead. */
+  /* Same masthead rhythm as `.settings-heading`. */
   .more-heading {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
     margin-bottom: var(--block-gap);
-  }
-
-  .more-logo {
-    width: 2rem;
-    height: 2rem;
-    flex-shrink: 0;
   }
 
   .more-list {
@@ -156,11 +152,7 @@
     margin-top: var(--space-2);
   }
 
-  /* The panel already draws the group's boundary, so a row carries no box of
-     its own — just a hairline from the next one. Stacking a bordered, inset
-     control-shaped box per row inside a bordered panel was a box of boxes.
-     (Real controls, like the selects below, still get `.input` chrome: their
-     edge is an affordance, not decoration.) */
+  /* Rows stay flat; section headings carry the only dividers. */
   .more-link {
     display: flex;
     align-items: center;
@@ -173,15 +165,11 @@
     text-align: left;
     text-decoration: none;
     border: none;
-    border-bottom: 1px solid var(--border);
     background: none;
     color: var(--text-primary);
+    font-weight: 500;
     cursor: pointer;
     transition: color 0.15s;
-  }
-
-  .more-link:last-child {
-    border-bottom: none;
   }
 
   .more-link:hover {
@@ -192,11 +180,23 @@
     flex: 1 1 auto;
   }
 
-  /* Same rhythm as `.settings-form`. */
-  .more-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-    margin-top: var(--space-2);
+  .more-control {
+    cursor: pointer;
+    padding-block: 0.35rem;
   }
+
+  .more-select {
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: none;
+    min-height: 2rem;
+    padding: var(--space-1) 1.75rem var(--space-1) var(--space-2);
+    font-family: inherit;
+    font-weight: inherit;
+    text-align: right;
+    text-align-last: right;
+    border: none;
+    background-color: transparent;
+  }
+
 </style>

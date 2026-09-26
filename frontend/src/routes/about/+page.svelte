@@ -51,8 +51,6 @@
     <h2 class="section-title">{m.about_koch_title()}</h2>
     <p class="body-text body-text--prose about-intro">{m.about_koch_intro()}</p>
 
-    <hr class="divider" />
-
     <!-- How it works -->
     <h3 class="sub-title">{m.about_koch_how_title()}</h3>
     <ol class="step-list">
@@ -67,13 +65,9 @@
       {/each}
     </ol>
 
-    <hr class="divider" />
-
     <!-- Why it works -->
     <h3 class="sub-title">{m.about_koch_why_title()}</h3>
     <p class="body-text body-text--prose">{m.about_koch_why_body()}</p>
-
-    <hr class="divider" />
 
     <!-- Comparison -->
     <h3 class="sub-title">{m.about_koch_vs_title()}</h3>

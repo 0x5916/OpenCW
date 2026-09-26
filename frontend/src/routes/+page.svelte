@@ -29,7 +29,6 @@
 
 <!-- Masthead: the product in one paragraph, with one action to take. -->
 <section class="masthead">
-  <p class="eyebrow">{m.home_eyebrow()}</p>
   <h1 class="masthead-title">{m.home_hero_title()}</h1>
   <p class="masthead-lede">{m.home_hero_subtitle()}</p>
   <div class="masthead-actions">
@@ -108,17 +107,18 @@
      reserved for the action next to it. */
   .masthead {
     padding-bottom: var(--section-gap);
-    border-bottom: 1px solid var(--border);
   }
 
   .masthead-title {
     margin: 0;
+    padding-bottom: var(--space-2);
     max-width: 30rem;
     font-size: var(--text-3xl);
     line-height: var(--leading-tight);
     font-weight: 600;
     letter-spacing: -0.02em;
     color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
   }
 
   .masthead-lede {
@@ -263,8 +263,6 @@
 
   .colophon {
     margin-top: var(--section-gap);
-    padding-top: var(--space-4);
-    border-top: 1px solid var(--border);
   }
 
   .colophon :global(.body-text) {
